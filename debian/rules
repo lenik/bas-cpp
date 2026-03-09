@@ -1,0 +1,15 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+
+%:
+	dh $@
+
+override_dh_auto_configure:
+	dh_auto_configure -- --buildtype=debug -Dwarning_level=0
+
+override_dh_auto_build:
+	# Meson picks up "sccache c++" as the compiler in this environment,
+	# but sccache fails inside the Debhelper build chroot. Patch the
+	# generated Ninja file to call g++ directly instead.
+	cd obj-x86_64-linux-gnu && sed -i 's/sccache c++/g++/g' build.ninja
+	dh_auto_build
