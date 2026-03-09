@@ -1,0 +1,50 @@
+Source: bas-cpp
+Section: libs
+Priority: optional
+Maintainer: Lenik (谢继雷) <lenik@bodz.net>
+Build-Depends:
+ debhelper-compat (= 13),
+ meson,
+ ninja-build,
+ libbas-c-dev,
+ libboost-dev,
+ libboost-system-dev,
+ libglib2.0-dev,
+ libicu-dev,
+ libcurl4-openssl-dev,
+ libssl-dev,
+ zlib1g-dev,
+Standards-Version: 4.7.0
+Homepage: http://uni.bodz.net/lib/libbas-cpp
+Vcs-Browser: http://uni.bodz.net/lib/libbas-cpp
+Vcs-Git: http://uni.bodz.net/lib/libbas-cpp.git
+
+Package: libbas-cpp1
+Section: libs
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+Description: C++ core library (BAS stack)
+ Shared library for bas-cpp, built on the BAS stack (bas-c, Boost, ICU,
+ libcurl, etc.). Provides unified I/O, volume abstraction, and helpers
+ that are reused by command-line tools and other applications.
+
+Package: bas-cpp
+Section: utils
+Architecture: any
+Depends:
+ ${shlibs:Depends},
+ ${misc:Depends},
+Description: C++ utilities using libbas-cpp
+ Small command-line utilities built on libbas-cpp. Currently includes
+ the `vols` tool for listing local volumes and their basic properties.
+
+Package: libbas-cpp-dev
+Section: libdevel
+Architecture: any
+Depends:
+ libbas-cpp1 (= ${binary:Version}),
+ ${misc:Depends},
+Description: C++ library and utilities (BAS stack) - development files
+ Headers and build support for building against libbas-cpp.

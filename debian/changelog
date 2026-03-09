@@ -1,0 +1,10 @@
+bas-cpp (1.0.0) testing; urgency=medium
+
+  * Add app/notepad: simple notepad with menubar/toolbar using ui/arch
+    action/group models.
+  * Build each program in app/ from a single .cpp (find app/*.cpp).
+  * Install apps to bindir and manpages (app/*.1) to mandir.
+  * Add README.md. Fix UIGroup menu registration so submenus are
+    findable by path.
+
+ -- Lenik (谢继雷) <lenik@bodz.net>  Tue, 10 Mar 2025 00:00:00 +0800
