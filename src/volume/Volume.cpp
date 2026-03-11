@@ -10,12 +10,26 @@
 #include "../io/U32stringReader.hpp"
 #include "../util/unicode.hpp"
 
-#include <log/uselog.h>
+#include <bas/log/uselog.h>
 
 #include <cassert>
 #include <deque>
 #include <sstream>
 #include <stdexcept>
+
+std::string volumeTypeToString(VolumeType t) {
+    switch (t) {
+        case VolumeType::HARDDISK: return "HARDDISK";
+        case VolumeType::FLOPPY:   return "FLOPPY";
+        case VolumeType::CDROM:    return "CDROM";
+        case VolumeType::NETWORK:  return "NETWORK";
+        case VolumeType::ARCHIVE:  return "ARCHIVE";
+        case VolumeType::SYSTEM:   return "SYSTEM";
+        case VolumeType::MEMORY:   return "MEMORY";
+        case VolumeType::OTHER:    return "OTHER";
+        default:                   return "UNKNOWN";
+    }
+}
 
 // throws if conversion fails and how is boost::locale::conv::stop
 static std::vector<uint8_t> convertEncoding(const std::vector<uint8_t>& data, 
@@ -66,6 +80,10 @@ bool Volume::writeRCFile(std::string_view name, std::string_view data) {
     } catch (...) {
         return false;
     }
+}
+
+std::string Volume::getTypeString() const {
+    return volumeTypeToString(getType());
 }
 
 std::string Volume::getUUID() {
