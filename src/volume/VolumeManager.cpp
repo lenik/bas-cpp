@@ -17,6 +17,23 @@ VolumeManager::VolumeManager() {
 VolumeManager::~VolumeManager() {
 }
 
+bool VolumeManager::addVolume(std::unique_ptr<Volume> volume) {
+    for (const auto& transformer : m_transformers) {
+        volume = transformer(std::move(volume));
+        if (!volume) {
+            return false;
+        }
+    }
+    m_volumes.push_back(std::move(volume));
+    return true;
+}
+
+void VolumeManager::removeVolume(size_t index) {
+    if (index >= m_volumes.size())
+        throw std::out_of_range("Index out of range");
+    m_volumes.erase(m_volumes.begin() + index);
+}
+
 std::vector<Volume*> VolumeManager::type(std::string_view type) const {
     std::vector<Volume*> matches;
     for (const auto& volume : m_volumes) {

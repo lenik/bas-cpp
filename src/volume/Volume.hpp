@@ -17,6 +17,7 @@
 
 enum class VolumeType {
     HARDDISK,
+    // PORTABLE,
     FLOPPY,
     CDROM,
     NETWORK,
@@ -25,6 +26,8 @@ enum class VolumeType {
     MEMORY,
     OTHER,
 };
+
+std::string volumeTypeToString(VolumeType t);
 
 /**
  * Simplified generic volume interface for file system abstraction
@@ -52,6 +55,8 @@ public:
         return getClass() + ":" + getId();
     }
     virtual VolumeType getType() const = 0;
+    virtual std::string getTypeString() const;
+    virtual bool isEncrypted() const { return false; }
     virtual bool isLocal() const { return false; }
     virtual std::string getLocalFile(std::string_view path) const = 0;
 

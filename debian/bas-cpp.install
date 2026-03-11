@@ -1,3 +1,4 @@
-usr/bin/assets
-usr/bin/vols
-
+usr/bin/*
+usr/share/bas-cpp/app/*
+usr/share/man/man*/*
+usr/share/bash-completion/completions/*

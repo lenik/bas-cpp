@@ -4,6 +4,8 @@ project('bas-cpp', 'cpp',
 #        'warning_level=0', 
         'cpp_std=c++17'])
 
+pkgdatadir = get_option('datadir') / meson.project_name()
+
 cpp = meson.get_compiler('cpp')
 # Disable all warnings (wx 3.0 and deps are noisy)
 cpp_nowarn = []
@@ -58,6 +60,7 @@ cpp_nowarn = []
     zlib_dep = dependency('zlib', required : true)
 
 cpp_sources = files(
+    './src/module.cpp',
     './src/fmt/JsonForm.cpp',
     './src/fmt/TextForm.cpp',
     './src/fmt/FileUtility.cpp',
@@ -193,18 +196,22 @@ exe_deps = [
 
 exe_inc = [
     include_directories('src'),
-    include_directories('.'),
 ] + boost_inc
 
 lib_bas_cpp = library('bas-cpp',
     cpp_sources,
     dependencies : exe_deps,
     include_directories : exe_inc,
-    cpp_args : cpp_nowarn + ['-DLOGGER_NAME=bas-cpp'],
+    cpp_args : cpp_nowarn + ['-DLOGGER_NAME=cpp'],
     override_options: ['b_lundef=false'], # Allows undefined symbols at link time
     version : meson.project_version(),
     soversion : meson.project_version().split('.')[0],
     install : true,
+)
+
+bas_cpp_dep = declare_dependency(
+    link_with: lib_bas_cpp,
+    include_directories: exe_inc
 )
 
 # ---- pkg-config ----
@@ -338,7 +345,7 @@ foreach test_rel_path : all_test_files
         all_sources,
         include_directories : exe_inc,
         dependencies : exe_deps,
-        cpp_args : cpp_nowarn + ['-DLOGGER_NAME=' + test_name],
+        cpp_args : cpp_nowarn + ['-DLOGGER_NAME=test'],
         install : false,
     )
     
@@ -359,6 +366,11 @@ endif
 
 foreach app_cpp : app_cpp_list
     app_name = app_cpp.split('/')[-1].replace('.cpp', '')
+    if app_name == 'vols'
+        install_dir = get_option('bindir')
+    else
+        install_dir = pkgdatadir / 'app'
+    endif
     app_exe = executable(app_name,
         app_cpp,
         assets_o,
@@ -367,6 +379,7 @@ foreach app_cpp : app_cpp_list
         dependencies : exe_deps,
         cpp_args : cpp_nowarn + ['-DLOGGER_NAME=' + app_name],
         install : true,
+        install_dir : install_dir,
     )
 endforeach
 
