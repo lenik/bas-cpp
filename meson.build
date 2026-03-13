@@ -6,6 +6,8 @@ project('bas-cpp', 'cpp',
 
 pkgdatadir = get_option('datadir') / meson.project_name()
 
+fs = import('fs')
+
 cpp = meson.get_compiler('cpp')
 # Disable all warnings (wx 3.0 and deps are noisy)
 cpp_nowarn = []
