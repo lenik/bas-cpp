@@ -34,6 +34,29 @@ void VolumeManager::removeVolume(size_t index) {
     m_volumes.erase(m_volumes.begin() + index);
 }
 
+void VolumeManager::clear() {
+    m_volumes.clear();
+}
+
+size_t VolumeManager::getVolumeCount() const {
+    return m_volumes.size();
+}
+
+Volume* VolumeManager::getVolume(size_t index) const {
+    return m_volumes[index].get();
+}
+
+Volume* VolumeManager::getDefaultVolume() const {
+    if (m_volumes.empty()) {
+        return nullptr;
+    }
+    return m_volumes[0].get();
+}
+
+const std::vector<std::unique_ptr<Volume>>& VolumeManager::all() const {
+    return m_volumes;
+}
+
 std::vector<Volume*> VolumeManager::type(std::string_view type) const {
     std::vector<Volume*> matches;
     for (const auto& volume : m_volumes) {
@@ -123,4 +146,8 @@ void VolumeManager::addLocalVolumes() {
     } catch (...) {
     }
 #endif
+}
+
+void VolumeManager::addTransformer(VolumeTransformer transformer) {
+    m_transformers.push_back(transformer);
 }
