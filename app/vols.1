@@ -1,0 +1,34 @@
+.TH VOLS 1 "March 2026" "bas-cpp" "User Commands"
+.SH NAME
+vols \- list local volumes detected by bas-cpp
+.SH SYNOPSIS
+.B vols
+.SH DESCRIPTION
+.B vols
+enumerates local volumes known to the bas-cpp volume subsystem and prints
+one line per volume.
+.PP
+Each line contains the following tab-separated fields:
+.IP \(bu 2
+Mount point or root path
+.IP \(bu 2
+Device path (or \- if unknown)
+.IP \(bu 2
+Volume type
+.IP \(bu 2
+Label
+.IP \(bu 2
+UUID
+.PP
+The output is intended primarily for human inspection and simple scripting.
+.SH OPTIONS
+This command currently takes no options.
+.SH EXIT STATUS
+The
+.B vols
+command exits with status 0 on success and a non-zero status on error.
+.SH AUTHORS
+Written as part of the bas-cpp project.
+.SH SEE ALSO
+.BR bas-cpp (7)
+
