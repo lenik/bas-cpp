@@ -16,27 +16,22 @@ class VolumeManager {
     
 public:
     VolumeManager();
-    ~VolumeManager();
+    virtual ~VolumeManager();
     
     /**
      * Add a volume to the manager.
      * @param volume The volume to add.
      * @return True if the volume was added, false if it was rejected by a transformer.
      */
-    inline bool addVolume(std::unique_ptr<Volume> volume);
-    inline void removeVolume(size_t index);
-    inline void clear() { m_volumes.clear(); }
+    bool addVolume(std::unique_ptr<Volume> volume);
+    void removeVolume(size_t index);
+    void clear();
     
-    inline size_t getVolumeCount() const { return m_volumes.size(); }
-    inline Volume* getVolume(size_t index) const { return m_volumes[index].get(); }
-    inline Volume* getDefaultVolume() const {
-        if (m_volumes.empty())
-            return nullptr;
-        else
-            return m_volumes[0].get();
-    }
+    size_t getVolumeCount() const;
+    Volume* getVolume(size_t index) const;
+    Volume* getDefaultVolume() const;
     
-    inline const std::vector<std::unique_ptr<Volume>>& all() const { return m_volumes; }
+    const std::vector<std::unique_ptr<Volume>>& all() const;
     std::vector<Volume*> type(std::string_view type) const;
 
     /*
@@ -47,9 +42,7 @@ public:
     void addLocalVolumes();
 
     // apply a function to each volume
-    void addTransformer(VolumeTransformer transformer) {
-        m_transformers.push_back(transformer);
-    }
+    void addTransformer(VolumeTransformer transformer);
 
 };
 
