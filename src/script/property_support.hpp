@@ -11,33 +11,31 @@
  *
  * Example:
  *   mutable_property<int> count;
- *   count.onchange.add([](int old_val, int new_val) { log("count: %d -> %d", old_val, new_val); });
+ *   count.onchange.add([](int new_val, int old_val) { log("count: %d -> %d", old_val, new_val); });
  *   count.set(42);
  *   int n = count.get();
  */
-template<typename T>
+template <typename T> //
 class observable {
-public:
+  public:
     using value_type = T;
 
-    using change_signal_t = boost::signals2::signal<void(T const&, T const&)>;
-    using slot_type   = typename change_signal_t::slot_type;
+    using change_signal_t = boost::signals2::signal< //
+        void(T const& new_value, T const& old_value)>;
+    using slot_type = typename change_signal_t::slot_type;
 
-    observable()
-        : onchange(std::make_unique<change_signal_t>())
-    {}
+    observable() //
+        : onchange(std::make_unique<change_signal_t>()) {}
 
     explicit observable(T value)
-        : m_value(std::move(value))
-        , onchange(std::make_unique<change_signal_t>())
-    {}
-    
+        : m_value(std::move(value)), onchange(std::make_unique<change_signal_t>()) {}
+
     observable(observable&& other) noexcept {
         std::lock_guard<std::mutex> lock(other.m_mutex);
         m_value = std::move(other.m_value);
         onchange = std::move(other.onchange);
     }
-    
+
     // Move assignment
     observable& operator=(observable&& other) noexcept {
         if (this != &other) {
@@ -48,8 +46,8 @@ public:
         }
         return *this;
     }
-    
-    // // Note: Returning T const& from a thread-safe getter is risky 
+
+    // // Note: Returning T const& from a thread-safe getter is risky
     // // if the object is modified immediately after. Returning by value is safer.
     // T get() const {
     //     std::lock_guard<std::mutex> lock(m_mutex);
@@ -77,7 +75,7 @@ public:
             }
         }
         if (changed && onchange) {
-            (*onchange)(old, m_value);
+            (*onchange)(m_value, old);
         }
     }
 
@@ -89,7 +87,7 @@ public:
             m_value = std::move(value);
         }
         if (onchange) {
-            (*onchange)(old, m_value);
+            (*onchange)(m_value, old);
         }
     }
 
@@ -105,15 +103,15 @@ public:
         return &m_value;
     }
 
-    boost::signals2::connection connect(const slot_type& slot) {
+    boost::signals2::connection connect(const slot_type& slot) { //
         return onchange->connect(slot);
     }
 
-    void disconnect() {
+    void disconnect() { //
         onchange->disconnect_all_slots();
     }
 
-private:
+  private:
     mutable std::mutex m_mutex; // 'mutable' allows locking in const get()
     T m_value{};
     std::unique_ptr<change_signal_t> onchange;
