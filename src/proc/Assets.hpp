@@ -14,6 +14,8 @@ extern bool assets_contains(std::string_view path);
 
 extern std::vector<uint8_t> assets_get_data(std::string_view path);
 
+extern std::vector<std::unique_ptr<FileStatus>> assets_listdir(std::string_view dir);
+
 extern void assets_dump_tree();
 
 #endif

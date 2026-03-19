@@ -12,6 +12,8 @@
 
 #include <bas/log/uselog.h>
 
+
+#include <algorithm>
 #include <cassert>
 #include <deque>
 #include <sstream>
@@ -29,26 +31,6 @@ std::string volumeTypeToString(VolumeType t) {
         case VolumeType::OTHER:    return "OTHER";
         default:                   return "UNKNOWN";
     }
-}
-
-// throws if conversion fails and how is boost::locale::conv::stop
-static std::vector<uint8_t> convertEncoding(const std::vector<uint8_t>& data, 
-                                   std::string_view fromEncoding, 
-                                   std::string_view toEncoding,
-                                   unicode_conversion_mode convertion = UNICODE_ERROR, 
-                                   char32_t replacement = U'\uFFFD') {
-    if (data.empty()) {
-        return {};
-    }
-    
-    // If source and target are the same, no conversion needed
-    if (fromEncoding == toEncoding) {
-        return data;
-    }
-    
-    // Convert using ICU
-    auto unicode = unicode::fromEncoding(data, fromEncoding, convertion, replacement);
-    return unicode::toEncoding(unicode, toEncoding);
 }
 
 std::string Volume::readRCFile(std::string_view name) {
@@ -124,7 +106,6 @@ std::unique_ptr<VolumeFile> Volume::getRootFile() {
 }
 
 std::unique_ptr<VolumeFile> Volume::resolve(std::string_view path) {
-    if (!this) throw std::invalid_argument("Volume::resolve: null Volume");
     return std::make_unique<VolumeFile>(this, std::string(path));
 }
 
@@ -194,8 +175,8 @@ std::string Volume::toRealPath(std::string_view path) const {
 std::vector<std::unique_ptr<FileStatus>> Volume::readDir(std::string_view path, bool recursive) {
     if (path.empty()) throw std::invalid_argument("Volume::readDir: path is required");
     std::vector<std::unique_ptr<FileStatus>> list;
-    readDir(list, path, recursive);
-    return move(list);
+    readDir_inplace(list, path, recursive);
+    return list;
 }
 
 bool Volume::createDirectories(std::string_view _path) {
@@ -335,6 +316,27 @@ bool Volume::rename(std::string_view _src, std::string_view _dest, bool overwrit
     return true;
 }
 
+/**
+ * @param buf the buffer to store the compressed string
+ * @param buf_size include the null terminator 
+ * @param src the source string
+ * @param ellipsis the ellipsis string
+ * @return the buffer pointer
+ */
+char *ellpsis(char *buf, size_t buf_size, const char *src, const char *ellipsis = "...") {
+    int src_len = static_cast<int>(strlen(src));
+    int ellipsis_len = static_cast<int>(strlen(ellipsis));
+    int maxchars = std::min<int>(buf_size - ellipsis_len - 1, src_len);
+    memcpy(buf, src, maxchars);
+    if (maxchars < src_len) {
+        memcpy(buf + maxchars, ellipsis, ellipsis_len);
+        buf[buf_size - 1] = '\0';
+    } else {
+        buf[maxchars] = '\0';
+    }
+    return buf;
+}
+
 std::unique_ptr<Reader> Volume::newReader(std::string_view path, std::string_view encoding) {
     if (path.empty()) throw std::invalid_argument("Volume::newReader: path is required");
     auto in = newInputStream(path);
@@ -342,7 +344,17 @@ std::unique_ptr<Reader> Volume::newReader(std::string_view path, std::string_vie
         return nullptr;
     auto data = in->readBytesUntilEOF();
     in->close();
-    printf("volumn read: %d bytes => %s.", data.size(), data.data());
+
+    if (get_loglevel() >= LOG_LEVEL_INFO) {
+        int size = static_cast<int>(data.size());
+        unsigned char *content = data.data();
+        
+        char header_ellipsis[80];
+        ellpsis(header_ellipsis, sizeof(header_ellipsis), (const char *)content);
+
+        loginfo_fmt("volumn read: %d bytes => %s.", size, header_ellipsis);
+    }
+
     std::string text;
     if (data.empty())
         text = "";

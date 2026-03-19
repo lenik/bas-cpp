@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <cstring>
+#include <vector>
 #include <stdexcept>
 
 namespace {
@@ -40,20 +41,20 @@ int Path::compare(const Path& other) const {
     return pathCompareC(_path, other._path);
 }
 
-static std::string path_join(std::string_view dir, std::string_view base) {
-    if (!base.empty() && base[0] == '/')
-        return std::string(base);
+static std::string path_join(std::string_view dir, std::string_view tail) {
+    if (!tail.empty() && tail[0] == '/')
+        return std::string(tail);
     
     std::string path = std::string(dir);
     if (!dir.empty() && dir.back() != '/') {
         path.append("/");
     }
-    path.append(base);
+    path.append(tail);
     return path;
 }
 
-Path::Path(std::string_view dir, std::string_view base)
-    : Path(path_join(dir, base))
+Path::Path(std::string_view dir, std::string_view tail)
+    : Path(path_join(dir, tail))
 {
 }
 
@@ -212,7 +213,7 @@ Path Path::normalize() const {
     const char* old = _path;
     const char *end = old + old_len;
 
-    char buf[old_len + 1];
+    std::vector<char> buf(old_len + 1);
     int len = 0;
     int parent = 0;
     
@@ -288,7 +289,7 @@ Path Path::normalize() const {
 
     if (len == old_len)
         return *this;
-    return Path(std::string(buf, len));
+    return Path(std::string(buf.data(), len));
 }
 
 Path Path::getParent() const {

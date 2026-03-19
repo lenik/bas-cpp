@@ -121,7 +121,7 @@ bool MemoryZip::isDirectory(std::string_view path) const {
     return false;
 }
 
-void MemoryZip::readDir(std::vector<std::unique_ptr<FileStatus>>& list, std::string_view path, bool recursive) {
+void MemoryZip::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list, std::string_view path, bool recursive) {
     std::string pathStr(path);
     
     // Normalize path

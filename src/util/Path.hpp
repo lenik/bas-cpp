@@ -15,7 +15,7 @@
 class Path {
 public:
     Path(std::string_view path);
-    Path(std::string_view dir, std::string_view base);
+    Path(std::string_view dir, std::string_view tail);
     Path(const Path&);
     Path(Path&&) noexcept;
     Path& operator=(const Path&);
