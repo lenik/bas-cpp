@@ -88,10 +88,10 @@ public:
     
     // Directory operations
     // readDir can throw IOException or AccessException
-    virtual void readDir(std::vector<std::unique_ptr<FileStatus>>& list, std::string_view path, bool recursive = false)
+    virtual void readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list, std::string_view path, bool recursive = false)
         { printf("readDir(list, path, rec) not implemented yet\n"); }
 
-    std::vector<std::unique_ptr<FileStatus>> readDir(std::string_view path, bool recursive = false);
+    virtual std::vector<std::unique_ptr<FileStatus>> readDir(std::string_view path, bool recursive = false);
     //  {
     //     std::vector<std::unique_ptr<FileStatus>> list;
     //     readDir(list, path, recursive);

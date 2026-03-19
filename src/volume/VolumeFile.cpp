@@ -298,7 +298,7 @@ void VolumeFile::readDir(std::vector<std::unique_ptr<FileStatus>>& list, bool re
     if (!m_volume || m_path.empty()) {
         throw IOException("readDir", m_path, "Volume or path is null/empty");
     }
-    m_volume->readDir(list, m_path, recursive);
+    m_volume->readDir_inplace(list, m_path, recursive);
 }
 
 bool VolumeFile::stat(FileStatus* status) const {

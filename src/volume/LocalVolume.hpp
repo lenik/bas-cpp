@@ -55,7 +55,7 @@ public:
     bool isDirectory(std::string_view path) const override;
     bool stat(std::string_view path, FileStatus* status) const override;
     
-    void readDir(std::vector<std::unique_ptr<FileStatus>>& list, std::string_view path, bool recursive = false) override;
+    void readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list, std::string_view path, bool recursive = false) override;
     bool createDirectory(std::string_view path) override;
     bool removeDirectory(std::string_view path) override;
     

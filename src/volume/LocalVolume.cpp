@@ -202,7 +202,7 @@ static void readDirRecursive(const std::string& dirPath, const std::string& pref
     closedir(dir);
 }
 
-void LocalVolume::readDir(std::vector<std::unique_ptr<FileStatus>>& list, std::string_view _path, bool recursive) {
+void LocalVolume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list, std::string_view _path, bool recursive) {
     std::string dirPath = resolveLocal(_path);
     
     struct stat sb;
