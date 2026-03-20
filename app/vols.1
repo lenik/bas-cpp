@@ -3,32 +3,118 @@
 vols \- list local volumes detected by bas-cpp
 .SH SYNOPSIS
 .B vols
+.RI [ options ]
 .SH DESCRIPTION
 .B vols
 enumerates local volumes known to the bas-cpp volume subsystem and prints
-one line per volume.
+one header row plus one line per volume. Columns are tab-separated.
 .PP
-Each line contains the following tab-separated fields:
-.IP \(bu 2
-Mount point or root path
-.IP \(bu 2
-Device path (or \- if unknown)
-.IP \(bu 2
-Volume type
-.IP \(bu 2
-Label
-.IP \(bu 2
-UUID
+If you do not pass any field-selection option
+.RB ( \-a ", " \-c ", " \-m ", " \-d ", " \-t ", " \-l ", " \-u ", " \-r ", " \-L ", " \-D ", " \-o ", " \-O ", " \-z ),
+the default columns are
+.BR \-mdtlu
+(mount point, device, type, label, UUID).
+With
+.BR \-v " / " \-\-verbose ,
+the default columns are
+.BR \-mdtlurLD
+(those five plus read-only, logical type, loop device).
+.B \-c " / " \-\-compact
+selects only the compact column set
+.RB ( \-mdtlu ),
+even with
+.BR \-v .
+.B \-a " / " \-\-all
+selects every column (same as combining all field flags).
 .PP
-The output is intended primarily for human inspection and simple scripting.
+Bind mounts are always included in the scan.
+Overlay filesystems are added when you pass
+.BR \-s " / " \-\-symbols ,
+or when the logical-type column is selected
+.RB ( \-L " / " \-\-logical-type ,
+or
+.B \-v
+defaults).
+.PP
+.B \-w " / " \-\-writable
+lists only writable mounts and implies the read-only column
+.RB ( \-r )
+so each printed row still shows
+.BR ro " / " rw .
 .SH OPTIONS
-This command currently takes no options.
+.SS Field columns
+.TP
+.BR \-a ", " \-\-all
+Print every available column.
+.TP
+.BR \-c ", " \-\-compact
+Use the compact column set
+.RB ( \-mdtlu );
+with explicit field flags, compact is ORed with those columns.
+.TP
+.BR \-m ", " \-\-mountpoint
+Mount point (or root path).
+.TP
+.BR \-d ", " \-\-device
+Device path (or \-).
+.TP
+.BR \-t ", " \-\-type
+Volume type.
+.TP
+.BR \-l ", " \-\-label
+Label.
+.TP
+.BR \-u ", " \-\-uuid
+UUID.
+.TP
+.BR \-r ", " \-\-read-only
+Read-only flag (\fBro\fR / \fBrw\fR).
+.TP
+.BR \-L ", " \-\-logical-type
+Logical mount kind (\fB\-\fR, \fBbind\fR, \fBoverlay\fR).
+.TP
+.BR \-D ", " \-\-loop-device
+Loop device marker (\fBloop\fR / \fB\-\fR).
+.TP
+.BR \-o ", " \-\-opts
+Per-mount (VFS) option string from
+.BR /proc/self/mountinfo .
+.TP
+.BR \-O ", " \-\-superopts
+Superblock option string from
+.BR /proc/self/mountinfo .
+.TP
+.BR \-z ", " \-\-root
+Root path within the filesystem (mountinfo \(lqroot\(rq field, before the mount point).
+.SS Other
+.TP
+.BR \-s ", " \-\-symbols
+Include overlay filesystems in the volume scan (bind mounts are always included).
+.TP
+.BR \-h ", " \-\-help
+Print usage and exit successfully.
+.TP
+.BR \-w ", " \-\-writable
+Omit read-only volumes; implies
+.BR \-r .
+.TP
+.BR \-v ", " \-\-verbose
+Lower the library log threshold (more messages on stderr). With no field flags, selects the verbose default column set.
+.TP
+.BR \-q ", " \-\-quiet
+Suppress library warnings on stderr (errors only).
+.PP
+.B \-v
+and
+.B \-q
+cannot be used together.
+.B \-a
+and
+.B \-c
+cannot be used together.
 .SH EXIT STATUS
-The
-.B vols
-command exits with status 0 on success and a non-zero status on error.
+Exits 0 on success, 2 for invalid options, conflicting flags, or unexpected arguments.
 .SH AUTHORS
 Written as part of the bas-cpp project.
 .SH SEE ALSO
 .BR bas-cpp (7)
-

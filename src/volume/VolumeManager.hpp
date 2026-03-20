@@ -34,12 +34,12 @@ public:
     const std::vector<std::unique_ptr<Volume>>& all() const;
     std::vector<Volume*> type(std::string_view type) const;
 
-    /*
-     * Discover and add local filesystem volumes (Linux: from /proc/self/mountinfo)
-     *
-     * rejected volumes are not added to the manager.
+    /**
+     * Discover and add local filesystem volumes (Linux: from /proc/self/mountinfo).
+     * @param includeSymbols when false, skip overlay mounts; bind mounts are always included.
+     * @param excludeReadOnly when true, skip read-only mounts.
      */
-    void addLocalVolumes();
+    void addLocalVolumes(bool includeSymbols = false, bool excludeReadOnly = false);
 
     // apply a function to each volume
     void addTransformer(VolumeTransformer transformer);
