@@ -2,6 +2,7 @@
 
 #include "DirEntry.hpp"
 #include "FileStatus.hpp"
+#include "mountinfo.hpp"
 
 #include "../io/IOException.hpp"
 #include "../io/InputStreamReader.hpp"
@@ -10,6 +11,7 @@
 #include "../io/OutputStreamWriter.hpp"
 
 #include <algorithm>
+#include <cctype>
 #include <cerrno>
 #include <chrono>
 #include <cstring>
@@ -28,7 +30,8 @@
 namespace fs = std::filesystem;
 
 static void strip_trailing_slashes(std::string& s) {
-    while (s.size() > 1 && s.back() == '/') s.pop_back();
+    while (s.size() > 1 && s.back() == '/')
+        s.pop_back();
 }
 
 LocalVolume::LocalVolume(std::string_view rootPath) : m_rootPath(rootPath) {
@@ -41,6 +44,12 @@ LocalVolume::LocalVolume(std::string_view rootPath) : m_rootPath(rootPath) {
 void LocalVolume::setRootPath(std::string_view rootPath) {
     m_rootPath = rootPath;
     strip_trailing_slashes(m_rootPath);
+    m_mountInfoCached = false;
+    m_device.reset();
+    m_mountPoint.reset();
+    m_logicalType = LocalLogicalType::NONE;
+    m_isLoop = false;
+    m_readOnly = false;
 }
 
 VolumeType LocalVolume::getType() const {
@@ -48,9 +57,7 @@ VolumeType LocalVolume::getType() const {
     return m_type;
 }
 
-std::string LocalVolume::getDefaultLabel() const {
-    return "Local Volume";
-}
+std::string LocalVolume::getDefaultLabel() const { return "Local Volume"; }
 
 std::string LocalVolume::getLabel() {
     // Check if root path is a mount point and use device label
@@ -61,9 +68,7 @@ std::string LocalVolume::getLabel() {
     return Volume::getLabel();
 }
 
-void LocalVolume::setLabel(std::string_view label) {
-    Volume::setLabel(label);
-}
+void LocalVolume::setLabel(std::string_view label) { Volume::setLabel(label); }
 
 std::string LocalVolume::getUUID() {
     // Check if root path is a mount point and use device UUID
@@ -87,6 +92,44 @@ const std::optional<std::string>& LocalVolume::getDevice() const {
     return m_device;
 }
 
+bool LocalVolume::isLoop() const {
+#if defined(__linux__)
+    cacheMountInfo();
+    return m_isLoop;
+#else
+    return false;
+#endif
+}
+
+LocalLogicalType LocalVolume::getLogicalType() const {
+#if defined(__linux__)
+    cacheMountInfo();
+    return m_logicalType;
+#else
+    return LocalLogicalType::NONE;
+#endif
+}
+
+bool LocalVolume::isLogical() const { return getLogicalType() != LocalLogicalType::NONE; }
+
+bool LocalVolume::isReadOnly() const {
+#if defined(__linux__)
+    cacheMountInfo();
+    return m_readOnly;
+#else
+    return false;
+#endif
+}
+
+MountInfo LocalVolume::getMountInfo() const {
+#if defined(__linux__)
+    cacheMountInfo();
+    return m_mountInfo;
+#else
+    return MountInfo();
+#endif
+}
+
 std::string LocalVolume::resolveLocal(std::string_view _path) const {
     std::string path = normalize(_path);
     if (path.empty()) {
@@ -99,7 +142,8 @@ std::string LocalVolume::resolveLocal(std::string_view _path) const {
         result = m_rootPath + "/" + path;
     }
     // No trailing slash: libstdc++ can segfault in path::_M_split_cmpts for "base/"
-    if (result.size() > 1 && result.back() == '/') result.pop_back();
+    if (result.size() > 1 && result.back() == '/')
+        result.pop_back();
     return result;
 }
 
@@ -120,7 +164,7 @@ bool LocalVolume::isDirectory(std::string_view _path) const {
 
 bool LocalVolume::stat(std::string_view _path, FileStatus* st) const {
     std::string localPath = resolveLocal(_path);
-    
+
     auto fs_status = fs::status(localPath);
     if (fs::is_directory(fs_status))
         st->type |= FileType::DIRECTORY;
@@ -128,16 +172,17 @@ bool LocalVolume::stat(std::string_view _path, FileStatus* st) const {
         st->type |= FileType::REGULAR_FILE;
         std::error_code ec;
         st->size = fs::file_size(localPath, ec);
-        if (ec) st->size = 0;
+        if (ec)
+            st->size = 0;
     }
-    
+
     auto ftime = fs::last_write_time(localPath);
     auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
         ftime - fs::file_time_type::clock::now() + std::chrono::system_clock::now());
     st->modifiedTime = std::chrono::system_clock::to_time_t(sctp);
     st->accessTime = st->modifiedTime; // Simplified
     st->createTime = st->modifiedTime; // Simplified
-    
+
     return true;
 }
 
@@ -149,14 +194,17 @@ static void readDirOne(const std::string& dirPath, std::vector<std::unique_ptr<F
     }
     struct dirent* ent;
     while ((ent = readdir(dir)) != nullptr) {
-        if (ent->d_name[0] == '.' && (ent->d_name[1] == '\0' || (ent->d_name[1] == '.' && ent->d_name[2] == '\0')))
+        if (ent->d_name[0] == '.' &&
+            (ent->d_name[1] == '\0' || (ent->d_name[1] == '.' && ent->d_name[2] == '\0')))
             continue;
         std::string fullPath = dirPath;
-        if (fullPath.back() != '/') fullPath += '/';
+        if (fullPath.back() != '/')
+            fullPath += '/';
         fullPath += ent->d_name;
 
         struct stat st;
-        if (stat(fullPath.c_str(), &st) != 0) continue;
+        if (stat(fullPath.c_str(), &st) != 0)
+            continue;
 
         auto fileStatus = std::make_unique<FileStatus>();
         fileStatus->name = ent->d_name;
@@ -174,17 +222,21 @@ static void readDirOne(const std::string& dirPath, std::vector<std::unique_ptr<F
 static void readDirRecursive(const std::string& dirPath, const std::string& prefix,
                              std::vector<std::unique_ptr<FileStatus>>& list) {
     DIR* dir = opendir(dirPath.c_str());
-    if (!dir) return;
+    if (!dir)
+        return;
     struct dirent* ent;
     while ((ent = readdir(dir)) != nullptr) {
-        if (ent->d_name[0] == '.' && (ent->d_name[1] == '\0' || (ent->d_name[1] == '.' && ent->d_name[2] == '\0')))
+        if (ent->d_name[0] == '.' &&
+            (ent->d_name[1] == '\0' || (ent->d_name[1] == '.' && ent->d_name[2] == '\0')))
             continue;
         std::string fullPath = dirPath;
-        if (fullPath.back() != '/') fullPath += '/';
+        if (fullPath.back() != '/')
+            fullPath += '/';
         fullPath += ent->d_name;
 
         struct stat st;
-        if (stat(fullPath.c_str(), &st) != 0) continue;
+        if (stat(fullPath.c_str(), &st) != 0)
+            continue;
 
         std::string displayName = prefix.empty() ? ent->d_name : prefix + "/" + ent->d_name;
         auto fileStatus = std::make_unique<FileStatus>();
@@ -202,9 +254,10 @@ static void readDirRecursive(const std::string& dirPath, const std::string& pref
     closedir(dir);
 }
 
-void LocalVolume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list, std::string_view _path, bool recursive) {
+void LocalVolume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list,
+                                  std::string_view _path, bool recursive) {
     std::string dirPath = resolveLocal(_path);
-    
+
     struct stat sb;
     if (::stat(dirPath.c_str(), &sb) != 0 || !S_ISDIR(sb.st_mode)) {
         throw IOException("readDir", std::string(_path), "Path is not a directory");
@@ -230,7 +283,7 @@ bool LocalVolume::createDirectory(std::string_view _path) {
     if (fs::exists(localPath)) {
         throw IOException("mkdir", std::string(_path), "File with same name exists");
     }
-    
+
     std::error_code ec;
     if (!fs::create_directory(localPath, ec)) {
         if (ec) {
@@ -242,7 +295,7 @@ bool LocalVolume::createDirectory(std::string_view _path) {
 
 bool LocalVolume::removeDirectory(std::string_view _path) {
     std::string localPath = resolveLocal(_path);
-    
+
     if (!fs::exists(localPath)) {
         return false;
     }
@@ -261,7 +314,8 @@ bool LocalVolume::removeDirectory(std::string_view _path) {
     return true;
 }
 
-// std::unique_ptr<IReadStream> LocalVolume::openForRead(std::string_view _path, std::string_view /*encoding*/) {
+// std::unique_ptr<IReadStream> LocalVolume::openForRead(std::string_view _path, std::string_view
+// /*encoding*/) {
 //     std::string localPath = resolveLocal(_path);
 //     if (!fs::exists(localPath))
 //         throw IOException("openForRead", std::string(_path), "Path does not exist");
@@ -271,7 +325,8 @@ bool LocalVolume::removeDirectory(std::string_view _path) {
 //     return stream->isOpen() ? std::move(stream) : nullptr;
 // }
 
-// std::unique_ptr<IWriteStream> LocalVolume::openForWrite(std::string_view _path, bool append, std::string_view /*encoding*/) {
+// std::unique_ptr<IWriteStream> LocalVolume::openForWrite(std::string_view _path, bool append,
+// std::string_view /*encoding*/) {
 //     std::string localPath = resolveLocal(_path);
 //     if (fs::exists(localPath) && !fs::is_regular_file(localPath))
 //         throw IOException("openForWrite", std::string(_path), "Path is not a regular file");
@@ -320,11 +375,13 @@ std::unique_ptr<RandomInputStream> LocalVolume::newRandomInputStream(std::string
     return stream->isOpen() ? std::move(stream) : nullptr;
 }
 
-std::unique_ptr<RandomReader> LocalVolume::newRandomReader(std::string_view _path, std::string_view encoding) {
+std::unique_ptr<RandomReader> LocalVolume::newRandomReader(std::string_view _path,
+                                                           std::string_view encoding) {
     return Volume::newRandomReader(_path, encoding);
 }
 
-std::unique_ptr<Writer> LocalVolume::newWriter(std::string_view _path, bool append, std::string_view encoding) {
+std::unique_ptr<Writer> LocalVolume::newWriter(std::string_view _path, bool append,
+                                               std::string_view encoding) {
     std::string localPath = resolveLocal(_path);
     if (fs::exists(localPath) && !fs::is_regular_file(localPath))
         throw IOException("newWriter", std::string(_path), "Path is not a regular file");
@@ -339,17 +396,18 @@ std::vector<uint8_t> LocalVolume::readFile(std::string_view _path) {
         throw IOException("readFile", std::string(_path), "Path does not exist");
     if (!fs::is_regular_file(localPath))
         throw IOException("readFile", std::string(_path), "Path is not a regular file");
-    
+
     std::ifstream file(localPath, std::ios::binary);
-    if (!file) return {};
-    
+    if (!file)
+        return {};
+
     file.seekg(0, std::ios::end);
     size_t size = file.tellg();
     file.seekg(0, std::ios::beg);
-    
+
     std::vector<uint8_t> data(size);
     file.read(reinterpret_cast<char*>(data.data()), size);
-    
+
     return data;
 }
 
@@ -359,12 +417,12 @@ void LocalVolume::writeFile(std::string_view _path, const std::vector<uint8_t>& 
         throw IOException("writeFile", std::string(_path), "Path does not exist");
     if (!fs::is_regular_file(localPath))
         throw IOException("writeFile", std::string(_path), "Path is not a regular file");
-    
+
     std::ofstream file(localPath, std::ios::binary);
     if (!file.is_open()) {
         throw IOException("writeFile", std::string(_path), "Failed to open file for writing");
     }
-    
+
     file.write(reinterpret_cast<const char*>(data.data()), data.size());
     if (!file.good()) {
         throw IOException("writeFile", std::string(_path), "Error writing file");
@@ -421,43 +479,143 @@ void LocalVolume::renameFileUnchecked(std::string_view src, std::string_view des
     }
 }
 
-std::string LocalVolume::getTempDir() {
-    return fs::temp_directory_path().string();
-}
+std::string LocalVolume::getTempDir() { return fs::temp_directory_path().string(); }
 
 std::string LocalVolume::createTempFile(std::string_view prefix, std::string_view suffix) {
     std::string tempDir = getTempDir();
-    std::string tempFile = tempDir + "/" + std::string(prefix) + std::to_string(std::time(nullptr)) + std::string(suffix);
-    
+    std::string tempFile = tempDir + "/" + std::string(prefix) +
+                           std::to_string(std::time(nullptr)) + std::string(suffix);
+
     // Create empty file
     std::ofstream file(tempFile);
     file.close();
-    
+
     return tempFile;
 }
 
-// 
+//
 
 #if defined(__linux__)
 
+namespace {
+
+bool mountOptCsvHas(const std::string& opts, std::string_view name) {
+    size_t pos = 0;
+    while (pos < opts.size()) {
+        size_t end = opts.find(',', pos);
+        std::string_view tok(opts.data() + pos,
+                             (end == std::string::npos) ? (opts.size() - pos) : (end - pos));
+        while (!tok.empty() && tok.front() == ' ')
+            tok.remove_prefix(1);
+        while (!tok.empty() && tok.back() == ' ')
+            tok.remove_suffix(1);
+        if (tok == name)
+            return true;
+        if (end == std::string::npos)
+            break;
+        pos = end + 1;
+    }
+    return false;
+}
+
+// Kernels often omit the "bind" mount flag in mountinfo; subtree mounts are still visible as
+// root != "/" (field 4) while the filesystem type is the backing one (e.g. ext4).
+bool mountLooksLikeBind(const MountInfo& proc) {
+    if (mountOptCsvHas(proc.vfsOpts, "bind") || mountOptCsvHas(proc.vfsOpts, "rbind"))
+        return true;
+    if (mountOptCsvHas(proc.superOpts, "bind") || mountOptCsvHas(proc.superOpts, "rbind"))
+        return true;
+    if (proc.fsType == "overlay")
+        return false;
+    return !proc.root.empty() && proc.root != "/";
+}
+
+bool majMinIsLoopDevice(int major, int minor) {
+    return major == 7;
+}
+
+bool devicePathIsLoop(const std::string& device) { return device.rfind("/dev/loop", 0) == 0; }
+
+bool lookupLinuxMountProc(const std::string& canonicalMount, MountInfo& out) {
+    std::ifstream mountinfo("/proc/self/mountinfo");
+    if (mountinfo.is_open()) {
+        std::string line;
+        while (std::getline(mountinfo, line)) {
+            MountInfo mountInfo;
+            if (!parseMountInfoLine(line, mountInfo))
+                continue;
+
+            if (mountInfo.canonicalMountPoint != canonicalMount)
+                continue;
+
+            out = mountInfo;
+            return true;
+        }
+    }
+
+    std::ifstream mounts("/proc/mounts");
+    if (mounts.is_open()) {
+        std::string line;
+        while (std::getline(mounts, line)) {
+            std::istringstream iss(line);
+            std::vector<std::string> tokens;
+            std::string t;
+            while (iss >> t)
+                tokens.push_back(t);
+            if (tokens.size() < 6)
+                continue;
+
+            std::string device = tokens[0];
+            std::string mountPath = tokens[1];
+            std::string fsType = tokens[2];
+            std::string vfsOpts = tokens[3];
+            std::string dump = tokens[4];
+            std::string pass = tokens[5];
+
+            std::string canonicalMountPath;
+            try {
+                canonicalMountPath = fs::canonical(mountPath).string();
+            } catch (...) {
+                canonicalMountPath = fs::absolute(mountPath).string();
+            }
+            if (canonicalMountPath != canonicalMount)
+                continue;
+
+            out.reset();
+            out.device = device;
+            out.mountPoint = mountPath;
+            out.fsType = fsType;
+            out.vfsOpts = vfsOpts;
+            out.dump = std::stoi(dump);
+            out.pass = std::stoi(pass);
+            out.canonicalMountPoint = canonicalMountPath;
+            return true;
+        }
+    }
+
+    return false;
+}
+
+} // namespace
+
 bool LocalVolume::isMountPoint(const std::string& localPath) const {
     struct ::stat pathStat, parentStat;
-    
+
     if (::stat(localPath.c_str(), &pathStat) != 0) {
         return false;
     }
-    
+
     // Get parent directory
     std::string parent = fs::path(localPath).parent_path().string();
     if (parent.empty() || parent == "/") {
         // Root directory is always a mount point
         return true;
     }
-    
+
     if (::stat(parent.c_str(), &parentStat) != 0) {
         return false;
     }
-    
+
     // If device IDs differ, it's a mount point
     return pathStat.st_dev != parentStat.st_dev;
 }
@@ -469,84 +627,10 @@ std::string LocalVolume::getMountDevice(const std::string& mountPoint) const {
     } catch (...) {
         canonicalMount = fs::absolute(mountPoint).string();
     }
-    
-    // Try /proc/self/mountinfo first (more detailed)
-    std::ifstream mountinfo("/proc/self/mountinfo");
-    if (mountinfo.is_open()) {
-        std::string line;
-        while (std::getline(mountinfo, line)) {
-            std::istringstream iss(line);
-            std::vector<std::string> tokens;
-            std::string token;
-            
-            while (iss >> token) {
-                tokens.push_back(token);
-            }
-            
-            // /proc/self/mountinfo format:
-            // ID parent-ID major:minor root mount-point [options] - type device [options]
-            // Example: 36 35 98:0 /mnt/point /mnt/point rw,noatime - ext4 /dev/sda1 rw
-            if (tokens.size() >= 10) {
-                // Find the "-" separator
-                size_t dashIdx = 0;
-                for (size_t i = 0; i < tokens.size(); ++i) {
-                    if (tokens[i] == "-") {
-                        dashIdx = i;
-                        break;
-                    }
-                }
-                
-                if (dashIdx > 0 && dashIdx + 2 < tokens.size()) {
-                    std::string mountPath = tokens[4];
-                    std::string device = tokens[dashIdx + 2];
-                    
-                    std::string canonicalMountPath;
-                    try {
-                        canonicalMountPath = fs::canonical(mountPath).string();
-                    } catch (...) {
-                        canonicalMountPath = fs::absolute(mountPath).string();
-                    }
-                    
-                    if (canonicalMountPath == canonicalMount) {
-                        return device;
-                    }
-                }
-            }
-        }
-    }
-    
-    // Fallback to /proc/mounts
-    std::ifstream mounts("/proc/mounts");
-    if (mounts.is_open()) {
-        std::string line;
-        while (std::getline(mounts, line)) {
-            std::istringstream iss(line);
-            std::vector<std::string> tokens;
-            std::string token;
-            
-            while (iss >> token) {
-                tokens.push_back(token);
-            }
-            
-            // /proc/mounts format: device mount-point type options
-            if (tokens.size() >= 2) {
-                std::string device = tokens[0];
-                std::string mountPath = tokens[1];
-                
-                std::string canonicalMountPath;
-                try {
-                    canonicalMountPath = fs::canonical(mountPath).string();
-                } catch (...) {
-                    canonicalMountPath = fs::absolute(mountPath).string();
-                }
-                
-                if (canonicalMountPath == canonicalMount) {
-                    return device;
-                }
-            }
-        }
-    }
-    
+
+    MountInfo info;
+    if (lookupLinuxMountProc(canonicalMount, info))
+        return info.device;
     return "";
 }
 
@@ -554,7 +638,7 @@ std::string LocalVolume::getFilesystemUUID(const std::string& device) const {
     if (device.empty()) {
         return "";
     }
-    
+
     // Try to get UUID using blkid command
     std::string command = "blkid -s UUID -o value " + device + " 2>/dev/null";
     FILE* pipe = popen(command.c_str(), "r");
@@ -572,7 +656,7 @@ std::string LocalVolume::getFilesystemUUID(const std::string& device) const {
         }
         pclose(pipe);
     }
-    
+
     // Fallback: try to find UUID in /dev/disk/by-uuid/
     try {
         for (const auto& entry : fs::directory_iterator("/dev/disk/by-uuid")) {
@@ -582,7 +666,7 @@ std::string LocalVolume::getFilesystemUUID(const std::string& device) const {
                     fs::path target = fs::read_symlink(symlinkPath);
                     fs::path canonicalTarget = fs::canonical(symlinkPath);
                     fs::path canonicalDevice = fs::canonical(device);
-                    
+
                     if (canonicalTarget == canonicalDevice) {
                         return entry.path().filename().string();
                     }
@@ -595,7 +679,7 @@ std::string LocalVolume::getFilesystemUUID(const std::string& device) const {
     } catch (...) {
         // Ignore errors
     }
-    
+
     return "";
 }
 
@@ -603,7 +687,7 @@ std::string LocalVolume::getFilesystemLabel(const std::string& device) const {
     if (device.empty()) {
         return "";
     }
-    
+
     // Try to get label using blkid command
     std::string command = "blkid -s LABEL -o value " + device + " 2>/dev/null";
     FILE* pipe = popen(command.c_str(), "r");
@@ -621,7 +705,7 @@ std::string LocalVolume::getFilesystemLabel(const std::string& device) const {
         }
         pclose(pipe);
     }
-    
+
     // Fallback: try to find label in /dev/disk/by-label/
     try {
         for (const auto& entry : fs::directory_iterator("/dev/disk/by-label")) {
@@ -631,7 +715,7 @@ std::string LocalVolume::getFilesystemLabel(const std::string& device) const {
                     fs::path target = fs::read_symlink(symlinkPath);
                     fs::path canonicalTarget = fs::canonical(symlinkPath);
                     fs::path canonicalDevice = fs::canonical(device);
-                    
+
                     if (canonicalTarget == canonicalDevice) {
                         return entry.path().filename().string();
                     }
@@ -644,7 +728,7 @@ std::string LocalVolume::getFilesystemLabel(const std::string& device) const {
     } catch (...) {
         // Ignore errors
     }
-    
+
     return "";
 }
 
@@ -652,34 +736,45 @@ void LocalVolume::cacheMountInfo() const {
     if (m_mountInfoCached) {
         return;
     }
-    
-    if (isMountPoint(m_rootPath)) {
-        std::string device = getMountDevice(m_rootPath);
-        if (!device.empty()) {
-            m_device = device;
 
-            try {
-                std::string canonicalMount = fs::canonical(m_rootPath).string();
-                m_mountPoint = canonicalMount;
-            } catch (...) {
-                m_mountPoint = m_rootPath;
+    m_mountInfo.reset();
+
+    if (isMountPoint(m_rootPath)) {
+        std::string canonicalMount;
+        try {
+            canonicalMount = fs::canonical(m_rootPath).string();
+        } catch (...) {
+            canonicalMount = fs::absolute(m_rootPath).string();
+        }
+
+        MountInfo proc;
+        if (lookupLinuxMountProc(canonicalMount, proc) && !proc.device.empty()) {
+            m_mountInfo = proc;
+            m_device = proc.device;
+            m_mountPoint = canonicalMount;
+
+            m_isLoop = devicePathIsLoop(proc.device) || majMinIsLoopDevice(proc.major, proc.minor);
+
+            if (proc.fsType == "overlay") {
+                m_logicalType = LocalLogicalType::OVERLAY;
+            } else if (mountLooksLikeBind(proc)) {
+                m_logicalType = LocalLogicalType::BIND;
+            } else {
+                m_logicalType = LocalLogicalType::NONE;
             }
 
+            m_readOnly = mountOptCsvHas(proc.vfsOpts, "ro") || mountOptCsvHas(proc.superOpts, "ro");
+
             // Classify volume type based on device string
+            const std::string& device = proc.device;
             if (false) {
-            } else if (m_rootPath.find("/dev/") == 0
-                    || m_rootPath.find("/proc/") == 0
-                    || m_rootPath.find("/run/") == 0
-                    || m_rootPath.find("/sys/") == 0
-                    || m_rootPath.find("/tmp/") == 0
-                    ) {
+            } else if (m_rootPath.find("/dev/") == 0 || m_rootPath.find("/proc/") == 0 ||
+                       m_rootPath.find("/run/") == 0 || m_rootPath.find("/sys/") == 0 ||
+                       m_rootPath.find("/tmp/") == 0) {
                 m_type = VolumeType::SYSTEM;
-            } else if (device.rfind("/dev/sr", 0) == 0 
-                    || device.rfind("/dev/cd", 0) == 0
-                    ) {
+            } else if (device.rfind("/dev/sr", 0) == 0 || device.rfind("/dev/cd", 0) == 0) {
                 m_type = VolumeType::CDROM;
-            } else if (!device.empty() && device[0] == '/' 
-                    && device.find("/dev/") == 0) {
+            } else if (!device.empty() && device[0] == '/' && device.find("/dev/") == 0) {
                 m_type = VolumeType::HARDDISK;
             } else if (device.rfind("//", 0) == 0) {
                 m_type = VolumeType::NETWORK;
@@ -698,6 +793,5 @@ void LocalVolume::cacheMountInfo() const {
 }
 
 #elif defined(WINDOWS)
-
 
 #endif

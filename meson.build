@@ -139,6 +139,7 @@ cpp_sources = files(
     './src/script/scriptable.cpp',
     './src/script/boost_json.cpp',
     './src/volume/LocalVolume.cpp',
+    './src/volume/mountinfo.cpp',
     './src/volume/MemoryZip.cpp',
     './src/volume/Volume.cpp',
     './src/volume/VolumeFile.cpp',
@@ -370,8 +371,11 @@ foreach app_cpp : app_cpp_list
     app_name = app_cpp.split('/')[-1].replace('.cpp', '')
     if app_name == 'vols'
         install_dir = get_option('bindir')
+        # Same logger as libbas-cpp so vols can tune levels for VolumeManager::logwarn etc.
+        app_logger = 'cpp'
     else
         install_dir = pkgdatadir / 'app'
+        app_logger = app_name
     endif
     app_exe = executable(app_name,
         app_cpp,
@@ -379,7 +383,7 @@ foreach app_cpp : app_cpp_list
         link_with : lib_bas_cpp,
         include_directories : exe_inc,
         dependencies : exe_deps,
-        cpp_args : cpp_nowarn + ['-DLOGGER_NAME=' + app_name],
+        cpp_args : cpp_nowarn + ['-DLOGGER_NAME=' + app_logger],
         install : true,
         install_dir : install_dir,
     )

@@ -2,9 +2,16 @@
 #define LOCALVOLUME_H
 
 #include "Volume.hpp"
+#include "volume/mountinfo.hpp"
 
 #include <optional>
 #include <string>
+
+enum class LocalLogicalType {
+    NONE,
+    BIND,
+    OVERLAY,
+};
 
 /**
  * Local filesystem volume implementation
@@ -18,7 +25,11 @@ private:
     mutable std::optional<std::string> m_mountPoint;
     mutable std::optional<std::string> m_device;
     mutable VolumeType m_type = VolumeType::OTHER;
+    mutable LocalLogicalType m_logicalType = LocalLogicalType::NONE;
+    mutable bool m_isLoop = false;
+    mutable bool m_readOnly = false;
     mutable bool m_mountInfoCached = false;
+    mutable MountInfo m_mountInfo;
     
 #if defined(__linux__)
     bool isMountPoint(const std::string& path) const;
@@ -48,6 +59,12 @@ public:
     void setLabel(std::string_view label) override;
     const std::optional<std::string>& getMountPoint() const;
     const std::optional<std::string>& getDevice() const;
+
+    bool isLoop() const;
+    LocalLogicalType getLogicalType() const;
+    bool isLogical() const;
+    bool isReadOnly() const;
+    MountInfo getMountInfo() const;
     
     // Volume interface implementation
     bool exists(std::string_view path) const override;
