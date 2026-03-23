@@ -71,6 +71,7 @@ cpp_sources = files(
     './src/proc/ImageFormat.cpp',
     './src/proc/Assets.cpp',
     './src/proc/dbgaction.cpp',
+    './src/proc/env.cpp',
     './src/io/LAInputStream.cpp',
     './src/io/CharsetDecoder.cpp',
     './src/io/EncodingWriteStreamToOutputStream.cpp',
