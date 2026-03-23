@@ -18,10 +18,6 @@ extern "C" {
 
 namespace fs = std::filesystem;
 
-VolumeFile::VolumeFile()
-    : m_volume(nullptr)
-{}
-
 VolumeFile::VolumeFile(Volume* volume, std::string path)
     : m_volume(volume)
     , m_path(path)

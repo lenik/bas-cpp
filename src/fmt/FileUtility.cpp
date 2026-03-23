@@ -1,19 +1,16 @@
 #include "FileUtility.hpp"
 
-#include "OctetStreamForm.hpp"
-#include "TextForm.hpp"
-
 #include <vector>
 
 IFileUtility::IFileUtility()
     : file()
 {
-    file.connect([this](const VolumeFile& file, const VolumeFile& old_file) {
-        if (file.isEmpty()) {
+    file.connect([this](const std::optional<VolumeFile>& file, const std::optional<VolumeFile>& /*old_file*/) {
+        if (!file.has_value()) {
             resetObject();
             return;
         }
-        restoreObject(file);
+        restoreObject(*file);
     });
 }
 
@@ -29,7 +26,7 @@ bool IFileUtility::isSupportedFileExtension(const std::string& ext) const
 }
 
 bool IFileUtility::checkFile(VolumeFile file) const {
-    if (file.isEmpty())
+    if (!file.getVolume() || file.getPath().empty())
         return false;
     if (!file.exists() || !file.isFile())
         return false;
@@ -54,19 +51,20 @@ bool IFileUtility::checkFile(VolumeFile file) const {
 
 std::string IFileUtility::getFilePath() const
 {
-    return isFileSet() ? file->getPath() : "";
+    return isFileSet() ? file->value().getPath() : "";
 }
 
 void IFileUtility::setFilePath(std::string_view filePath)
 {
     assert(!filePath.empty());
-    VolumeFile vf(file->getVolume(), std::string(filePath));
+    assert(file->has_value());
+    VolumeFile vf(file->value().getVolume(), std::string(filePath));
     setFile(vf);
 }
 
 void IFileUtility::reloadFile()
 {
     resetObject();
-    if (file->isNotEmpty())
-        restoreObject(file.get());
+    if (file->has_value())
+        restoreObject(file.get().value());
 }

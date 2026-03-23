@@ -530,9 +530,7 @@ bool mountLooksLikeBind(const MountInfo& proc) {
     return !proc.root.empty() && proc.root != "/";
 }
 
-bool majMinIsLoopDevice(int major, int minor) {
-    return major == 7;
-}
+bool majMinIsLoopDevice(int major, int minor) { return major == 7; }
 
 bool devicePathIsLoop(const std::string& device) { return device.rfind("/dev/loop", 0) == 0; }
 
@@ -683,9 +681,20 @@ std::string LocalVolume::getFilesystemUUID(const std::string& device) const {
     return "";
 }
 
-std::string LocalVolume::getFilesystemLabel(const std::string& device) const {
+std::string LocalVolume::getFilesystemLabel(const MountInfo& proc) const {
+    std::string device = proc.device;
     if (device.empty()) {
         return "";
+    }
+
+    if (device.find("/dev/loop") == 0) { // loop
+        std::string basename = fs::path(proc.mountPoint).filename().string();
+        return "L<" + basename + ">";
+    }
+
+    if (proc.root != "/") { // bind
+        std::string basename = fs::path(proc.root).filename().string();
+        return "B<" + basename + ">";
     }
 
     // Try to get label using blkid command
@@ -785,7 +794,7 @@ void LocalVolume::cacheMountInfo() const {
             }
 
             m_cachedUUID = getFilesystemUUID(device);
-            m_cachedLabel = getFilesystemLabel(device);
+            m_cachedLabel = getFilesystemLabel(proc);
         }
     }
 

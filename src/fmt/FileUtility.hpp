@@ -6,6 +6,7 @@
 #include "../script/property_support.hpp"
 #include "../volume/VolumeFile.hpp"
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -20,15 +21,17 @@ public:
 
     virtual bool checkFile(VolumeFile file) const;
     
-    const VolumeFile& getFile() const { return file.get(); }
-    VolumeFile& getFile() { return file.get(); }
+    const std::optional<VolumeFile>& getFile() const { return file.get(); }
+    std::optional<VolumeFile>& getFile() { return file.get(); }
 
-    void setFile(const VolumeFile& file) { this->file.set(file); }
+    void setFile(const VolumeFile& vf) { this->file.set(vf); }
+    void setFile(VolumeFile&& vf) { this->file.set(std::move(vf)); }
+    void setFile(std::optional<VolumeFile> vf) { this->file.set(std::move(vf)); }
     
-    void clearFile() { file.set(VolumeFile()); }
+    void clearFile() { file.set(std::nullopt); }
 
     bool isFileSet() const {
-        return !file->isEmpty();
+        return file->has_value();
     }
 
     std::string getFilePath() const;
@@ -45,7 +48,7 @@ public:
 protected:
 
 public:
-    observable<VolumeFile> file;
+    observable<std::optional<VolumeFile>> file;
 };
 
 #endif // FILEUTILITY_H
