@@ -5,6 +5,7 @@
 
 #include <functional>
 #include <memory>
+#include <optional>
 #include <vector>
 
 class VolumeManager {
@@ -33,6 +34,17 @@ public:
     
     const std::vector<std::unique_ptr<Volume>>& all() const;
     std::vector<Volume*> type(std::string_view type) const;
+
+    /**
+     * Resolve a virtual URI into a file handle.
+     *
+     * URI format:
+     *   vol://<index><path>
+     * where <path> always starts with '/'.
+     *
+     * Returns std::nullopt on invalid URI or unknown volume index.
+     */
+    std::optional<VolumeFile> resolveUri(std::string_view uri) const;
 
     /**
      * Discover and add local filesystem volumes (Linux: from /proc/self/mountinfo).

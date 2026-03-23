@@ -6,6 +6,7 @@
 
 #include <log/uselog.h>
 
+#include <cctype>
 #include <fstream>
 #include <string>
 #include <unordered_set>
@@ -55,6 +56,65 @@ std::vector<Volume*> VolumeManager::type(std::string_view type) const {
         }
     }
     return matches;
+}
+
+std::optional<VolumeFile> VolumeManager::resolveUri(std::string_view uri) const {
+    constexpr std::string_view prefix = "vol://";
+    if (uri.size() <= prefix.size()) {
+        return std::nullopt;
+    }
+    if (uri.substr(0, prefix.size()) != prefix) {
+        return std::nullopt;
+    }
+
+    std::string_view rest = uri.substr(prefix.size());
+    if (rest.empty()) {
+        return std::nullopt;
+    }
+
+    // <index><path> where <path> always starts with '/'
+    const size_t firstSlash = rest.find('/');
+    if (firstSlash == std::string_view::npos) {
+        return std::nullopt;
+    }
+
+    std::string_view indexPart = rest.substr(0, firstSlash);
+    std::string_view pathPart = rest.substr(firstSlash);
+
+    if (indexPart.empty() || pathPart.empty() || pathPart.front() != '/') {
+        return std::nullopt;
+    }
+
+    for (char c : indexPart) {
+        if (!std::isdigit(static_cast<unsigned char>(c))) {
+            return std::nullopt;
+        }
+    }
+
+    size_t index = 0;
+    try {
+        index = static_cast<size_t>(std::stoull(std::string(indexPart)));
+    } catch (...) {
+        return std::nullopt;
+    }
+
+    if (index >= m_volumes.size()) {
+        return std::nullopt;
+    }
+
+    Volume* volume = m_volumes[index].get();
+    if (!volume) {
+        return std::nullopt;
+    }
+
+    std::string normalizedPath;
+    try {
+        normalizedPath = volume->normalize(pathPart);
+    } catch (...) {
+        return std::nullopt;
+    }
+
+    return VolumeFile(volume, normalizedPath);
 }
 
 void VolumeManager::addLocalVolumes(bool includeSymbols, bool excludeReadOnly) {

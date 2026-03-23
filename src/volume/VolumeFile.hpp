@@ -16,15 +16,13 @@
 class Volume;
 
 /**
- * VolumeFile - A wrapper around Volume that provides convenient file operations
- * Migrated from Qt/QML to standard C++ for wxWidgets
+ * VolumeFile - A wrapper around Volume that provides convenient file operations.
  */
 struct VolumeFile {
     Volume* m_volume;
     std::string m_path;
     
 public:
-    VolumeFile();
     VolumeFile(Volume* volume, std::string path);
     VolumeFile(const VolumeFile& other) = default;
     VolumeFile(VolumeFile&& other) noexcept = default;
@@ -39,10 +37,6 @@ public:
         return !(*this == other);
     }
     
-    bool isEmpty() const { return m_volume == nullptr || m_path.empty(); }
-    bool isNotEmpty() const { return !isEmpty(); }
-    operator bool() const { return isNotEmpty(); }
-
     Volume* getVolume() const { return m_volume; }
     void setVolume(Volume* volume);
     

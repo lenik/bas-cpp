@@ -35,7 +35,7 @@ private:
     bool isMountPoint(const std::string& path) const;
     std::string getMountDevice(const std::string& mountPoint) const;
     std::string getFilesystemUUID(const std::string& device) const;
-    std::string getFilesystemLabel(const std::string& device) const;
+    std::string getFilesystemLabel(const MountInfo& proc) const;
     void cacheMountInfo() const;
 #elif defined(WINDOWS)
 
