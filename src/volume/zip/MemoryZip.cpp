@@ -1,10 +1,10 @@
 #include "MemoryZip.hpp"
 
-#include "FileStatus.hpp"
+#include "../FileStatus.hpp"
 
-#include "../io/IOException.hpp"
-#include "../io/StringReader.hpp"
-#include "../io/Uint8ArrayInputStream.hpp"
+#include "../../io/IOException.hpp"
+#include "../../io/StringReader.hpp"
+#include "../../io/Uint8ArrayInputStream.hpp"
 
 #include <cstring>
 #include <map>

@@ -1,7 +1,7 @@
 #ifndef ASSETS_H
 #define ASSETS_H
 
-#include "../volume/MemoryZip.hpp"
+#include "../volume/zip/MemoryZip.hpp"
 
 #include <cstdint>
 #include <memory>

@@ -59,6 +59,7 @@ Installed payload:
 | **openssl**    | TLS and crypto for HTTPS/FTPS |
 | **boost**      | Locale, system, (optionally) core/assert/json |
 | **zlib**       | ZIP/deflate support in volume layer |
+| **ext2fs + com_err** *(optional)* | Userspace ext2/3/4 image access (`Ext4Volume`) |
 
 Meson will detect these at configure time and fail fast if anything critical is missing.
 
@@ -121,9 +122,17 @@ The volume layer abstracts over storage backends (local dirs, ZIPs, etc.).
   - open as `InputStream`/`OutputStream`/`Reader`/`Writer`
   - list children
   - query type and status (`FileStatus`).
-- **LocalVolume**: `Volume` backed by a local filesystem directory.
-- **MemoryZip**: In‑memory ZIP volume.
-- **VolumeManager**: Keeps a set of volumes and supports type‑based lookup.
+- **LocalVolume** (`src/volume/LocalVolume.*`): `Volume` backed by a local filesystem directory.
+- **MemoryZip** (`src/volume/zip/MemoryZip.*`): In‑memory ZIP volume.
+- **Fat32Volume** (`src/volume/fat32/`): FAT32 image-backed volume.
+  - Uses dedicated file streams (`Fat32FileInputStream`, `Fat32FileOutputStream`) to avoid
+    buffering the entire image in memory.
+- **Ext4Volume** (`src/volume/ext4/`): ext2/ext3/ext4 image-backed volume.
+  - Uses userspace `libext2fs` when available.
+  - Resolves path->inode lazily and caches directory indexes by inode (no full-tree scan at mount).
+  - Supports execution context (`uid/gid/groups`) and mode-based access checks.
+- **VolumeManager**: Keeps a set of volumes and supports type-based lookup, URI resolution,
+  and image volume registration (`addFat32Volume`, `addExt4Volume`).
 
 Typical usage:
 
@@ -132,6 +141,30 @@ LocalVolume vol("/some/root");
 auto file = vol.resolve("/path/to/file.txt");
 std::string data = file->readFileString("UTF-8");
 ```
+
+Resolve from manager URI:
+
+```cpp
+VolumeManager vm;
+vm.addLocalVolumes();
+auto vf = vm.resolveUri("vol://0/etc/hosts");
+if (vf) {
+    auto text = vf->readFileString();
+}
+```
+
+Mount image volumes:
+
+```cpp
+VolumeManager vm;
+vm.addFat32Volume("/path/to/disk.fat32.img");
+vm.addExt4Volume("/path/to/disk.ext4.img");
+```
+
+Notes:
+
+- `Ext4Volume` requires `libext2fs` development headers/libs at build time.
+- When ext2fs is not available, build still succeeds, but ext image operations fail with a clear exception.
 
 ### Formatting (`src/fmt/`)
 

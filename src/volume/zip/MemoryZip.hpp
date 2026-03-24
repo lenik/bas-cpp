@@ -1,12 +1,12 @@
 #ifndef MEMORYZIP_H
 #define MEMORYZIP_H
 
-#include "Volume.hpp"
+#include "../Volume.hpp"
 
-#include "../io/InputStream.hpp"
-#include "../io/OutputStream.hpp"
-#include "../io/Reader.hpp"
-#include "../io/Writer.hpp"
+#include "../../io/InputStream.hpp"
+#include "../../io/OutputStream.hpp"
+#include "../../io/Reader.hpp"
+#include "../../io/Writer.hpp"
 
 #include <cstddef>
 #include <map>

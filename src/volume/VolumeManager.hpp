@@ -47,6 +47,20 @@ public:
     std::optional<VolumeFile> resolveUri(std::string_view uri) const;
 
     /**
+     * Add a FAT32 image as a virtual volume.
+     * @return True if added, false if rejected by transformers.
+     * @throws IOException on image parse/open errors.
+     */
+    bool addFat32Volume(std::string_view imagePath);
+
+    /**
+     * Add an ext2/ext3/ext4 image as a virtual volume.
+     * @return True if added, false if rejected by transformers.
+     * @throws IOException on image open/parse errors.
+     */
+    bool addExt4Volume(std::string_view imagePath);
+
+    /**
      * Discover and add local filesystem volumes (Linux: from /proc/self/mountinfo).
      * @param includeSymbols when false, skip overlay mounts; bind mounts are always included.
      * @param excludeReadOnly when true, skip read-only mounts.
