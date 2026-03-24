@@ -1,5 +1,5 @@
 project('bas-cpp', 'cpp', 
-    version : '1.0.0',
+    version : '1.0.1',
     default_options : [
 #        'warning_level=0', 
         'cpp_std=c++17'])
@@ -60,6 +60,18 @@ cpp_nowarn = []
 # zlib for ZIP support
     # zlib is used for decompression, but we'll parse ZIP manually
     zlib_dep = dependency('zlib', required : true)
+
+# ext2fs (e2fsprogs userspace library) for ext2/3/4 image access
+    ext2fs_header_ok = cpp.has_header('ext2fs/ext2fs.h')
+    ext2fs_lib_dep = cpp.find_library('ext2fs', required : false)
+    com_err_lib_dep = cpp.find_library('com_err', required : false)
+    ext2fs_enabled = ext2fs_header_ok and ext2fs_lib_dep.found() and com_err_lib_dep.found()
+    ext2fs_deps = []
+    ext2fs_cpp_args = ['-DBAS_HAS_EXT2FS=0']
+    if ext2fs_enabled
+        ext2fs_deps += [ext2fs_lib_dep, com_err_lib_dep]
+        ext2fs_cpp_args = ['-DBAS_HAS_EXT2FS=1']
+    endif
 
 cpp_sources = files(
     './src/module.cpp',
@@ -139,12 +151,18 @@ cpp_sources = files(
     './src/script/json.cpp',
     './src/script/scriptable.cpp',
     './src/script/boost_json.cpp',
+    './src/volume/ext4/Ext4Volume.cpp',
+    './src/volume/ext4/Ext4FileInputStream.cpp',
+    './src/volume/ext4/Ext4FileOutputStream.cpp',
+    './src/volume/fat32/Fat32Volume.cpp',
+    './src/volume/fat32/Fat32FileInputStream.cpp',
+    './src/volume/fat32/Fat32FileOutputStream.cpp',
     './src/volume/LocalVolume.cpp',
     './src/volume/mountinfo.cpp',
-    './src/volume/MemoryZip.cpp',
     './src/volume/Volume.cpp',
     './src/volume/VolumeFile.cpp',
     './src/volume/VolumeManager.cpp',
+    './src/volume/zip/MemoryZip.cpp',
 )
 
 # Assets will be zipped and linked as a section in the executable
@@ -196,7 +214,7 @@ exe_deps = [
     libcurl_dep,
     openssl_dep,
     zlib_dep,
-]
+] + ext2fs_deps
 
 exe_inc = [
     include_directories('src'),
@@ -206,7 +224,7 @@ lib_bas_cpp = library('bas-cpp',
     cpp_sources,
     dependencies : exe_deps,
     include_directories : exe_inc,
-    cpp_args : cpp_nowarn + ['-DLOGGER_NAME=cpp'],
+    cpp_args : cpp_nowarn + ext2fs_cpp_args + ['-DLOGGER_NAME=cpp'],
     override_options: ['b_lundef=false'], # Allows undefined symbols at link time
     version : meson.project_version(),
     soversion : meson.project_version().split('.')[0],
@@ -312,6 +330,8 @@ all_test_files = [
     'net/DataUriInputStream_test.cpp',
     'net/DataProtocol_test.cpp',
     'script/json_test.cpp',
+    'volume/ext4/Ext4Volume_test.cpp',
+    'volume/fat32/Fat32Volume_test.cpp',
 ]
 
 # Build each test using the 'includes' utility to get source dependencies
@@ -349,7 +369,7 @@ foreach test_rel_path : all_test_files
         all_sources,
         include_directories : exe_inc,
         dependencies : exe_deps,
-        cpp_args : cpp_nowarn + ['-DLOGGER_NAME=test'],
+        cpp_args : cpp_nowarn + ext2fs_cpp_args + ['-DLOGGER_NAME=test'],
         install : false,
     )
     
@@ -378,13 +398,13 @@ foreach app_cpp : app_cpp_list
         install_dir = pkgdatadir / 'app'
         app_logger = app_name
     endif
-    app_exe = executable(app_name,
+    executable(app_name,
         app_cpp,
         assets_o,
         link_with : lib_bas_cpp,
         include_directories : exe_inc,
         dependencies : exe_deps,
-        cpp_args : cpp_nowarn + ['-DLOGGER_NAME=' + app_logger],
+        cpp_args : cpp_nowarn + ext2fs_cpp_args + ['-DLOGGER_NAME=' + app_logger],
         install : true,
         install_dir : install_dir,
     )

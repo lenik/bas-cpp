@@ -3,7 +3,7 @@
 #include "assets_data.h"
 
 #include "../volume/FileStatus.hpp"
-#include "../volume/MemoryZip.hpp"
+#include "../volume/zip/MemoryZip.hpp"
 
 #include <cassert>
 #include <cstdio>

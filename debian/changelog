@@ -1,3 +1,22 @@
+bas-cpp (1.0.1) testing; urgency=medium
+
+  * Refactor volume backends into dedicated modules:
+    - src/volume/zip (MemoryZip)
+    - src/volume/fat32 (Fat32Volume + file streams)
+    - src/volume/ext4 (Ext4Volume + file streams)
+  * Add FAT32 image volume support and wire it through VolumeManager.
+  * Add ext2/ext3/ext4 image volume support with optional libext2fs linking.
+  * Avoid full-image buffering for FAT32/EXT file access by introducing
+    dedicated RandomInputStream/OutputStream implementations.
+  * Switch Ext4Volume to on-demand path->inode resolution and cache
+    directory indexes by inode to avoid expensive full-tree mount scans.
+  * Add Ext4Volume execution context primitives (uid/gid/groups + IUserDb)
+    and enforce mode-based access checks for traversal/read/list paths.
+  * Add image-based tests for FAT32 and EXT volume backends.
+  * Update build wiring and includes for relocated MemoryZip paths.
+
+ -- Lenik (谢继雷) <lenik@bodz.net>  Tue, 24 Mar 2026 18:30:00 +0800
+
 bas-cpp (1.0.0) testing; urgency=medium
 
   * Add app/notepad: simple notepad with menubar/toolbar using ui/arch
