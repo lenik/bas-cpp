@@ -7,3 +7,6 @@ SOURCES := $(shell find . -type f \( -name '*.cpp' -o -name '*.c' -o -name '*.hp
 format:
 	organize-includes -n -I $(CURDIR) $(SOURCES)
 
+bulk.h:
+	grep -r -h '^#include <' | sort -u | grep -v bas/ >$@
+

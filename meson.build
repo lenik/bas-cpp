@@ -85,6 +85,9 @@ if ext2fs_enabled
     ext2fs_cpp_args = ['-DBAS_HAS_EXT2FS=1']
 endif
 
+# Precompiled header for wxWidgets
+cpp_pch = 'src/bulk.h'
+
 cpp_sources = files(
     './src/fmt/FileUtility.cpp',
     './src/fmt/HtmlForm.cpp',
@@ -199,7 +202,7 @@ assets_zip = custom_target(
 # Compile assembly file that embeds assets.zip using .incbin
 # Use configure_file to copy assets.s to build directory
 assets_s = configure_file(
-    input: 'app/assets.s',
+    input: 'src/assets.s',
     output: 'assets.s',
     copy: true,
 )
@@ -231,11 +234,13 @@ exe_inc = [
 lib_bas_cpp = library(
     'bas-cpp',
     cpp_sources,
+    assets_o,
     dependencies: exe_deps,
     include_directories: exe_inc,
     cpp_args: cpp_nowarn
     + ext2fs_cpp_args
     + ['-DLOGGER_NAME=cpp', '-DASSETS_NAME=bas_cpp'],
+    #cpp_pch: cpp_pch,
     override_options: ['b_lundef=false'], # Allows undefined symbols at link time
     version: meson.project_version(),
     soversion: meson.project_version().split('.')[0],
@@ -388,6 +393,7 @@ foreach test_rel_path : all_test_files
         cpp_args: cpp_nowarn
         + ext2fs_cpp_args
         + ['-DLOGGER_NAME=test', '-DASSETS_NAME=bas_cpp'],
+        #cpp_pch: cpp_pch,
         install: false,
     )
 
@@ -419,13 +425,13 @@ foreach app_cpp : app_cpp_list
     executable(
         app_name,
         app_cpp,
-        assets_o,
         link_with: lib_bas_cpp,
         include_directories: exe_inc,
         dependencies: exe_deps,
         cpp_args: cpp_nowarn
         + ext2fs_cpp_args
         + ['-DLOGGER_NAME=' + app_logger, '-DASSETS_NAME=bas_cpp'],
+        #cpp_pch: cpp_pch,
         install: true,
         install_dir: install_dir,
     )

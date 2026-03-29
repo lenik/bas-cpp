@@ -10,8 +10,8 @@
 
 #define __CONCAT_EVAL(x, y) __CONCAT(x, y)
 
-#define define_zip_assets(name) \
-    extern const unsigned char __CONCAT_EVAL(name, _assets_data_start)[]; \
-    extern const unsigned char __CONCAT_EVAL(name, _assets_data_end)[]; \
+#define define_zip_assets(name, sym) \
+    extern const unsigned char __CONCAT_EVAL(sym, _start)[]; \
+    extern const unsigned char __CONCAT_EVAL(sym, _end)[]; \
     std::unique_ptr<MemoryZip> __CONCAT_EVAL(name, _assets) = \
-        std::make_unique<MemoryZip>(__CONCAT_EVAL(name, _assets_data_start), __CONCAT_EVAL(name, _assets_data_end) - __CONCAT_EVAL(name, _assets_data_start))
+        std::make_unique<MemoryZip>(__CONCAT_EVAL(sym, _start), __CONCAT_EVAL(sym, _end) - __CONCAT_EVAL(sym, _start))

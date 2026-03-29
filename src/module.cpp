@@ -4,4 +4,4 @@
 
 define_logger();
 
-define_zip_assets(bas_cpp);
+define_zip_assets(bas_cpp, bas_cpp_assets);

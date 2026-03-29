@@ -2,7 +2,7 @@
 #error ASSETS_NAME is not defined
 #endif
 
-#include "../volume/zip/MemoryZip.hpp"
+#include "../volume/Volume.hpp"
 
 #include <memory>
 
@@ -14,7 +14,7 @@
 extern "C" {
 #endif
 
-extern std::unique_ptr<MemoryZip> __CONCAT_EVAL(ASSETS_NAME, _assets);
+extern std::unique_ptr<Volume> __CONCAT_EVAL(ASSETS_NAME, _assets);
 
 #ifdef __cplusplus
 }
