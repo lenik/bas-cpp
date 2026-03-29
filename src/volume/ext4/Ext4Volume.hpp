@@ -51,9 +51,6 @@ public:
     void readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list, std::string_view path,
                          bool recursive = false) override;
 
-    bool createDirectory(std::string_view path) override;
-    bool removeDirectory(std::string_view path) override;
-
     std::unique_ptr<InputStream> newInputStream(std::string_view path) override;
     std::unique_ptr<OutputStream> newOutputStream(std::string_view path, bool append = false) override;
     std::unique_ptr<Reader> newReader(std::string_view path, std::string_view encoding = "UTF-8") override;
@@ -72,10 +69,12 @@ public:
 
 protected:
     std::string getDefaultLabel() const override;
-    void removeFileUnchecked(std::string_view path) override;
-    void copyFileUnchecked(std::string_view src, std::string_view dest) override;
-    void moveFileUnchecked(std::string_view src, std::string_view dest) override;
-    void renameFileUnchecked(std::string_view oldPath, std::string_view newPath) override;
+    void createDirectoryThrowsUnchecked(std::string_view path) override;
+    void removeDirectoryThrowsUnchecked(std::string_view path) override;
+    void removeFileThrowsUnchecked(std::string_view path) override;
+    void copyFileThrowsUnchecked(std::string_view src, std::string_view dest) override;
+    void moveFileThrowsUnchecked(std::string_view src, std::string_view dest) override;
+    void renameFileThrowsUnchecked(std::string_view oldPath, std::string_view newPath) override;
 
 private:
     std::string normalizePath(std::string_view path) const;

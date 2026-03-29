@@ -1,5 +1,7 @@
 #include "ImageFormat.hpp"
 
+#include "proc/UseAssets.hpp"
+
 #ifdef _WIN32
 #include <windows.h>
 #elif defined(__APPLE__)
@@ -22,17 +24,21 @@
 #include <string.h>
 
 // Symbols from assets.s (or assets_stub.cpp when no embedded assets); C linkage
-extern "C" const uint8_t zip_data_start[];
-extern "C" const uint8_t zip_data_end[];
+// extern "C" const uint8_t bas_cpp_assets_data_start[];
+// extern "C" const uint8_t bas_cpp_assets_data_end[];
 
 Section ImageFormat::findSection(std::string_view sectionName) {
+//, const uint8_t* start, const uint8_t* end) {
+    // if (start == nullptr || end == nullptr) {
+    //     return {0, 0};
+    // }
     // For "assets" section, use the symbols from assets.s
-    if (sectionName == "assets") {
-        Section section;
-        section.offset = reinterpret_cast<size_t>(zip_data_start);
-        section.length = zip_data_end - zip_data_start;
-        return section;
-    }
+    // if (sectionName == "assets") {
+    //     Section section;
+    //     section.offset = reinterpret_cast<size_t>(start);
+    //     section.length = end - start;
+    //     return section;
+    // }
     
     // For other sections, use platform-specific methods
 #ifdef _WIN32

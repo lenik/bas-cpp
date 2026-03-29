@@ -63,21 +63,17 @@ std::string Fat32Volume::getLocalFile(std::string_view /*path*/) const {
     return "";
 }
 
-std::string Fat32Volume::normalizePath(std::string_view path) const {
-    return Volume::normalize(path, true);
-}
-
 bool Fat32Volume::exists(std::string_view path) const {
-    return m_nodes.find(normalizePath(path)) != m_nodes.end();
+    return m_nodes.find(normalizeArg(path)) != m_nodes.end();
 }
 
 bool Fat32Volume::isFile(std::string_view path) const {
-    auto it = m_nodes.find(normalizePath(path));
+    auto it = m_nodes.find(normalizeArg(path));
     return it != m_nodes.end() && !it->second.isDirectory;
 }
 
 bool Fat32Volume::isDirectory(std::string_view path) const {
-    auto it = m_nodes.find(normalizePath(path));
+    auto it = m_nodes.find(normalizeArg(path));
     return it != m_nodes.end() && it->second.isDirectory;
 }
 
@@ -85,11 +81,11 @@ bool Fat32Volume::stat(std::string_view path, FileStatus* status) const {
     if (!status) {
         throw std::invalid_argument("Fat32Volume::stat: status is null");
     }
-    auto it = m_nodes.find(normalizePath(path));
+    auto it = m_nodes.find(normalizeArg(path));
     if (it == m_nodes.end()) {
         return false;
     }
-    status->name = normalizePath(path);
+    status->name = normalizeArg(path);
     status->type = it->second.isDirectory ? DIRECTORY : REGULAR_FILE;
     status->size = it->second.size;
     status->modifiedTime = 0;
@@ -100,7 +96,7 @@ bool Fat32Volume::stat(std::string_view path, FileStatus* status) const {
 
 void Fat32Volume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list, std::string_view path,
                                   bool recursive) {
-    const std::string parent = normalizePath(path);
+    const std::string parent = normalizeArg(path);
     auto pit = m_nodes.find(parent);
     if (pit == m_nodes.end() || !pit->second.isDirectory) {
         throw IOException("readDir", std::string(path), "Path is not a directory");
@@ -146,7 +142,7 @@ void Fat32Volume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list
 }
 
 std::vector<uint8_t> Fat32Volume::readFile(std::string_view path) {
-    const std::string normalized = normalizePath(path);
+    const std::string normalized = normalizeArg(path);
     auto it = m_nodes.find(normalized);
     if (it == m_nodes.end() || it->second.isDirectory) {
         throw IOException("readFile", std::string(path), "File not found or is a directory");
@@ -170,7 +166,7 @@ std::vector<uint8_t> Fat32Volume::readFile(std::string_view path) {
 }
 
 std::unique_ptr<InputStream> Fat32Volume::newInputStream(std::string_view path) {
-    const std::string normalized = normalizePath(path);
+    const std::string normalized = normalizeArg(path);
     auto it = m_nodes.find(normalized);
     if (it == m_nodes.end() || it->second.isDirectory) {
         throw IOException("newInputStream", std::string(path), "File not found or is a directory");
@@ -203,16 +199,6 @@ std::unique_ptr<RandomReader> Fat32Volume::newRandomReader(std::string_view path
     return Volume::newRandomReader(path, encoding);
 }
 
-bool Fat32Volume::createDirectory(std::string_view path) {
-    throw IOException("createDirectory", std::string(path),
-                      "Fat32Volume write operations are not implemented yet");
-}
-
-bool Fat32Volume::removeDirectory(std::string_view path) {
-    throw IOException("removeDirectory", std::string(path),
-                      "Fat32Volume write operations are not implemented yet");
-}
-
 std::unique_ptr<OutputStream> Fat32Volume::newOutputStream(std::string_view path, bool append) {
     return std::make_unique<Fat32FileOutputStream>(m_imagePath, std::string(path), append);
 }
@@ -226,19 +212,29 @@ void Fat32Volume::writeFile(std::string_view path, const std::vector<uint8_t>& /
     throw IOException("writeFile", std::string(path), "Fat32Volume write operations are not implemented yet");
 }
 
-void Fat32Volume::removeFileUnchecked(std::string_view path) {
+void Fat32Volume::createDirectoryThrowsUnchecked(std::string_view path) {
+    throw IOException("createDirectory", std::string(path),
+                      "Fat32Volume write operations are not implemented yet");
+}
+
+void Fat32Volume::removeDirectoryThrowsUnchecked(std::string_view path) {
+    throw IOException("removeDirectory", std::string(path),
+                      "Fat32Volume write operations are not implemented yet");
+}
+
+void Fat32Volume::removeFileThrowsUnchecked(std::string_view path) {
     throw IOException("removeFile", std::string(path), "Fat32Volume write operations are not implemented yet");
 }
 
-void Fat32Volume::copyFileUnchecked(std::string_view src, std::string_view /*dest*/) {
+void Fat32Volume::copyFileThrowsUnchecked(std::string_view src, std::string_view /*dest*/) {
     throw IOException("copyFile", std::string(src), "Fat32Volume write operations are not implemented yet");
 }
 
-void Fat32Volume::moveFileUnchecked(std::string_view src, std::string_view /*dest*/) {
+void Fat32Volume::moveFileThrowsUnchecked(std::string_view src, std::string_view /*dest*/) {
     throw IOException("moveFile", std::string(src), "Fat32Volume write operations are not implemented yet");
 }
 
-void Fat32Volume::renameFileUnchecked(std::string_view oldPath, std::string_view /*newPath*/) {
+void Fat32Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::string_view /*newPath*/) {
     throw IOException("renameFile", std::string(oldPath), "Fat32Volume write operations are not implemented yet");
 }
 

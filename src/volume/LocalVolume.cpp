@@ -276,44 +276,6 @@ void LocalVolume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list
     }
 }
 
-bool LocalVolume::createDirectory(std::string_view _path) {
-    std::string localPath = resolveLocal(_path);
-    if (fs::is_directory(localPath))
-        return false;
-    if (fs::exists(localPath)) {
-        throw IOException("mkdir", std::string(_path), "File with same name exists");
-    }
-
-    std::error_code ec;
-    if (!fs::create_directory(localPath, ec)) {
-        if (ec) {
-            throw IOException("mkdir", std::string(_path), ec.message());
-        }
-    }
-    return true;
-}
-
-bool LocalVolume::removeDirectory(std::string_view _path) {
-    std::string localPath = resolveLocal(_path);
-
-    if (!fs::exists(localPath)) {
-        return false;
-    }
-    if (!fs::is_directory(localPath)) {
-        throw IOException("rmdir", std::string(_path), "Path is not a directory");
-    }
-
-    std::error_code ec;
-    if (!fs::remove(localPath, ec)) {
-        if (ec) {
-            throw IOException("rmdir", std::string(_path), ec.message());
-        } else {
-            throw IOException("rmdir", std::string(_path), "Directory not empty or does not exist");
-        }
-    }
-    return true;
-}
-
 // std::unique_ptr<IReadStream> LocalVolume::openForRead(std::string_view _path, std::string_view
 // /*encoding*/) {
 //     std::string localPath = resolveLocal(_path);
@@ -413,23 +375,46 @@ std::vector<uint8_t> LocalVolume::readFile(std::string_view _path) {
 
 void LocalVolume::writeFile(std::string_view _path, const std::vector<uint8_t>& data) {
     std::string localPath = resolveLocal(_path);
-    if (!fs::exists(localPath))
-        throw IOException("writeFile", std::string(_path), "Path does not exist");
-    if (!fs::is_regular_file(localPath))
-        throw IOException("writeFile", std::string(_path), "Path is not a regular file");
+    if (fs::exists(localPath) && !fs::is_regular_file(localPath))
+        throw IOException("writeFile", std::string(_path), //
+                          "Path is not a regular file: " + localPath);
 
     std::ofstream file(localPath, std::ios::binary);
     if (!file.is_open()) {
-        throw IOException("writeFile", std::string(_path), "Failed to open file for writing");
+        throw IOException("writeFile", std::string(_path), //
+                          "Failed to open file for writing: " + localPath);
     }
 
     file.write(reinterpret_cast<const char*>(data.data()), data.size());
     if (!file.good()) {
-        throw IOException("writeFile", std::string(_path), "Error writing file");
+        throw IOException("writeFile", std::string(_path), //
+                          "Error writing file: " + localPath);
     }
 }
 
-void LocalVolume::removeFileUnchecked(std::string_view path) {
+void LocalVolume::createDirectoryThrowsUnchecked(std::string_view _path) {
+    std::string localPath = resolveLocal(_path);
+    std::error_code ec;
+    if (!fs::create_directory(localPath, ec)) {
+        if (ec) {
+            throw IOException("mkdir", std::string(_path), ec.message());
+        }
+    }
+}
+
+void LocalVolume::removeDirectoryThrowsUnchecked(std::string_view _path) {
+    std::string localPath = resolveLocal(_path);
+    std::error_code ec;
+    if (!fs::remove(localPath, ec)) {
+        if (ec) {
+            throw IOException("rmdir", std::string(_path), ec.message());
+        } else {
+            throw IOException("rmdir", std::string(_path), "Directory not empty or does not exist");
+        }
+    }
+}
+
+void LocalVolume::removeFileThrowsUnchecked(std::string_view path) {
     std::string localPath = resolveLocal(path);
     std::error_code ec;
     if (!fs::remove(localPath, ec)) {
@@ -437,7 +422,7 @@ void LocalVolume::removeFileUnchecked(std::string_view path) {
     }
 }
 
-void LocalVolume::copyFileUnchecked(std::string_view src, std::string_view dest) {
+void LocalVolume::copyFileThrowsUnchecked(std::string_view src, std::string_view dest) {
     std::string localSrc = resolveLocal(src);
     std::string localDest = resolveLocal(dest);
     std::error_code ec;
@@ -447,7 +432,7 @@ void LocalVolume::copyFileUnchecked(std::string_view src, std::string_view dest)
     }
 }
 
-void LocalVolume::moveFileUnchecked(std::string_view src, std::string_view dest) {
+void LocalVolume::moveFileThrowsUnchecked(std::string_view src, std::string_view dest) {
     std::string localSrc = resolveLocal(src);
     std::string localDest = resolveLocal(dest);
     std::error_code ec;
@@ -469,7 +454,7 @@ void LocalVolume::moveFileUnchecked(std::string_view src, std::string_view dest)
     }
 }
 
-void LocalVolume::renameFileUnchecked(std::string_view src, std::string_view dest) {
+void LocalVolume::renameFileThrowsUnchecked(std::string_view src, std::string_view dest) {
     std::string localSrc = resolveLocal(src);
     std::string localDest = resolveLocal(dest);
     std::error_code ec;

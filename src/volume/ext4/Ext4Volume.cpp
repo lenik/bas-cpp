@@ -58,10 +58,6 @@ std::string Ext4Volume::getLocalFile(std::string_view /*path*/) const {
     return "";
 }
 
-std::string Ext4Volume::normalizePath(std::string_view path) const {
-    return Volume::normalize(path, true);
-}
-
 bool Ext4Volume::exists(std::string_view path) const {
     Node node;
     return resolveNode(path, &node);
@@ -82,7 +78,7 @@ bool Ext4Volume::stat(std::string_view path, FileStatus* status) const {
         throw std::invalid_argument("Ext4Volume::stat: status is null");
     }
     Node node;
-    const std::string normalized = normalizePath(path);
+    const std::string normalized = normalizeArg(path);
     if (!resolveNode(normalized, &node)) {
         return false;
     }
@@ -100,7 +96,7 @@ bool Ext4Volume::stat(std::string_view path, FileStatus* status) const {
 
 void Ext4Volume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list, std::string_view path,
                                  bool recursive) {
-    const std::string parent = normalizePath(path);
+    const std::string parent = normalizeArg(path);
     Node parentNode;
     if (!resolveNode(parent, &parentNode) || !parentNode.isDirectory) {
         throw IOException("readDir", std::string(path), "Path is not a directory");
@@ -148,7 +144,7 @@ void Ext4Volume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list,
 }
 
 std::vector<uint8_t> Ext4Volume::readFile(std::string_view path) {
-    const std::string normalized = normalizePath(path);
+    const std::string normalized = normalizeArg(path);
     Node node;
     if (!resolveNode(normalized, &node) || node.isDirectory) {
         throw IOException("readFile", std::string(path), "File not found or is a directory");
@@ -165,7 +161,7 @@ std::vector<uint8_t> Ext4Volume::readFile(std::string_view path) {
 }
 
 std::unique_ptr<InputStream> Ext4Volume::newInputStream(std::string_view path) {
-    const std::string normalized = normalizePath(path);
+    const std::string normalized = normalizeArg(path);
     Node node;
     if (!resolveNode(normalized, &node) || node.isDirectory) {
         throw IOException("newInputStream", std::string(path), "File not found or is a directory");
@@ -190,14 +186,6 @@ std::unique_ptr<RandomReader> Ext4Volume::newRandomReader(std::string_view path,
     return Volume::newRandomReader(path, encoding);
 }
 
-bool Ext4Volume::createDirectory(std::string_view path) {
-    throw IOException("createDirectory", std::string(path), "Ext4Volume write operations are not implemented yet");
-}
-
-bool Ext4Volume::removeDirectory(std::string_view path) {
-    throw IOException("removeDirectory", std::string(path), "Ext4Volume write operations are not implemented yet");
-}
-
 std::unique_ptr<OutputStream> Ext4Volume::newOutputStream(std::string_view path, bool append) {
     return std::make_unique<Ext4FileOutputStream>(m_imagePath, std::string(path), append);
 }
@@ -219,19 +207,27 @@ std::string Ext4Volume::createTempFile(std::string_view /*prefix*/, std::string_
     throw IOException("createTempFile", "", "Ext4Volume does not support temp file operations");
 }
 
-void Ext4Volume::removeFileUnchecked(std::string_view path) {
+void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
+    throw IOException("createDirectory", std::string(path), "Ext4Volume write operations are not implemented yet");
+}
+
+void Ext4Volume::removeDirectoryThrowsUnchecked(std::string_view path) {
+    throw IOException("removeDirectory", std::string(path), "Ext4Volume write operations are not implemented yet");
+}
+
+void Ext4Volume::removeFileThrowsUnchecked(std::string_view path) {
     throw IOException("removeFile", std::string(path), "Ext4Volume write operations are not implemented yet");
 }
 
-void Ext4Volume::copyFileUnchecked(std::string_view src, std::string_view /*dest*/) {
+void Ext4Volume::copyFileThrowsUnchecked(std::string_view src, std::string_view /*dest*/) {
     throw IOException("copyFile", std::string(src), "Ext4Volume write operations are not implemented yet");
 }
 
-void Ext4Volume::moveFileUnchecked(std::string_view src, std::string_view /*dest*/) {
+void Ext4Volume::moveFileThrowsUnchecked(std::string_view src, std::string_view /*dest*/) {
     throw IOException("moveFile", std::string(src), "Ext4Volume write operations are not implemented yet");
 }
 
-void Ext4Volume::renameFileUnchecked(std::string_view oldPath, std::string_view /*newPath*/) {
+void Ext4Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::string_view /*newPath*/) {
     throw IOException("renameFile", std::string(oldPath), "Ext4Volume write operations are not implemented yet");
 }
 
@@ -256,7 +252,7 @@ void Ext4Volume::buildIndex() {
 }
 
 bool Ext4Volume::resolveNode(std::string_view path, Node* out) const {
-    const std::string normalized = normalizePath(path);
+    const std::string normalized = normalizeArg(path);
     auto cached = m_nodes.find(normalized);
     if (cached != m_nodes.end()) {
         if (out) *out = cached->second;
