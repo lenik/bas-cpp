@@ -26,7 +26,12 @@
 
 #if defined(__linux__)
 #include <fcntl.h>
+// `sys/stat.h` already pulls in `statx` definitions on most modern Linuxes.
+// Some environments (e.g. uos1) break when we also include `<linux/stat.h>`,
+// because it redefines `struct statx*` from the `bits/statx.h` headers.
+#if !defined(STATX_TYPE)
 #include <linux/stat.h>
+#endif
 #endif
 
 #include <dirent.h>

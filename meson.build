@@ -13,6 +13,13 @@ pkgdatadir = get_option('datadir') / meson.project_name()
 fs = import('fs')
 
 cpp = meson.get_compiler('cpp')
+
+# `std::filesystem` may require linking `stdc++fs` on older libstdc++ toolchains.
+stdcxxfs_deps = []
+stdcxxfs_lib = cpp.find_library('stdc++fs', required: false)
+if stdcxxfs_lib.found()
+  stdcxxfs_deps += stdcxxfs_lib
+endif
 # Disable all warnings (wx 3.0 and deps are noisy)
 cpp_nowarn = []
 #cpp_nowarn += cpp.get_supported_arguments(['-w', '/w'])
@@ -226,7 +233,7 @@ exe_deps = [
     libcurl_dep,
     openssl_dep,
     zlib_dep,
-] + ext2fs_deps
+] + ext2fs_deps + stdcxxfs_deps
 
 exe_inc = [
     include_directories('src'),
