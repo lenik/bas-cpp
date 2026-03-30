@@ -229,16 +229,6 @@ void MemoryZip::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list,
     } // for m_entries
 }
 
-std::vector<uint8_t> MemoryZip::readFile(std::string_view path) {
-    std::string pathStr(path);
-    const ZipEntry* entry = findEntry(pathStr);
-    if (!entry || entry->isDirectory) {
-        throw IOException("readFile", pathStr, "File not found or is directory");
-    }
-
-    return decompressEntry(*entry);
-}
-
 bool MemoryZip::stat(std::string_view path, FileStatus* status) const {
     std::string pathStr(path);
     const ZipEntry* entry = findEntry(pathStr);
@@ -336,7 +326,16 @@ std::unique_ptr<Writer> MemoryZip::newWriter(std::string_view path, bool append,
     throw IOException("newWriter", std::string(path), "MemoryZip is read-only");
 }
 
-void MemoryZip::writeFile(std::string_view path, const std::vector<uint8_t>& data) {
+std::vector<uint8_t> MemoryZip::readFileUnchecked(std::string_view path) {
+    std::string pathStr(path);
+    const ZipEntry* entry = findEntry(pathStr);
+    if (!entry || entry->isDirectory) {
+        throw IOException("readFile", pathStr, "File not found or is directory");
+    }
+    return decompressEntry(*entry);
+}
+
+void MemoryZip::writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) {
     (void)path; // Suppress unused parameter warning
     (void)data;
     throw IOException("writeFile", std::string(path), "MemoryZip is read-only");

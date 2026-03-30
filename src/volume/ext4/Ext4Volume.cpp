@@ -143,23 +143,6 @@ void Ext4Volume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list,
     walk(parent, parentNode);
 }
 
-std::vector<uint8_t> Ext4Volume::readFile(std::string_view path) {
-    const std::string normalized = normalizeArg(path);
-    Node node;
-    if (!resolveNode(normalized, &node) || node.isDirectory) {
-        throw IOException("readFile", std::string(path), "File not found or is a directory");
-    }
-    if (!checkMode(node, 4)) {
-        throw IOException("readFile", std::string(path), "Permission denied");
-    }
-
-    auto in = newInputStream(path);
-    if (!in) return {};
-    auto data = in->readBytesUntilEOF();
-    if (data.size() > node.size) data.resize(static_cast<size_t>(node.size));
-    return data;
-}
-
 std::unique_ptr<InputStream> Ext4Volume::newInputStream(std::string_view path) {
     const std::string normalized = normalizeArg(path);
     Node node;
@@ -195,16 +178,33 @@ std::unique_ptr<Writer> Ext4Volume::newWriter(std::string_view path, bool /*appe
     throw IOException("newWriter", std::string(path), "Ext4Volume write operations are not implemented yet");
 }
 
-void Ext4Volume::writeFile(std::string_view path, const std::vector<uint8_t>& /*data*/) {
-    throw IOException("writeFile", std::string(path), "Ext4Volume write operations are not implemented yet");
-}
-
 std::string Ext4Volume::getTempDir() {
     throw IOException("getTempDir", "", "Ext4Volume does not support temp file operations");
 }
 
 std::string Ext4Volume::createTempFile(std::string_view /*prefix*/, std::string_view /*suffix*/) {
     throw IOException("createTempFile", "", "Ext4Volume does not support temp file operations");
+}
+
+std::vector<uint8_t> Ext4Volume::readFileUnchecked(std::string_view path) {
+    const std::string normalized = normalizeArg(path);
+    Node node;
+    if (!resolveNode(normalized, &node) || node.isDirectory) {
+        throw IOException("readFile", std::string(path), "File not found or is a directory");
+    }
+    if (!checkMode(node, 4)) {
+        throw IOException("readFile", std::string(path), "Permission denied");
+    }
+
+    auto in = newInputStream(path);
+    if (!in) return {};
+    auto data = in->readBytesUntilEOF();
+    if (data.size() > node.size) data.resize(static_cast<size_t>(node.size));
+    return data;
+}
+
+void Ext4Volume::writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& /*data*/) {
+    throw IOException("writeFile", std::string(path), "Ext4Volume write operations are not implemented yet");
 }
 
 void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
@@ -326,7 +326,7 @@ const std::unordered_map<std::string, Ext4Volume::Node>& Ext4Volume::getDirector
             struct ext2_inode inodeBuf {};
             if (ext2fs_read_inode(c->fs, dirent->inode, &inodeBuf) != 0) return 0;
             const bool isDir = LINUX_S_ISDIR(inodeBuf.i_mode);
-            const uint64_t size = ext2fs_file_inode_size(c->fs, &inodeBuf);
+            const uint64_t size = EXT2_I_SIZE(&inodeBuf);
             (*c->entries)[name] = Node{isDir, size, dirent->inode, inodeBuf.i_mode, inodeBuf.i_uid,
                                        inodeBuf.i_gid};
             return 0;

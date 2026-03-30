@@ -8,8 +8,7 @@
 #include <string>
 
 #if defined(BAS_HAS_EXT2FS) && BAS_HAS_EXT2FS
-typedef struct struct_ext2_filsys* ext2_filsys;
-typedef struct struct_ext2_file* ext2_file_t;
+#include <ext2fs/ext2fs.h>
 #endif
 
 class Ext4FileInputStream : public RandomInputStream {

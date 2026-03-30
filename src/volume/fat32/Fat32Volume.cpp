@@ -141,30 +141,6 @@ void Fat32Volume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list
     }
 }
 
-std::vector<uint8_t> Fat32Volume::readFile(std::string_view path) {
-    const std::string normalized = normalizeArg(path);
-    auto it = m_nodes.find(normalized);
-    if (it == m_nodes.end() || it->second.isDirectory) {
-        throw IOException("readFile", std::string(path), "File not found or is a directory");
-    }
-
-    const Node& node = it->second;
-    std::vector<uint8_t> out;
-    out.reserve(node.size);
-
-    if (node.size == 0 || node.firstCluster < 2) {
-        return out;
-    }
-
-    auto stream = newInputStream(path);
-    if (!stream) {
-        return {};
-    }
-    out = stream->readBytesUntilEOF();
-    if (out.size() > node.size) out.resize(node.size);
-    return out;
-}
-
 std::unique_ptr<InputStream> Fat32Volume::newInputStream(std::string_view path) {
     const std::string normalized = normalizeArg(path);
     auto it = m_nodes.find(normalized);
@@ -208,7 +184,31 @@ std::unique_ptr<Writer> Fat32Volume::newWriter(std::string_view path, bool /*app
     throw IOException("newWriter", std::string(path), "Fat32Volume write operations are not implemented yet");
 }
 
-void Fat32Volume::writeFile(std::string_view path, const std::vector<uint8_t>& /*data*/) {
+std::vector<uint8_t> Fat32Volume::readFileUnchecked(std::string_view path) {
+    const std::string normalized = normalizeArg(path);
+    auto it = m_nodes.find(normalized);
+    if (it == m_nodes.end() || it->second.isDirectory) {
+        throw IOException("readFile", std::string(path), "File not found or is a directory");
+    }
+
+    const Node& node = it->second;
+    std::vector<uint8_t> out;
+    out.reserve(node.size);
+
+    if (node.size == 0 || node.firstCluster < 2) {
+        return out;
+    }
+
+    auto stream = newInputStream(path);
+    if (!stream) {
+        return {};
+    }
+    out = stream->readBytesUntilEOF();
+    if (out.size() > node.size) out.resize(node.size);
+    return out;
+}
+
+void Fat32Volume::writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& /*data*/) {
     throw IOException("writeFile", std::string(path), "Fat32Volume write operations are not implemented yet");
 }
 

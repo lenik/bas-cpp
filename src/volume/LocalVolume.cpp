@@ -352,13 +352,8 @@ std::unique_ptr<Writer> LocalVolume::newWriter(std::string_view _path, bool appe
     return writer;
 }
 
-std::vector<uint8_t> LocalVolume::readFile(std::string_view _path) {
+std::vector<uint8_t> LocalVolume::readFileUnchecked(std::string_view _path) {
     std::string localPath = resolveLocal(_path);
-    if (!fs::exists(localPath))
-        throw IOException("readFile", std::string(_path), "Path does not exist");
-    if (!fs::is_regular_file(localPath))
-        throw IOException("readFile", std::string(_path), "Path is not a regular file");
-
     std::ifstream file(localPath, std::ios::binary);
     if (!file)
         return {};
@@ -373,12 +368,8 @@ std::vector<uint8_t> LocalVolume::readFile(std::string_view _path) {
     return data;
 }
 
-void LocalVolume::writeFile(std::string_view _path, const std::vector<uint8_t>& data) {
+void LocalVolume::writeFileUnchecked(std::string_view _path, const std::vector<uint8_t>& data) {
     std::string localPath = resolveLocal(_path);
-    if (fs::exists(localPath) && !fs::is_regular_file(localPath))
-        throw IOException("writeFile", std::string(_path), //
-                          "Path is not a regular file: " + localPath);
-
     std::ofstream file(localPath, std::ios::binary);
     if (!file.is_open()) {
         throw IOException("writeFile", std::string(_path), //

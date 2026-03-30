@@ -84,9 +84,6 @@ public:
     std::unique_ptr<RandomInputStream> newRandomInputStream(std::string_view path) override;
     std::unique_ptr<RandomReader> newRandomReader(std::string_view path, std::string_view encoding = "UTF-8") override;
 
-    std::vector<uint8_t> readFile(std::string_view path) override;
-    void writeFile(std::string_view path, const std::vector<uint8_t>& data) override;
-    
     std::string getTempDir() override;
     std::string createTempFile(std::string_view prefix = "tmp.", std::string_view suffix = "") override;
 
@@ -100,6 +97,9 @@ protected:
     void copyFileThrowsUnchecked(std::string_view src, std::string_view dest) override;
     void moveFileThrowsUnchecked(std::string_view src, std::string_view dest) override;
     void renameFileThrowsUnchecked(std::string_view oldPath, std::string_view newPath) override;
+    
+    std::vector<uint8_t> readFileUnchecked(std::string_view path) override;
+    void writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) override;
     
 };
 

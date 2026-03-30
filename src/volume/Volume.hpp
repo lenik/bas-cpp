@@ -166,7 +166,7 @@ class Volume {
                                                           std::string_view encoding = "UTF-8");
 
     // readFile can throw IOException or AccessException
-    virtual std::vector<uint8_t> readFile(std::string_view path) = 0;
+    std::vector<uint8_t> readFile(std::string_view path);
     std::string readFileUTF8(std::string_view path);
     std::string readFileString(std::string_view path, std::string_view encoding = "UTF-8");
     std::deque<std::string> readLines(std::string_view path, int maxLines = -1,
@@ -175,7 +175,7 @@ class Volume {
                                           std::string_view encoding = "UTF-8");
 
     // writeFile can throw IOException or AccessException
-    virtual void writeFile(std::string_view path, const std::vector<uint8_t>& data) = 0;
+    void writeFile(std::string_view path, const std::vector<uint8_t>& data);
     void writeFileUTF8(std::string_view path, std::string_view data);
     void writeFileString(std::string_view path, std::string_view data,
                          std::string_view encoding = "UTF-8");
@@ -199,6 +199,10 @@ class Volume {
     virtual void setSerialForced(std::string_view s);
 
     // unchecked operations: no exception handling, no return value
+
+    virtual std::vector<uint8_t> readFileUnchecked(std::string_view path) = 0;
+    virtual void writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) = 0;
+
     virtual void createDirectoryThrowsUnchecked(std::string_view path) = 0;
     virtual void removeDirectoryThrowsUnchecked(std::string_view path) = 0;
     virtual void removeFileThrowsUnchecked(std::string_view path) = 0;

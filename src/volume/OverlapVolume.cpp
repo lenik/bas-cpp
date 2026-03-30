@@ -2,7 +2,10 @@
 
 #include "../io/IOException.hpp"
 
+#include <iomanip>
 #include <map>
+#include <random>
+#include <sstream>
 #include <stdexcept>
 #include <utility>
 
@@ -27,10 +30,52 @@ static void mergeDirEntry(std::map<std::string, std::unique_ptr<FileStatus>>& m,
     m[key] = std::move(st);
 }
 
-OverlapVolume::OverlapVolume(std::vector<Volume*> layers)
-    : m_layers(std::move(layers)) {
+template <typename T> std::string toHex(T value) {
+    std::stringstream ss;
+    ss << std::hex << value;
+    return ss.str();
+}
+
+std::string toUUID(uint64_t random_seed) {
+    // 1. Initialize a better random engine with the seed
+    std::mt19937_64 gen(random_seed);
+    std::uniform_int_distribution<uint64_t> dis(0, 0xFFFFFFFFFFFFFFFF);
+
+    // 2. Generate two 64-bit random numbers (128 bits total)
+    uint64_t high = dis(gen);
+    uint64_t low = dis(gen);
+
+    // 3. Set Version 4 (0100) and Variant (10xx) bits
+    // Version 4: set the 4 bits starting at bit 48 of 'high' to 0100
+    high = (high & 0xFFFFFFFFFFFF0FFFULL) | 0x0000000000004000ULL;
+    // Variant: set the 2 bits starting at bit 60 of 'low' to 10
+    low = (low & 0x3FFFFFFFFFFFFFFFULL) | 0x8000000000000000ULL;
+
+    // 4. Format into canonical 8-4-4-4-12 string
+    std::stringstream ss;
+    ss << std::hex << std::setfill('0')
+       << std::setw(8) << (uint32_t)(high >> 32) << "-"
+       << std::setw(4) << (uint16_t)(high >> 16) << "-"
+       << std::setw(4) << (uint16_t)high << "-"
+       << std::setw(4) << (uint16_t)(low >> 48) << "-"
+       << std::setw(12) << (low & 0xFFFFFFFFFFFFULL);
+    return ss.str();
+}
+
+OverlapVolume::OverlapVolume(std::string label, std::vector<Volume*> layers)
+    : m_layers(std::move(layers)), m_label(label) {
     if (m_layers.empty()) {
         throw std::invalid_argument("OverlapVolume requires at least one volume layer");
+    }
+    if (!m_label.empty()) {
+        user_attrs = true;
+        uint64_t hash = 0;
+        for (const auto& layer : m_layers) {
+            std::string uuid = layer->getUUID();
+            hash = hash * 31 + std::hash<std::string>()(uuid);
+        }
+        m_serial = toHex(hash);
+        m_uuid = toUUID(hash);
     }
 }
 
@@ -193,7 +238,13 @@ std::unique_ptr<RandomInputStream> OverlapVolume::newRandomInputStream(std::stri
     return v->newRandomInputStream(path);
 }
 
-std::vector<uint8_t> OverlapVolume::readFile(std::string_view path) {
+std::string OverlapVolume::getTempDir() { return m_layers.back()->getTempDir(); }
+
+std::string OverlapVolume::createTempFile(std::string_view prefix, std::string_view suffix) {
+    return m_layers.back()->createTempFile(prefix, suffix);
+}
+
+std::vector<uint8_t> OverlapVolume::readFileUnchecked(std::string_view path) {
     Volume* v = layerForFile(path);
     if (!v) {
         throw IOException("readFile", std::string(normalize(path)), "Path is not a readable file");
@@ -201,14 +252,8 @@ std::vector<uint8_t> OverlapVolume::readFile(std::string_view path) {
     return v->readFile(path);
 }
 
-void OverlapVolume::writeFile(std::string_view path, const std::vector<uint8_t>& data) {
+void OverlapVolume::writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) {
     m_layers.back()->writeFile(path, data);
-}
-
-std::string OverlapVolume::getTempDir() { return m_layers.back()->getTempDir(); }
-
-std::string OverlapVolume::createTempFile(std::string_view prefix, std::string_view suffix) {
-    return m_layers.back()->createTempFile(prefix, suffix);
 }
 
 void OverlapVolume::createDirectoryThrowsUnchecked(std::string_view path) {

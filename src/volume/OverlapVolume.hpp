@@ -14,10 +14,10 @@
  */
 class OverlapVolume : public Volume {
 public:
-    explicit OverlapVolume(std::vector<Volume*> layers);
+    explicit OverlapVolume(std::string label, std::vector<Volume*> layers);
 
     template<typename... Ts>
-    static std::unique_ptr<OverlapVolume> make(Ts&&... vols) {
+    static std::unique_ptr<OverlapVolume> make(std::string label, Ts&&... vols) {
         static_assert((std::is_convertible_v<Ts*, Volume*> && ...));
         std::vector<Volume*> vec;
         vec.reserve(sizeof...(Ts));
@@ -60,14 +60,14 @@ public:
     std::unique_ptr<OutputStream> newOutputStream(std::string_view path, bool append = false) override;
     std::unique_ptr<RandomInputStream> newRandomInputStream(std::string_view path) override;
 
-    std::vector<uint8_t> readFile(std::string_view path) override;
-    void writeFile(std::string_view path, const std::vector<uint8_t>& data) override;
-
     std::string getTempDir() override;
     std::string createTempFile(std::string_view prefix = "tmp.", std::string_view suffix = "") override;
 
 protected:
     std::string getDefaultLabel() const override;
+
+    std::vector<uint8_t> readFileUnchecked(std::string_view path) override;
+    void writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) override;
 
     void createDirectoryThrowsUnchecked(std::string_view path) override;
     void removeDirectoryThrowsUnchecked(std::string_view path) override;

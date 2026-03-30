@@ -16,6 +16,8 @@ extern "C" {
 
 extern std::unique_ptr<Volume> __CONCAT_EVAL(ASSETS_NAME, _assets);
 
+extern Volume* g_assets;
+
 #ifdef __cplusplus
 }
 #endif

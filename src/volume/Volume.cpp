@@ -592,6 +592,17 @@ std::unique_ptr<RandomReader> Volume::newRandomReader(std::string_view path,
     return std::make_unique<U32stringReader>(u32);
 }
 
+std::vector<uint8_t> Volume::readFile(std::string_view _path) {
+    if (!exists(_path))
+        throw IOException("readFile", 
+        getLabel() + "::" + std::string(_path), "Path does not exist");
+    if (!isFile(_path))
+        throw IOException("readFile", 
+        getLabel() + "::" + std::string(_path), "Path is not a regular file");
+
+    return readFileUnchecked(_path);
+}
+
 std::string Volume::readFileUTF8(std::string_view path) {
     if (path.empty())
         throw std::invalid_argument("Volume::readFileUTF8: path is required");
@@ -685,6 +696,13 @@ std::deque<std::string> Volume::readLastLines(std::string_view path, int maxLine
     ReversedReader reader(read_backward);
     std::vector<std::string> revLines = reader.readLines(encoding, limit);
     return std::deque<std::string>(revLines.rbegin(), revLines.rend());
+}
+
+void Volume::writeFile(std::string_view _path, const std::vector<uint8_t>& data) {
+    if (exists(_path) && !isFile(_path))
+        throw IOException("writeFile", std::string(_path), //
+                          "Path is not a regular file: " + std::string(_path));
+    writeFileUnchecked(_path, data);
 }
 
 void Volume::writeFileUTF8(std::string_view path, std::string_view data) {

@@ -58,14 +58,15 @@ public:
     std::unique_ptr<RandomReader> newRandomReader(std::string_view path,
                                                   std::string_view encoding = "UTF-8") override;
 
-    std::vector<uint8_t> readFile(std::string_view path) override;
-    void writeFile(std::string_view path, const std::vector<uint8_t>& data) override;
-
     std::string getTempDir() override;
     std::string createTempFile(std::string_view prefix = "tmp.", std::string_view suffix = "") override;
 
 protected:
     std::string getDefaultLabel() const override;
+
+    std::vector<uint8_t> readFileUnchecked(std::string_view path) override;
+    void writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) override;
+
     void createDirectoryThrowsUnchecked(std::string_view path) override;
     void removeDirectoryThrowsUnchecked(std::string_view path) override;
     void removeFileThrowsUnchecked(std::string_view path) override;
