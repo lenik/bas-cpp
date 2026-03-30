@@ -22,8 +22,12 @@ public:
         std::vector<Volume*> vec;
         vec.reserve(sizeof...(Ts));
         (vec.push_back(vols), ...);
-        return std::make_unique<OverlapVolume>(std::move(vec));
+        return std::make_unique<OverlapVolume>(label, std::move(vec));
     }
+
+    void pushLayer(Volume* vol);
+    void popLayer();
+    void removeLayer(Volume* vol);
 
     Volume* bottomLayer() { return m_layers.front(); }
     Volume* topLayer() { return m_layers.back(); }

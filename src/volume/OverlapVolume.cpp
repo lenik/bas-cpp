@@ -2,6 +2,7 @@
 
 #include "../io/IOException.hpp"
 
+#include <algorithm>
 #include <iomanip>
 #include <map>
 #include <random>
@@ -76,6 +77,34 @@ OverlapVolume::OverlapVolume(std::string label, std::vector<Volume*> layers)
         }
         m_serial = toHex(hash);
         m_uuid = toUUID(hash);
+    }
+}
+
+void OverlapVolume::pushLayer(Volume* vol) {
+    if (vol == nullptr) {
+        throw std::invalid_argument("Volume cannot be nullptr");
+    }
+    if (std::find(m_layers.begin(), m_layers.end(), vol) != m_layers.end()) {
+        throw std::invalid_argument("Volume already in overlap volume");
+    }
+    m_layers.push_back(vol);
+}
+
+void OverlapVolume::popLayer() {
+    if (m_layers.empty()) {
+        throw std::invalid_argument("Overlap volume must have at least one layer");
+    }
+    m_layers.pop_back();
+}
+
+void OverlapVolume::removeLayer(Volume* vol) {
+    if (std::find(m_layers.begin(), m_layers.end(), vol) == m_layers.end()) {
+        throw std::invalid_argument("Volume not found in overlap volume");
+    }
+    m_layers.erase(std::remove(m_layers.begin(), m_layers.end(), vol),
+        m_layers.end());
+    if (m_layers.empty()) {
+        throw std::invalid_argument("Overlap volume must have at least one layer");
     }
 }
 

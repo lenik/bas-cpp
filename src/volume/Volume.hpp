@@ -49,6 +49,9 @@ class Volume {
   public:
     virtual ~Volume() = default;
 
+    int getPriority() const { return m_priority; }
+    void setPriority(int priority) { m_priority = priority; }
+
     // Volume info
     virtual std::string getClass() const = 0; // "local", "seczure", etc.
     virtual std::string getId() const = 0;
@@ -214,6 +217,7 @@ class Volume {
     std::string readRCFile(std::string_view name);
     bool writeRCFile(std::string_view name, std::string_view data);
 
+    int m_priority = 0;
     std::string m_uuidFile = "UUID";
     std::string m_serialFile = "SERIAL";
     std::string m_labelFile = "LABEL";

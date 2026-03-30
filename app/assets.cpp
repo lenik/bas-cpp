@@ -1,4 +1,5 @@
 #include "proc/UseAssets.hpp"
+#include "proc/AssetsRegistry.hpp"
 
 #include <iostream>
 
@@ -22,10 +23,10 @@ int main(int argc, char** argv) {
 
     if (options) {
         std::cout << "Assets list:" << std::endl;
-        bas_cpp_assets->ls(options, path);
+        AssetsRegistry::instance()->ls(options, path);
     } else {
         std::cout << "Assets tree:" << std::endl;
-        bas_cpp_assets->tree(path);
+        AssetsRegistry::instance()->tree(path);
     }
     return 0;
 }

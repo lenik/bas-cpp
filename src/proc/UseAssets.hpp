@@ -3,6 +3,7 @@
 #endif
 
 #include "../volume/Volume.hpp"
+#include "../volume/OverlapVolume.hpp"
 
 #include <memory>
 
@@ -15,8 +16,6 @@ extern "C" {
 #endif
 
 extern std::unique_ptr<Volume> __CONCAT_EVAL(ASSETS_NAME, _assets);
-
-extern Volume* g_assets;
 
 #ifdef __cplusplus
 }

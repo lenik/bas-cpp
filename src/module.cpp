@@ -1,14 +1,22 @@
 #include "proc/DefAssets.hpp"
+#include "proc/AssetsRegistry.hpp"
 
 #include <bas/log/deflog.h>
 
-extern "C" {
-    
-define_logger();
-
 define_zip_assets(bas_cpp, bas_cpp_assets);
 
-__attribute__((weak))
-Volume* g_assets = bas_cpp_assets.get();
+extern "C" {
+
+define_logger();
+
+}
+
+namespace {
+
+struct BasCppAssetsRegistrar {
+    BasCppAssetsRegistrar() {
+        AssetsRegistry::pushLayer(bas_cpp_assets.get());
+    }
+} bas_cpp_assets_registrar;
 
 }
