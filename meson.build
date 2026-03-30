@@ -27,6 +27,9 @@ cpp_nowarn = []
 # libbas-c
 bas_dep = dependency('bas-c', required: true)
 
+boost_sub = subproject('boost')
+boost_json_dep = boost_sub.get_variable('boost_json_dep')
+
 # GLib for scriptable UI stack (GList)
 glib_dep = dependency('glib-2.0', required: true)
 
@@ -38,43 +41,6 @@ libcurl_dep = dependency('libcurl', required: true)
 
 # OpenSSL (crypto + ssl for HTTPS)
 openssl_dep = dependency('openssl', required: true)
-
-# boost libraries
-# use vendored boost libraries if boost-system <= 1.67
-boost_system_dep = dependency('boost', modules: ['system'], required: true)
-
-wx_dep = dependency('wxwidgets', required: true)
-
-if not boost_system_dep.found() or (boost_system_dep.version() < '1.68' or wx_dep.version() < '3.1')
-    boost_inc = [
-        include_directories('third_party/boost_json/include'),
-        include_directories('third_party/boost_core/include'),
-        include_directories('third_party/boost_assert/include'),
-    ]
-
-    # Boost.System (error_code) used by vendored Boost.JSON and JsonForm
-    boost_dep = dependency(
-        'boost',
-        modules: [
-            'locale',
-            'system',
-        ],
-        required: true,
-    )
-
-else
-    boost_dep = dependency(
-        'boost',
-        modules: [
-            'assert',
-            'core',
-            'json',
-            'locale',
-            'system',
-        ],
-        required: true,
-    )
-endif
 
 # zlib for ZIP support
 # zlib is used for decompression, but we'll parse ZIP manually
@@ -227,7 +193,7 @@ assets_o = custom_target(
 
 exe_deps = [
     bas_dep,
-    boost_dep,
+    boost_json_dep,
     glib_dep,
     icu_uc_dep,
     libcurl_dep,
@@ -237,7 +203,7 @@ exe_deps = [
 
 exe_inc = [
     include_directories('src'),
-] + boost_inc
+]
 
 lib_bas_cpp = library(
     'bas-cpp',
