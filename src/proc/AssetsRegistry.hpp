@@ -1,7 +1,7 @@
 #ifndef ASSETSREGISTRY_HPP
 #define ASSETSREGISTRY_HPP
 
-#include "../volume/OverlapVolume.hpp"
+#include "../volume/OverlayVolume.hpp"
 
 #include <memory>
 #include <stdexcept>
@@ -9,8 +9,8 @@
 
 class AssetsRegistry {
 public:
-    static std::unique_ptr<OverlapVolume>& instance() {
-        static std::unique_ptr<OverlapVolume> instance;
+    static std::unique_ptr<OverlayVolume>& instance() {
+        static std::unique_ptr<OverlayVolume> instance;
         return instance;
     }
     static void pushLayer(Volume* vol) {
@@ -19,7 +19,7 @@ public:
         }
         auto& inst = instance();
         if (!inst) {
-            inst = std::make_unique<OverlapVolume>("", std::vector<Volume*>{vol});
+            inst = std::make_unique<OverlayVolume>("", std::vector<Volume*>{vol});
         } else {
             inst->pushLayer(vol);
         }

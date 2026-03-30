@@ -195,7 +195,7 @@ class Volume {
     void tree(std::string_view path, const std::string& prefix);
 
   protected:
-    friend class OverlapVolume;
+    friend class OverlayVolume;
     friend class AccessControlledVolume;
 
     virtual void setUUIDForced(std::string_view u);

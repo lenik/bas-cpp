@@ -12,17 +12,17 @@
  * Stack of volumes: logical paths match; earlier layers are below, later layers override
  * for listing and reads. Mutations and writes go only to the last (top) layer.
  */
-class OverlapVolume : public Volume {
+class OverlayVolume : public Volume {
 public:
-    explicit OverlapVolume(std::string label, std::vector<Volume*> layers);
+    explicit OverlayVolume(std::string label, std::vector<Volume*> layers);
 
     template<typename... Ts>
-    static std::unique_ptr<OverlapVolume> make(std::string label, Ts&&... vols) {
+    static std::unique_ptr<OverlayVolume> make(std::string label, Ts&&... vols) {
         static_assert((std::is_convertible_v<Ts*, Volume*> && ...));
         std::vector<Volume*> vec;
         vec.reserve(sizeof...(Ts));
         (vec.push_back(vols), ...);
-        return std::make_unique<OverlapVolume>(label, std::move(vec));
+        return std::make_unique<OverlayVolume>(label, std::move(vec));
     }
 
     void pushLayer(Volume* vol);
@@ -85,7 +85,7 @@ private:
     Volume* layerForFile(std::string_view path) const;
 
     std::vector<Volume*> m_layers;
-    std::string m_class = "overlap";
+    std::string m_class = "overlay";
     std::string m_id;
     VolumeType m_volumeType = VolumeType::OTHER;
     

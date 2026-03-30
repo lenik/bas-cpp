@@ -166,7 +166,7 @@ cpp_sources = files(
     './src/util/Path.cpp',
     './src/util/PathHelper.cpp',
     './src/volume/LocalVolume.cpp',
-    './src/volume/OverlapVolume.cpp',
+    './src/volume/OverlayVolume.cpp',
     './src/volume/Volume.cpp',
     './src/volume/VolumeFile.cpp',
     './src/volume/VolumeManager.cpp',

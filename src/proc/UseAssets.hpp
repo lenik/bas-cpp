@@ -3,7 +3,7 @@
 #endif
 
 #include "../volume/Volume.hpp"
-#include "../volume/OverlapVolume.hpp"
+#include "../volume/OverlayVolume.hpp"
 
 #include <memory>
 

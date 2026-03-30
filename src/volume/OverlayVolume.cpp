@@ -1,4 +1,4 @@
-#include "OverlapVolume.hpp"
+#include "OverlayVolume.hpp"
 
 #include "../io/IOException.hpp"
 
@@ -63,10 +63,10 @@ std::string toUUID(uint64_t random_seed) {
     return ss.str();
 }
 
-OverlapVolume::OverlapVolume(std::string label, std::vector<Volume*> layers)
+OverlayVolume::OverlayVolume(std::string label, std::vector<Volume*> layers)
     : m_layers(std::move(layers)), m_label(label) {
     if (m_layers.empty()) {
-        throw std::invalid_argument("OverlapVolume requires at least one volume layer");
+        throw std::invalid_argument("OverlayVolume requires at least one volume layer");
     }
     if (!m_label.empty()) {
         user_attrs = true;
@@ -80,37 +80,37 @@ OverlapVolume::OverlapVolume(std::string label, std::vector<Volume*> layers)
     }
 }
 
-void OverlapVolume::pushLayer(Volume* vol) {
+void OverlayVolume::pushLayer(Volume* vol) {
     if (vol == nullptr) {
         throw std::invalid_argument("Volume cannot be nullptr");
     }
     if (std::find(m_layers.begin(), m_layers.end(), vol) != m_layers.end()) {
-        throw std::invalid_argument("Volume already in overlap volume");
+        throw std::invalid_argument("Volume already in overlay volume");
     }
     m_layers.push_back(vol);
 }
 
-void OverlapVolume::popLayer() {
+void OverlayVolume::popLayer() {
     if (m_layers.empty()) {
-        throw std::invalid_argument("Overlap volume must have at least one layer");
+        throw std::invalid_argument("Overlay volume must have at least one layer");
     }
     m_layers.pop_back();
 }
 
-void OverlapVolume::removeLayer(Volume* vol) {
+void OverlayVolume::removeLayer(Volume* vol) {
     if (std::find(m_layers.begin(), m_layers.end(), vol) == m_layers.end()) {
-        throw std::invalid_argument("Volume not found in overlap volume");
+        throw std::invalid_argument("Volume not found in overlay volume");
     }
     m_layers.erase(std::remove(m_layers.begin(), m_layers.end(), vol),
         m_layers.end());
     if (m_layers.empty()) {
-        throw std::invalid_argument("Overlap volume must have at least one layer");
+        throw std::invalid_argument("Overlay volume must have at least one layer");
     }
 }
 
-std::string OverlapVolume::getDefaultLabel() const { return "Overlap Volume"; }
+std::string OverlayVolume::getDefaultLabel() const { return "Overlay Volume"; }
 
-std::string OverlapVolume::getUUID() { 
+std::string OverlayVolume::getUUID() { 
     if (user_attrs) {
         return m_uuid;
     } else {
@@ -118,7 +118,7 @@ std::string OverlapVolume::getUUID() {
     }
 }
 
-void OverlapVolume::setUUID(std::string_view u) {
+void OverlayVolume::setUUID(std::string_view u) {
     if (user_attrs) {
         m_uuid = std::string(u);
     } else {
@@ -126,7 +126,7 @@ void OverlapVolume::setUUID(std::string_view u) {
     }
 }
 
-std::string OverlapVolume::getSerial() { 
+std::string OverlayVolume::getSerial() { 
     if (user_attrs) {
         return m_serial;
     } else {
@@ -134,7 +134,7 @@ std::string OverlapVolume::getSerial() {
     }
 }
 
-void OverlapVolume::setSerial(std::string_view s) {
+void OverlayVolume::setSerial(std::string_view s) {
     if (user_attrs) {
         m_serial = std::string(s);
     } else {
@@ -142,7 +142,7 @@ void OverlapVolume::setSerial(std::string_view s) {
     }
 }
 
-std::string OverlapVolume::getLabel() { 
+std::string OverlayVolume::getLabel() { 
     if (user_attrs) {
         return m_label;
     } else {
@@ -150,7 +150,7 @@ std::string OverlapVolume::getLabel() {
     }
 }
 
-void OverlapVolume::setLabel(std::string_view label) {
+void OverlayVolume::setLabel(std::string_view label) {
     if (user_attrs) {
         m_label = std::string(label);
     } else {
@@ -158,12 +158,12 @@ void OverlapVolume::setLabel(std::string_view label) {
     }
 }
 
-std::string OverlapVolume::getLocalFile(std::string_view path) const {
+std::string OverlayVolume::getLocalFile(std::string_view path) const {
     Volume* w = layerExists(path);
     return w ? w->getLocalFile(path) : std::string();
 }
 
-Volume* OverlapVolume::layerExists(std::string_view path) const {
+Volume* OverlayVolume::layerExists(std::string_view path) const {
     std::string p = normalize(path);
     for (size_t i = m_layers.size(); i > 0; --i) {
         Volume* v = m_layers[i - 1];
@@ -174,7 +174,7 @@ Volume* OverlapVolume::layerExists(std::string_view path) const {
     return nullptr;
 }
 
-Volume* OverlapVolume::layerForFile(std::string_view path) const {
+Volume* OverlayVolume::layerForFile(std::string_view path) const {
     std::string p = normalize(path);
     for (size_t i = m_layers.size(); i > 0; --i) {
         Volume* v = m_layers[i - 1];
@@ -185,7 +185,7 @@ Volume* OverlapVolume::layerForFile(std::string_view path) const {
     return nullptr;
 }
 
-bool OverlapVolume::exists(std::string_view path) const {
+bool OverlayVolume::exists(std::string_view path) const {
     std::string p = normalize(path);
     for (const auto& layer : m_layers) {
         if (layer->exists(p)) {
@@ -195,17 +195,17 @@ bool OverlapVolume::exists(std::string_view path) const {
     return false;
 }
 
-bool OverlapVolume::isFile(std::string_view path) const {
+bool OverlayVolume::isFile(std::string_view path) const {
     Volume* w = layerExists(path);
     return w && w->isFile(normalize(path));
 }
 
-bool OverlapVolume::isDirectory(std::string_view path) const {
+bool OverlayVolume::isDirectory(std::string_view path) const {
     Volume* w = layerExists(path);
     return w && w->isDirectory(normalize(path));
 }
 
-bool OverlapVolume::stat(std::string_view path, FileStatus* status) const {
+bool OverlayVolume::stat(std::string_view path, FileStatus* status) const {
     Volume* w = layerExists(path);
     if (!w) {
         return false;
@@ -213,7 +213,7 @@ bool OverlapVolume::stat(std::string_view path, FileStatus* status) const {
     return w->stat(normalize(path), status);
 }
 
-void OverlapVolume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list,
+void OverlayVolume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list,
                                     std::string_view path, bool recursive) {
     std::string norm = normalize(path);
     bool anyDir = false;
@@ -246,7 +246,7 @@ void OverlapVolume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& li
     }
 }
 
-std::unique_ptr<InputStream> OverlapVolume::newInputStream(std::string_view path) {
+std::unique_ptr<InputStream> OverlayVolume::newInputStream(std::string_view path) {
     Volume* v = layerForFile(path);
     if (!v) {
         throw IOException("newInputStream", std::string(normalize(path)), "Path is not a readable file");
@@ -254,11 +254,11 @@ std::unique_ptr<InputStream> OverlapVolume::newInputStream(std::string_view path
     return v->newInputStream(path);
 }
 
-std::unique_ptr<OutputStream> OverlapVolume::newOutputStream(std::string_view path, bool append) {
+std::unique_ptr<OutputStream> OverlayVolume::newOutputStream(std::string_view path, bool append) {
     return m_layers.back()->newOutputStream(path, append);
 }
 
-std::unique_ptr<RandomInputStream> OverlapVolume::newRandomInputStream(std::string_view path) {
+std::unique_ptr<RandomInputStream> OverlayVolume::newRandomInputStream(std::string_view path) {
     Volume* v = layerForFile(path);
     if (!v) {
         throw IOException("newRandomInputStream", std::string(normalize(path)),
@@ -267,13 +267,13 @@ std::unique_ptr<RandomInputStream> OverlapVolume::newRandomInputStream(std::stri
     return v->newRandomInputStream(path);
 }
 
-std::string OverlapVolume::getTempDir() { return m_layers.back()->getTempDir(); }
+std::string OverlayVolume::getTempDir() { return m_layers.back()->getTempDir(); }
 
-std::string OverlapVolume::createTempFile(std::string_view prefix, std::string_view suffix) {
+std::string OverlayVolume::createTempFile(std::string_view prefix, std::string_view suffix) {
     return m_layers.back()->createTempFile(prefix, suffix);
 }
 
-std::vector<uint8_t> OverlapVolume::readFileUnchecked(std::string_view path) {
+std::vector<uint8_t> OverlayVolume::readFileUnchecked(std::string_view path) {
     Volume* v = layerForFile(path);
     if (!v) {
         throw IOException("readFile", std::string(normalize(path)), "Path is not a readable file");
@@ -281,23 +281,23 @@ std::vector<uint8_t> OverlapVolume::readFileUnchecked(std::string_view path) {
     return v->readFile(path);
 }
 
-void OverlapVolume::writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) {
+void OverlayVolume::writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) {
     m_layers.back()->writeFile(path, data);
 }
 
-void OverlapVolume::createDirectoryThrowsUnchecked(std::string_view path) {
+void OverlayVolume::createDirectoryThrowsUnchecked(std::string_view path) {
     m_layers.back()->createDirectoryThrows(path);
 }
 
-void OverlapVolume::removeDirectoryThrowsUnchecked(std::string_view path) {
+void OverlayVolume::removeDirectoryThrowsUnchecked(std::string_view path) {
     m_layers.back()->removeDirectoryThrows(path);
 }
 
-void OverlapVolume::removeFileThrowsUnchecked(std::string_view path) {
+void OverlayVolume::removeFileThrowsUnchecked(std::string_view path) {
     m_layers.back()->removeFileThrows(path);
 }
 
-void OverlapVolume::copyFileThrowsUnchecked(std::string_view src, std::string_view dest) {
+void OverlayVolume::copyFileThrowsUnchecked(std::string_view src, std::string_view dest) {
     std::string s = normalize(src);
     Volume* srcLayer = layerForFile(s);
     if (!srcLayer) {
@@ -307,7 +307,7 @@ void OverlapVolume::copyFileThrowsUnchecked(std::string_view src, std::string_vi
     m_layers.back()->writeFile(normalize(dest), data);
 }
 
-void OverlapVolume::moveFileThrowsUnchecked(std::string_view src, std::string_view dest) {
+void OverlayVolume::moveFileThrowsUnchecked(std::string_view src, std::string_view dest) {
     Volume* top = m_layers.back();
     std::string s = normalize(src);
     if (!top->exists(s) || !top->isFile(s)) {
@@ -316,7 +316,7 @@ void OverlapVolume::moveFileThrowsUnchecked(std::string_view src, std::string_vi
     top->moveFile(src, dest);
 }
 
-void OverlapVolume::renameFileThrowsUnchecked(std::string_view src, std::string_view dest) {
+void OverlayVolume::renameFileThrowsUnchecked(std::string_view src, std::string_view dest) {
     Volume* top = m_layers.back();
     std::string s = normalize(src);
     if (!top->exists(s)) {
