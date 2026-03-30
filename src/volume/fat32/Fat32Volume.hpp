@@ -4,6 +4,7 @@
 #include "../Volume.hpp"
 
 #include <cstdint>
+#include <ctime>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -14,6 +15,9 @@ private:
         bool isDirectory = false;
         uint32_t firstCluster = 0;
         uint32_t size = 0;
+        time_t atime = 0;
+        time_t mtime = 0;
+        time_t creationTime = 0;
     };
 
     std::string m_imagePath;
@@ -38,6 +42,7 @@ public:
     std::string getClass() const override { return "fat32"; }
     std::string getId() const override { return m_imagePath; }
     VolumeType getType() const override { return VolumeType::ARCHIVE; }
+    std::string getSource() const override;
     bool isLocal() const override { return false; }
     std::string getLocalFile(std::string_view path) const override;
 

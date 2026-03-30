@@ -2,9 +2,11 @@
 #define EXT4VOLUME_H
 
 #include "IUserDb.hpp"
+
 #include "../Volume.hpp"
 
 #include <cstdint>
+#include <ctime>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -18,6 +20,9 @@ private:
         uint16_t mode = 0;
         uint32_t uid = 0;
         uint32_t gid = 0;
+        time_t atime = 0;
+        time_t mtime = 0;
+        time_t ctime = 0;
     };
 
     std::string m_imagePath;
@@ -41,9 +46,10 @@ public:
     std::string getClass() const override { return "ext"; }
     std::string getId() const override { return m_imagePath; }
     VolumeType getType() const override { return VolumeType::ARCHIVE; }
+    std::string getSource() const override;
     bool isLocal() const override { return false; }
     std::string getLocalFile(std::string_view path) const override;
-
+    
     bool exists(std::string_view path) const override;
     bool isFile(std::string_view path) const override;
     bool isDirectory(std::string_view path) const override;

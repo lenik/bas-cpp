@@ -3,16 +3,17 @@
 #include "LocalVolume.hpp"
 #include "Volume.hpp"
 #include "mountinfo.hpp"
+
 #include "ext4/Ext4Volume.hpp"
 #include "fat32/Fat32Volume.hpp"
-
-#include <log/uselog.h>
 
 #include <cctype>
 #include <fstream>
 #include <string>
 #include <unordered_set>
 #include <vector>
+
+#include <log/uselog.h>
 
 VolumeManager::VolumeManager() {}
 

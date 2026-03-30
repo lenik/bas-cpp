@@ -2,8 +2,8 @@
 #error ASSETS_NAME is not defined
 #endif
 
-#include "../volume/Volume.hpp"
 #include "../volume/OverlayVolume.hpp"
+#include "../volume/Volume.hpp"
 
 #include <memory>
 

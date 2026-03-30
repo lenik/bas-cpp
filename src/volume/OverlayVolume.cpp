@@ -54,12 +54,10 @@ std::string toUUID(uint64_t random_seed) {
 
     // 4. Format into canonical 8-4-4-4-12 string
     std::stringstream ss;
-    ss << std::hex << std::setfill('0')
-       << std::setw(8) << (uint32_t)(high >> 32) << "-"
-       << std::setw(4) << (uint16_t)(high >> 16) << "-"
-       << std::setw(4) << (uint16_t)high << "-"
-       << std::setw(4) << (uint16_t)(low >> 48) << "-"
-       << std::setw(12) << (low & 0xFFFFFFFFFFFFULL);
+    ss << std::hex << std::setfill('0') << std::setw(8) << (uint32_t)(high >> 32) << "-"
+       << std::setw(4) << (uint16_t)(high >> 16) << "-" << std::setw(4) << (uint16_t)high << "-"
+       << std::setw(4) << (uint16_t)(low >> 48) << "-" << std::setw(12)
+       << (low & 0xFFFFFFFFFFFFULL);
     return ss.str();
 }
 
@@ -79,6 +77,27 @@ OverlayVolume::OverlayVolume(std::string label, std::vector<Volume*> layers)
         m_uuid = toUUID(hash);
     }
 }
+
+std::string OverlayVolume::getClass() const { return m_class; }
+std::string OverlayVolume::getId() const { return m_id; }
+VolumeType OverlayVolume::getType() const { return m_volumeType; }
+std::string OverlayVolume::getSource() const {
+    std::string out = "overlay<";
+    for (Volume* v : m_layers) {
+        out += "; ";
+        out += v->getSource();
+    }
+    out += ">";
+    return out;
+}
+
+Volume* OverlayVolume::bottomLayer() { return m_layers.front(); }
+Volume* OverlayVolume::topLayer() { return m_layers.back(); }
+const Volume* OverlayVolume::bottomLayer() const { return m_layers.front(); }
+const Volume* OverlayVolume::topLayer() const { return m_layers.back(); }
+
+const std::vector<Volume*>& OverlayVolume::getLayers() const { return m_layers; }
+std::vector<Volume*>& OverlayVolume::layers() { return m_layers; }
 
 void OverlayVolume::pushLayer(Volume* vol) {
     if (vol == nullptr) {
@@ -101,8 +120,7 @@ void OverlayVolume::removeLayer(Volume* vol) {
     if (std::find(m_layers.begin(), m_layers.end(), vol) == m_layers.end()) {
         throw std::invalid_argument("Volume not found in overlay volume");
     }
-    m_layers.erase(std::remove(m_layers.begin(), m_layers.end(), vol),
-        m_layers.end());
+    m_layers.erase(std::remove(m_layers.begin(), m_layers.end(), vol), m_layers.end());
     if (m_layers.empty()) {
         throw std::invalid_argument("Overlay volume must have at least one layer");
     }
@@ -110,7 +128,7 @@ void OverlayVolume::removeLayer(Volume* vol) {
 
 std::string OverlayVolume::getDefaultLabel() const { return "Overlay Volume"; }
 
-std::string OverlayVolume::getUUID() { 
+std::string OverlayVolume::getUUID() {
     if (user_attrs) {
         return m_uuid;
     } else {
@@ -126,7 +144,7 @@ void OverlayVolume::setUUID(std::string_view u) {
     }
 }
 
-std::string OverlayVolume::getSerial() { 
+std::string OverlayVolume::getSerial() {
     if (user_attrs) {
         return m_serial;
     } else {
@@ -142,7 +160,7 @@ void OverlayVolume::setSerial(std::string_view s) {
     }
 }
 
-std::string OverlayVolume::getLabel() { 
+std::string OverlayVolume::getLabel() {
     if (user_attrs) {
         return m_label;
     } else {
@@ -249,7 +267,8 @@ void OverlayVolume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& li
 std::unique_ptr<InputStream> OverlayVolume::newInputStream(std::string_view path) {
     Volume* v = layerForFile(path);
     if (!v) {
-        throw IOException("newInputStream", std::string(normalize(path)), "Path is not a readable file");
+        throw IOException("newInputStream", std::string(normalize(path)),
+                          "Path is not a readable file");
     }
     return v->newInputStream(path);
 }

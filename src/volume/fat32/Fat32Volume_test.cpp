@@ -1,13 +1,14 @@
 #include "Fat32Volume.hpp"
 
-#include <bas/log/logger.h>
-
 #include <cassert>
 #include <cstdlib>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <string>
+
+#include <bas/log/logger.h>
+
 #include <unistd.h>
 
 namespace fs = std::filesystem;

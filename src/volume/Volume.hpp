@@ -30,6 +30,37 @@ enum class VolumeType {
 
 std::string volumeTypeToString(VolumeType t);
 
+struct ListOptions {
+    bool recursive = false;
+    bool longFormat = false;
+    bool includeDotFiles = false;
+    bool includeDotDot = false;
+    bool formatSuffix = false;
+    bool human = false;
+    bool color = false;
+    bool tree = false;
+
+    std::string color_dir = "\033[34m";
+    std::string color_link = "\033[32m";
+    std::string color_fifo = "\033[33m";
+    std::string color_socket = "\033[35m";
+    std::string color_character = "\033[36m";
+    std::string color_block = "\033[37m";
+    std::string color_regular = "\033[39m";
+    std::string color_regular_executable = "\033[32m";
+    std::string color_regular_archive = "\033[33m";
+    std::string color_suffix = "\033[0m";
+    std::string color_end = "\033[0m";
+
+    std::string color_mode = "\033[34m";
+    std::string color_size = "\033[35m";
+    std::string color_user = "\033[32m";
+    std::string color_group = "\033[33m";
+
+    static ListOptions parse(std::string_view options);
+    static const ListOptions DEFAULT;
+};
+
 /**
  * Simplified generic volume interface for file system abstraction
  */
@@ -56,8 +87,13 @@ class Volume {
     virtual std::string getClass() const = 0; // "local", "seczure", etc.
     virtual std::string getId() const = 0;
     inline std::string getClassId() const { return getClass() + ":" + getId(); }
+    
     virtual VolumeType getType() const = 0;
     virtual std::string getTypeString() const;
+
+    /** Human-readable backing source, e.g. "dev /dev/sda1", "dir /path", "img /file.ext2", "mem #addr". */
+    virtual std::string getSource() const;
+    
     virtual bool isEncrypted() const { return false; }
     virtual bool isLocal() const { return false; }
     virtual std::string getLocalFile(std::string_view path) const = 0;
@@ -190,9 +226,8 @@ class Volume {
     virtual std::string createTempFile(std::string_view prefix = "tmp.",
                                        std::string_view suffix = "") = 0;
 
-    void ls(std::string_view options, std::string_view path);
-    void tree(std::string_view path = "/");
-    void tree(std::string_view path, const std::string& prefix);
+    void ls(std::string_view path, std::optional<ListOptions> options = std::nullopt);
+    void tree(std::string_view path, const std::string& prefix = "", std::optional<ListOptions> options = std::nullopt);
 
   protected:
     friend class OverlayVolume;

@@ -24,6 +24,11 @@
 
 #include <sys/stat.h>
 
+#if defined(__linux__)
+#include <fcntl.h>
+#include <linux/stat.h>
+#endif
+
 #include <dirent.h>
 #include <unistd.h>
 
@@ -165,24 +170,45 @@ bool LocalVolume::isDirectory(std::string_view _path) const {
 bool LocalVolume::stat(std::string_view _path, FileStatus* st) const {
     std::string localPath = resolveLocal(_path);
 
-    auto fs_status = fs::status(localPath);
-    if (fs::is_directory(fs_status))
-        st->type |= FileType::DIRECTORY;
-    else {
-        st->type |= FileType::REGULAR_FILE;
-        std::error_code ec;
-        st->size = fs::file_size(localPath, ec);
-        if (ec)
+#if defined(__linux__)
+    struct statx sx;
+    const unsigned mask = STATX_TYPE | STATX_MODE | STATX_SIZE | STATX_UID | STATX_GID | STATX_ATIME
+                          | STATX_MTIME | STATX_CTIME | STATX_BTIME;
+    if (statx(AT_FDCWD, localPath.c_str(), 0, mask, &sx) == 0) {
+        *st = FileStatus();
+        st->type = S_ISDIR(sx.stx_mode) ? DIRECTORY : REGULAR_FILE;
+        if (S_ISREG(sx.stx_mode))
+            st->size = sx.stx_size;
+        else
             st->size = 0;
+        st->modifiedTime = sx.stx_mtime.tv_sec;
+        st->accessTime = sx.stx_atime.tv_sec;
+        if (sx.stx_mask & STATX_BTIME)
+            st->creationTime = sx.stx_btime.tv_sec;
+        else
+            st->creationTime = sx.stx_mtime.tv_sec;
+        st->uid = sx.stx_uid;
+        st->gid = sx.stx_gid;
+        st->mode = static_cast<int>(sx.stx_mode);
+        return true;
     }
-
-    auto ftime = fs::last_write_time(localPath);
-    auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
-        ftime - fs::file_time_type::clock::now() + std::chrono::system_clock::now());
-    st->modifiedTime = std::chrono::system_clock::to_time_t(sctp);
-    st->accessTime = st->modifiedTime; // Simplified
-    st->createTime = st->modifiedTime; // Simplified
-
+#endif
+    struct stat sb;
+    if (::stat(localPath.c_str(), &sb) != 0) {
+        return false;
+    }
+    *st = FileStatus();
+    st->type = S_ISDIR(sb.st_mode) ? DIRECTORY : REGULAR_FILE;
+    if (S_ISREG(sb.st_mode))
+        st->size = static_cast<uint64_t>(sb.st_size);
+    else
+        st->size = 0;
+    st->modifiedTime = sb.st_mtime;
+    st->accessTime = sb.st_atime;
+    st->creationTime = sb.st_mtime;
+    st->uid = static_cast<unsigned>(sb.st_uid);
+    st->gid = static_cast<unsigned>(sb.st_gid);
+    st->mode = static_cast<int>(sb.st_mode);
     return true;
 }
 
@@ -212,7 +238,10 @@ static void readDirOne(const std::string& dirPath, std::vector<std::unique_ptr<F
         fileStatus->size = S_ISREG(st.st_mode) ? static_cast<uint64_t>(st.st_size) : 0;
         fileStatus->modifiedTime = st.st_mtime;
         fileStatus->accessTime = st.st_atime;
-        fileStatus->createTime = st.st_ctime;
+        fileStatus->creationTime = st.st_mtime;
+        fileStatus->uid = static_cast<unsigned>(st.st_uid);
+        fileStatus->gid = static_cast<unsigned>(st.st_gid);
+        fileStatus->mode = static_cast<int>(st.st_mode);
         list.push_back(std::move(fileStatus));
     }
     closedir(dir);
@@ -245,7 +274,10 @@ static void readDirRecursive(const std::string& dirPath, const std::string& pref
         fileStatus->size = S_ISREG(st.st_mode) ? static_cast<uint64_t>(st.st_size) : 0;
         fileStatus->modifiedTime = st.st_mtime;
         fileStatus->accessTime = st.st_atime;
-        fileStatus->createTime = st.st_ctime;
+        fileStatus->creationTime = st.st_mtime;
+        fileStatus->uid = static_cast<unsigned>(st.st_uid);
+        fileStatus->gid = static_cast<unsigned>(st.st_gid);
+        fileStatus->mode = static_cast<int>(st.st_mode);
         list.push_back(std::move(fileStatus));
         if (S_ISDIR(st.st_mode)) {
             readDirRecursive(fullPath, displayName, list);
@@ -509,6 +541,24 @@ bool mountLooksLikeBind(const MountInfo& proc) {
 bool majMinIsLoopDevice(int major, int minor) { return major == 7; }
 
 bool devicePathIsLoop(const std::string& device) { return device.rfind("/dev/loop", 0) == 0; }
+
+std::string readLoopBackingFile(const std::string& loopDev) {
+    fs::path p(loopDev);
+    std::string base = p.filename().string();
+    if (base.size() < 5 || base.compare(0, 4, "loop") != 0)
+        return {};
+    fs::path sysfs = fs::path("/sys/class/block") / base / "loop" / "backing_file";
+    std::error_code ec;
+    if (!fs::exists(sysfs, ec))
+        return {};
+    std::ifstream in(sysfs.string());
+    std::string line;
+    if (!std::getline(in, line))
+        return {};
+    while (!line.empty() && (line.back() == '\n' || line.back() == '\r'))
+        line.pop_back();
+    return line;
+}
 
 bool lookupLinuxMountProc(const std::string& canonicalMount, MountInfo& out) {
     std::ifstream mountinfo("/proc/self/mountinfo");
@@ -777,6 +827,39 @@ void LocalVolume::cacheMountInfo() const {
     m_mountInfoCached = true;
 }
 
+std::string LocalVolume::getSource() const {
+    cacheMountInfo();
+    if (!m_device.has_value() || m_device->empty()) {
+        return "local:dir " + m_rootPath;
+    }
+    const std::string& dev = *m_device;
+    if (m_isLoop) {
+        std::string backing = readLoopBackingFile(dev);
+        if (!backing.empty())
+            return "local:img " + backing;
+        return "local:img " + dev;
+    }
+    if (m_logicalType == LocalLogicalType::OVERLAY) {
+        return "local:dir " + m_rootPath;
+    }
+    if (m_logicalType == LocalLogicalType::BIND) {
+        if (!m_mountInfo.root.empty() && m_mountInfo.root != "/")
+            return "local:dir " + m_mountInfo.root;
+        if (!dev.empty() && dev[0] == '/' && dev.rfind("/dev/", 0) != 0)
+            return "local:dir " + dev;
+        return "local:dir " + m_rootPath;
+    }
+    if (!dev.empty() && dev.rfind("/dev/", 0) == 0)
+        return "local:dev " + dev;
+    return "local:dir " + m_rootPath;
+}
+
 #elif defined(WINDOWS)
+
+std::string LocalVolume::getSource() const { return "local:dir " + m_rootPath; }
+
+#else
+
+std::string LocalVolume::getSource() const { return "local:dir " + m_rootPath; }
 
 #endif

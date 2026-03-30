@@ -1,7 +1,6 @@
 #include "Ext4Volume.hpp"
 
 #include "../../io/IOException.hpp"
-#include <bas/log/logger.h>
 
 #include <cassert>
 #include <cstdlib>
@@ -9,6 +8,9 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+
+#include <bas/log/logger.h>
+
 #include <unistd.h>
 
 namespace fs = std::filesystem;

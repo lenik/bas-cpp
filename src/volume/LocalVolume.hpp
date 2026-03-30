@@ -2,7 +2,7 @@
 #define LOCALVOLUME_H
 
 #include "Volume.hpp"
-#include "volume/mountinfo.hpp"
+#include "mountinfo.hpp"
 
 #include <optional>
 #include <string>
@@ -51,6 +51,8 @@ public:
     std::string getClass() const override { return "local"; }
     std::string getId() const override { return m_rootPath; }
     VolumeType getType() const override;
+    std::string getSource() const override;
+    
     bool isLocal() const override { return true; }
     std::string getLocalFile(std::string_view path) const override { return normalize(path); }
     std::string getUUID() override;
@@ -65,7 +67,7 @@ public:
     bool isLogical() const;
     bool isReadOnly() const;
     MountInfo getMountInfo() const;
-    
+
     // Volume interface implementation
     bool exists(std::string_view path) const override;
     bool isFile(std::string_view path) const override;

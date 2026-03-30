@@ -10,15 +10,14 @@
 #include "../io/U32stringReader.hpp"
 #include "../util/unicode.hpp"
 
-#include <bas/log/uselog.h>
-
 #include <algorithm>
 #include <cassert>
 #include <deque>
-#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include <stdexcept>
+
+#include <bas/log/uselog.h>
 
 #include <sys/stat.h>
 
@@ -77,6 +76,8 @@ bool Volume::writeRCFile(std::string_view name, std::string_view data) {
 }
 
 std::string Volume::getTypeString() const { return volumeTypeToString(getType()); }
+
+std::string Volume::getSource() const { return getClass() + " " + getId(); }
 
 std::string Volume::getUUID() {
     if (m_uuid_cached)
@@ -747,256 +748,4 @@ void Volume::writeLines(std::string_view path, const std::vector<std::string>& l
     }
 
     writeFileString(path, content.str(), encoding);
-}
-
-std::string format_mode(int mode) {
-    std::string s;
-    s.reserve(10);
-
-    // 1. File Type
-    if (S_ISDIR(mode))
-        s += 'd';
-    else if (S_ISLNK(mode))
-        s += 'l';
-    else if (S_ISCHR(mode))
-        s += 'c';
-    else if (S_ISBLK(mode))
-        s += 'b';
-    else if (S_ISFIFO(mode))
-        s += 'p';
-    else if (S_ISSOCK(mode))
-        s += 's';
-    else
-        s += '-';
-
-    // 2. Owner Permissions
-    s += (mode & S_IRUSR) ? 'r' : '-';
-    s += (mode & S_IWUSR) ? 'w' : '-';
-    s += (mode & S_IXUSR) ? 'x' : '-';
-
-    // 3. Group Permissions
-    s += (mode & S_IRGRP) ? 'r' : '-';
-    s += (mode & S_IWGRP) ? 'w' : '-';
-    s += (mode & S_IXGRP) ? 'x' : '-';
-
-    // 4. Other Permissions
-    s += (mode & S_IROTH) ? 'r' : '-';
-    s += (mode & S_IWOTH) ? 'w' : '-';
-    s += (mode & S_IXOTH) ? 'x' : '-';
-
-    return s;
-}
-
-std::string format_size_human(size_t size) {
-    static const std::vector<std::string> units = {"B", "K", "M", "G", "T", "P"};
-
-    if (size < 1024) {
-        return std::to_string(size) + units[0];
-    }
-
-    int unit_index = 0;
-    double d_size = static_cast<double>(size);
-
-    while (d_size >= 1024 && unit_index < units.size() - 1) {
-        d_size /= 1024.0;
-        unit_index++;
-    }
-
-    std::stringstream ss;
-    // Set precision to 1 decimal place (e.g., 1.5G)
-    ss << std::fixed << std::setprecision(1) << d_size << units[unit_index];
-    return ss.str();
-}
-
-std::string format_size(size_t size, bool human) {
-    if (human) {
-        return format_size_human(size);
-    }
-
-    std::stringstream ss;
-    // This injects commas (e.g., 1,234,567) using the user's locale
-    ss.imbue(std::locale(""));
-    ss << std::fixed << size;
-    return ss.str();
-}
-
-std::string format_time(time_t time) {
-    std::stringstream ss;
-    ss << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S");
-    return ss.str();
-}
-
-void Volume::ls(std::string_view options, std::string_view path) {
-    bool recursive = options.find('R') != std::string::npos;
-    bool long_format = options.find('l') != std::string::npos;
-    bool all = options.find('a') != std::string::npos;
-    bool almost_all = options.find('A') != std::string::npos;
-    bool format_suffix = options.find('F') != std::string::npos;
-    bool human = options.find('h') != std::string::npos;
-    bool color = options.find('C') != std::string::npos;
-
-    std::string color_dir = "\033[34m";
-    std::string color_link = "\033[32m";
-    std::string color_fifo = "\033[33m";
-    std::string color_socket = "\033[35m";
-    std::string color_character = "\033[36m";
-    std::string color_block = "\033[37m";
-    std::string color_regular = "\033[39m";
-    std::string color_regular_executable = "\033[32m";
-    std::string color_regular_archive = "\033[33m";
-    std::string color_suffix = "\033[0m";
-    std::string color_end = color ? "\033[0m" : "";
-
-    bool accessTime = false;
-    bool createTime = false;
-
-    std::vector<std::unique_ptr<FileStatus>> list = readDir(path, recursive);
-
-    int max_width = 0;
-    for (const auto& st : list) {
-        int width = st->name.size();
-        if (width > max_width)
-            max_width = width;
-    }
-    max_width += path.size() + 1;
-
-    const char* env_columns = getenv("COLUMNS");
-    int columns = env_columns ? std::stoi(env_columns) : 80;
-    int names_per_line = columns / (max_width + 1);
-
-    int count_in_line = 0;
-    for (const auto& st : list) {
-        bool includes = st->name.front() != '.';
-        if (!includes) {
-            if (st->name == "." || st->name == "..")
-                includes = all;
-            else
-                includes = all || almost_all;
-            if (!includes)
-                continue;
-        }
-
-        std::string suffix = "";
-        std::string color_name = "";
-
-        if (format_suffix || color) {
-            color_name = color_regular;
-            if (st->isDirectory()) {
-                suffix = "/";
-                color_name = color_dir;
-            } else if (st->isSymbolicLink()) {
-                suffix = "->";
-                color_name = color_link;
-            } else if (st->isFIFO()) {
-                suffix = "|";
-                color_name = color_fifo;
-            } else if (st->isSocket()) {
-                suffix = "=";
-                color_name = color_socket;
-            } else if (st->isCharacterDevice()) {
-                suffix = "c";
-                color_name = color_character;
-            } else if (st->isBlockDevice()) {
-                suffix = "b";
-                color_name = color_block;
-            } else if (st->isRegularFile()) {
-                if (st->mode & (S_IXUSR | S_IXGRP | S_IXOTH)) {
-                    suffix = "*";
-                    color_name = color_regular;
-                }
-            }
-            if (!format_suffix)
-                suffix = "";
-            if (!color)
-                color_name = "";
-        }
-
-        std::string childPath(path);
-        if (!childPath.empty())
-            if (childPath.back() != '/')
-                childPath += "/";
-        childPath += st->name;
-
-        if (long_format) {
-            std::string mode = format_mode(st->mode);
-            std::string size = format_size(st->size, human);
-            std::cout << " " << std::setw(10) << mode //
-                      << " " << std::setw(10) << size;
-
-            std::string modifiedTime = format_time(st->modifiedTime);
-            if (accessTime)
-                std::string accessTime = format_time(st->accessTime);
-            if (createTime)
-                std::string createTime = format_time(st->createTime);
-            std::cout << " " << color_name << childPath << color_end;
-            if (format_suffix) {
-                std::cout << color_suffix << suffix << color_end;
-            }
-            std::cout << std::endl;
-        } else {
-            std::cout << std::setw(max_width + 1) << color_name << childPath << color_end;
-            if (format_suffix)
-                std::cout << color_suffix << suffix << color_end;
-            count_in_line++;
-            if (count_in_line >= names_per_line) {
-                std::cout << std::endl;
-                count_in_line = 0;
-            }
-        }
-    } // for
-    if (count_in_line > 0) {
-        std::cout << std::endl;
-    }
-    if (recursive) {
-        for (const auto& st : list) {
-            if (st->name == "." || st->name == "..")
-                continue;
-            if (st->name.front() == '.')
-                if (!all && !almost_all)
-                    continue;
-            if (st->isDirectory()) {
-                std::string childPath(path);
-                if (!childPath.empty())
-                    if (childPath.back() != '/')
-                        childPath += "/";
-                childPath += st->name;
-                ls(options, childPath);
-            }
-        }
-    }
-}
-
-void Volume::tree(std::string_view path) { tree(path, ""); }
-
-void Volume::tree(std::string_view path, const std::string& prefix) {
-    std::vector<std::unique_ptr<FileStatus>> list;
-    try {
-        list = this->readDir(path);
-    } catch (const std::exception& e) {
-        std::cerr << "Error reading directory " << path << ": " << e.what() << std::endl;
-        return;
-    }
-    for (const auto& st : list) {
-        if (!st)
-            continue;
-        bool isDir = st->isDirectory();
-        std::string line = prefix;
-        line += st->name;
-        if (isDir)
-            line += "/";
-        if (st->isRegularFile() && st->size) {
-            char buf[32];
-            snprintf(buf, sizeof(buf), " (%zu)", static_cast<size_t>(st->size));
-            line += buf;
-        }
-        std::puts(line.c_str());
-        if (isDir) {
-            std::string childPath(path);
-            if (!childPath.empty())
-                if (childPath.back() != '/')
-                    childPath += "/";
-            childPath += st->name;
-            tree(childPath, prefix + "  ");
-        }
-    }
 }

@@ -7,6 +7,7 @@
 #include "../../io/Uint8ArrayInputStream.hpp"
 
 #include <cstring>
+#include <ctime>
 #include <map>
 #include <sstream>
 
@@ -64,7 +65,123 @@ struct ZipEndOfCentralDir {
 };
 #pragma pack(pop)
 
-MemoryZip::MemoryZip(const uint8_t* data, size_t length) : m_data(data), m_size(length) {
+namespace {
+
+uint16_t readLE16(const uint8_t* p) {
+    return static_cast<uint16_t>(p[0]) | (static_cast<uint16_t>(p[1]) << 8);
+}
+
+uint32_t readLE32(const uint8_t* p) {
+    return static_cast<uint32_t>(p[0]) | (static_cast<uint32_t>(p[1]) << 8) |
+           (static_cast<uint32_t>(p[2]) << 16) | (static_cast<uint32_t>(p[3]) << 24);
+}
+
+/** ZIP DOS time/date (central / local header) to Unix time (local timezone). */
+time_t dosDateTimeToTimeT(uint16_t dosTime, uint16_t dosDate) {
+    if (dosTime == 0 && dosDate == 0)
+        return 0;
+    int sec = (dosTime & 0x1F) * 2;
+    int min = (dosTime >> 5) & 0x3F;
+    int hour = (dosTime >> 11) & 0x1F;
+    int day = dosDate & 0x1F;
+    int month = (dosDate >> 5) & 0x0F;
+    int year = (dosDate >> 9) + 1980;
+    if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || min > 59 || sec > 59)
+        return 0;
+    struct tm tm = {};
+    tm.tm_sec = sec;
+    tm.tm_min = min;
+    tm.tm_hour = hour;
+    tm.tm_mday = day;
+    tm.tm_mon = month - 1;
+    tm.tm_year = year - 1900;
+    tm.tm_isdst = -1;
+    return mktime(&tm);
+}
+
+/** Little-endian integer; nbytes in 1..8 (Info-ZIP variable-width UID/GID). */
+uint32_t readLEVarU32(const uint8_t* p, size_t nbytes) {
+    if (nbytes == 0 || nbytes > 8)
+        return 0;
+    uint64_t v = 0;
+    for (size_t i = 0; i < nbytes; ++i)
+        v |= static_cast<uint64_t>(p[i]) << (8 * i);
+    return static_cast<uint32_t>(v & 0xffffffffu);
+}
+
+struct ZipExtraParsed {
+    time_t utMtime = 0;
+    time_t utAtime = 0;
+    time_t utCtime = 0;
+    bool hasUtMtime = false;
+    bool hasUtAtime = false;
+    bool hasUtCtime = false;
+    bool hasUx = false;
+    unsigned uid = 0;
+    unsigned gid = 0;
+};
+
+/** Central-directory extra: UT (0x5455) mtime/atime/ctime, New Unix (0x7875) uid/gid. */
+void scanZipCentralExtraField(const uint8_t* data, uint16_t len, ZipExtraParsed* out) {
+    out->hasUtMtime = out->hasUtAtime = out->hasUtCtime = false;
+    out->hasUx = false;
+    size_t pos = 0;
+    while (pos + 4 <= len) {
+        uint16_t headerId = readLE16(data + pos);
+        uint16_t dataSize = readLE16(data + pos + 2);
+        pos += 4;
+        if (pos + dataSize > len)
+            break;
+        const uint8_t* payload = data + pos;
+
+        if (headerId == 0x5455 && dataSize >= 1) {
+            uint8_t flags = payload[0];
+            size_t off = 1;
+            if ((flags & 1) != 0 && off + 4 <= dataSize) {
+                time_t t = static_cast<time_t>(readLE32(payload + off));
+                if (t > 0) {
+                    out->utMtime = t;
+                    out->hasUtMtime = true;
+                }
+                off += 4;
+            }
+            if ((flags & 2) != 0 && off + 4 <= dataSize) {
+                time_t t = static_cast<time_t>(readLE32(payload + off));
+                if (t > 0) {
+                    out->utAtime = t;
+                    out->hasUtAtime = true;
+                }
+                off += 4;
+            }
+            if ((flags & 4) != 0 && off + 4 <= dataSize) {
+                time_t t = static_cast<time_t>(readLE32(payload + off));
+                if (t > 0) {
+                    out->utCtime = t;
+                    out->hasUtCtime = true;
+                }
+            }
+        } else if (headerId == 0x7875 && dataSize >= 3) {
+            uint8_t uidSize = payload[1];
+            if (2 + uidSize <= dataSize) {
+                size_t gidSizeIdx = 2 + uidSize;
+                if (gidSizeIdx < dataSize) {
+                    uint8_t gidSize = payload[gidSizeIdx];
+                    if (gidSizeIdx + 1 + gidSize <= dataSize) {
+                        out->hasUx = true;
+                        out->uid = readLEVarU32(payload + 2, uidSize);
+                        out->gid = readLEVarU32(payload + gidSizeIdx + 1, gidSize);
+                    }
+                }
+            }
+        }
+        pos += dataSize;
+    }
+}
+
+} // namespace
+
+MemoryZip::MemoryZip(std::string_view sym, const uint8_t* data, size_t length)
+    : m_sym(sym), m_data(data), m_size(length) {
     parseZip();
 }
 
@@ -74,11 +191,22 @@ template <typename T> std::string toHex(T value) {
     return ss.str();
 }
 
+std::string MemoryZip::getClass() const { return "mz"; }
+
 std::string MemoryZip::getId() const {
     // offset:length
     std::string offsetHex = toHex(reinterpret_cast<uintptr_t>(m_data));
     std::string lengthHex = toHex(m_size);
     return offsetHex + ":" + lengthHex;
+}
+
+VolumeType MemoryZip::getType() const { return VolumeType::ARCHIVE; }
+
+std::string MemoryZip::getSource() const {
+    // mem sym:offset:length
+    return std::string("mz ") + m_sym                        //
+           + ":" + toHex(reinterpret_cast<uintptr_t>(m_data)) //
+           + ":" + toHex(m_size);
 }
 
 std::string MemoryZip::getDefaultLabel() const { return "Memory Zip"; }
@@ -160,7 +288,15 @@ void MemoryZip::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list,
                 st->name = name;
                 st->type = pair.second.isDirectory ? DIRECTORY : REGULAR_FILE;
                 st->size = pair.second.uncompressedSize;
-                st->modifiedTime = 0;
+                st->modifiedTime = pair.second.modifiedTime;
+                st->accessTime =
+                    pair.second.accessTime != 0 ? pair.second.accessTime : pair.second.modifiedTime;
+                st->creationTime = pair.second.creationTime != 0 ? pair.second.creationTime
+                                                                 : pair.second.modifiedTime;
+                if (pair.second.hasUnixIds) {
+                    st->uid = pair.second.uid;
+                    st->gid = pair.second.gid;
+                }
             } else {
                 // Extract first component
                 std::string topLevel = entryName.substr(1, firstSlash - 1);
@@ -215,7 +351,15 @@ void MemoryZip::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list,
                 st->name = relative;
                 st->type = pair.second.isDirectory ? DIRECTORY : REGULAR_FILE;
                 st->size = pair.second.uncompressedSize;
-                st->modifiedTime = 0;
+                st->modifiedTime = pair.second.modifiedTime;
+                st->accessTime =
+                    pair.second.accessTime != 0 ? pair.second.accessTime : pair.second.modifiedTime;
+                st->creationTime = pair.second.creationTime != 0 ? pair.second.creationTime
+                                                                 : pair.second.modifiedTime;
+                if (pair.second.hasUnixIds) {
+                    st->uid = pair.second.uid;
+                    st->gid = pair.second.gid;
+                }
             }
         } // if pathStr.empty()
 
@@ -238,9 +382,15 @@ bool MemoryZip::stat(std::string_view path, FileStatus* status) const {
         status->name = pathStr;
         status->type = entry->isDirectory ? DIRECTORY : REGULAR_FILE;
         status->size = entry->uncompressedSize;
-        status->modifiedTime = 0; // ZIP doesn't preserve timestamps in our implementation
-        status->accessTime = 0;
-        status->createTime = 0;
+        status->modifiedTime = entry->modifiedTime;
+        status->accessTime =
+            entry->accessTime != 0 ? entry->accessTime : entry->modifiedTime;
+        status->creationTime =
+            entry->creationTime != 0 ? entry->creationTime : entry->modifiedTime;
+        if (entry->hasUnixIds) {
+            status->uid = entry->uid;
+            status->gid = entry->gid;
+        }
         return true;
     }
 
@@ -268,13 +418,11 @@ bool MemoryZip::stat(std::string_view path, FileStatus* status) const {
         status->size = 0;
         status->modifiedTime = 0;
         status->accessTime = 0;
-        status->createTime = 0;
+        status->creationTime = 0;
         return true;
     }
 
     return false;
-
-    return status;
 }
 
 // std::unique_ptr<IReadStream> MemoryZip::openForRead(std::string_view path, std::string_view
@@ -442,12 +590,28 @@ void MemoryZip::parseZip() {
         std::string filename(reinterpret_cast<const char*>(m_data + filenameOffset),
                              cde->filenameLen);
 
+        const uint8_t* extraPtr = m_data + filenameOffset + cde->filenameLen;
+        uint16_t extraLen = cde->extraFieldLen;
+
         ZipEntry entry;
         entry.name = filename;
         entry.localHeaderOffset = cde->localHeaderOffset;
         entry.compressedSize = cde->compressedSize;
         entry.uncompressedSize = cde->uncompressedSize;
         entry.compressionMethod = cde->compression;
+
+        ZipExtraParsed extra{};
+        if (extraLen > 0 && filenameOffset + cde->filenameLen + extraLen <= m_size)
+            scanZipCentralExtraField(extraPtr, extraLen, &extra);
+        entry.modifiedTime =
+            extra.hasUtMtime ? extra.utMtime : dosDateTimeToTimeT(cde->modTime, cde->modDate);
+        entry.accessTime = extra.hasUtAtime ? extra.utAtime : 0;
+        entry.creationTime = extra.hasUtCtime ? extra.utCtime : 0;
+        if (extra.hasUx) {
+            entry.hasUnixIds = true;
+            entry.uid = extra.uid;
+            entry.gid = extra.gid;
+        }
 
         // Check if it's a directory (ZIP convention: ends with /)
         entry.isDirectory = (!filename.empty() && filename.back() == '/');

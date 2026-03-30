@@ -8,9 +8,12 @@
 
 #include <cctype>
 #include <cstring>
+#include <ctime>
 #include <fstream>
 #include <stdexcept>
 #include <unordered_set>
+
+#include <sys/stat.h>
 
 namespace {
 
@@ -32,6 +35,29 @@ std::string trimRight(const std::string& s) {
 
 bool isDotEntry(std::string_view name) {
     return name == "." || name == "..";
+}
+
+/** FAT directory 32-byte entry uses MS-DOS date/time encoding (same as ZIP). */
+time_t fatDosDateTime(uint16_t dosTime, uint16_t dosDate) {
+    if (dosTime == 0 && dosDate == 0)
+        return 0;
+    int sec = (dosTime & 0x1F) * 2;
+    int min = (dosTime >> 5) & 0x3F;
+    int hour = (dosTime >> 11) & 0x1F;
+    int day = dosDate & 0x1F;
+    int month = (dosDate >> 5) & 0x0F;
+    int year = (dosDate >> 9) + 1980;
+    if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || min > 59 || sec > 59)
+        return 0;
+    struct tm tm = {};
+    tm.tm_sec = sec;
+    tm.tm_min = min;
+    tm.tm_hour = hour;
+    tm.tm_mday = day;
+    tm.tm_mon = month - 1;
+    tm.tm_year = year - 1900;
+    tm.tm_isdst = -1;
+    return mktime(&tm);
 }
 
 } // namespace
@@ -63,6 +89,8 @@ std::string Fat32Volume::getLocalFile(std::string_view /*path*/) const {
     return "";
 }
 
+std::string Fat32Volume::getSource() const { return "fat32 " + m_imagePath; }
+
 bool Fat32Volume::exists(std::string_view path) const {
     return m_nodes.find(normalizeArg(path)) != m_nodes.end();
 }
@@ -88,9 +116,11 @@ bool Fat32Volume::stat(std::string_view path, FileStatus* status) const {
     status->name = normalizeArg(path);
     status->type = it->second.isDirectory ? DIRECTORY : REGULAR_FILE;
     status->size = it->second.size;
-    status->modifiedTime = 0;
-    status->accessTime = 0;
-    status->createTime = 0;
+    status->modifiedTime = it->second.mtime;
+    status->accessTime = it->second.atime;
+    status->creationTime = it->second.creationTime;
+    status->mode =
+        static_cast<int>((it->second.isDirectory ? S_IFDIR : S_IFREG) | 0444);
     return true;
 }
 
@@ -122,9 +152,10 @@ void Fat32Volume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list
         st->name = recursive ? rel : rel.substr(0, rel.find('/'));
         st->type = node.isDirectory ? DIRECTORY : REGULAR_FILE;
         st->size = node.size;
-        st->modifiedTime = 0;
-        st->accessTime = 0;
-        st->createTime = 0;
+        st->modifiedTime = node.mtime;
+        st->accessTime = node.atime;
+        st->creationTime = node.creationTime;
+        st->mode = (node.isDirectory ? S_IFDIR : S_IFREG) | 0444;
         list.push_back(std::move(st));
     }
 
@@ -284,7 +315,7 @@ void Fat32Volume::parseBootSector() {
 
 void Fat32Volume::buildIndex() {
     m_nodes.clear();
-    m_nodes["/"] = Node{true, m_rootCluster, 0};
+    m_nodes["/"] = Node{true, m_rootCluster, 0, 0, 0, 0};
     parseDirectoryCluster("/", m_rootCluster);
 }
 
@@ -414,10 +445,19 @@ void Fat32Volume::parseDirectoryCluster(std::string_view dirPath, uint32_t first
             const uint32_t size = le32(ent + 28);
             const bool isDir = (attr & 0x10) != 0;
 
+            const uint16_t crTime = le16(ent + 14);
+            const uint16_t crDate = le16(ent + 16);
+            const uint16_t accDate = le16(ent + 18);
+            const uint16_t modTime = le16(ent + 22);
+            const uint16_t modDate = le16(ent + 24);
+            const time_t mtime = fatDosDateTime(modTime, modDate);
+            const time_t crt = fatDosDateTime(crTime, crDate);
+            const time_t atim = fatDosDateTime(0, accDate);
+
             std::string parent(dirPath);
             const std::string path = (parent == "/") ? ("/" + name) : (parent + "/" + name);
 
-            m_nodes[path] = Node{isDir, startCluster, isDir ? 0u : size};
+            m_nodes[path] = Node{isDir, startCluster, isDir ? 0u : size, atim, mtime, crt};
             if (isDir && startCluster >= 2) {
                 parseDirectoryCluster(path, startCluster);
             }

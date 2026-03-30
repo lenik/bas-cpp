@@ -2,8 +2,8 @@
 
 #include <cassert>
 #include <cstring>
-#include <vector>
 #include <stdexcept>
+#include <vector>
 
 namespace {
 

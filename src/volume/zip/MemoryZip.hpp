@@ -9,6 +9,7 @@
 #include "../../io/Writer.hpp"
 
 #include <cstddef>
+#include <ctime>
 #include <map>
 #include <memory>
 #include <string>
@@ -19,6 +20,7 @@
  */
 class MemoryZip : public Volume {
 private:
+    std::string m_sym;
     const uint8_t* m_data;
     size_t m_size;
     
@@ -30,17 +32,28 @@ private:
         size_t uncompressedSize;
         uint16_t compressionMethod;
         bool isDirectory;
+        /** From central directory (DOS or UT extra); 0 if unknown. */
+        time_t modifiedTime = 0;
+        /** From UT extra (0x5455) atime; 0 if absent. */
+        time_t accessTime = 0;
+        /** From UT extra ctime; 0 if absent. */
+        time_t creationTime = 0;
+        /** From Info-ZIP "New Unix" extra (0x7875), if present. */
+        bool hasUnixIds = false;
+        unsigned int uid = 0;
+        unsigned int gid = 0;
     };
     
     std::map<std::string, ZipEntry> m_entries; // Use map for faster lookup
     
 public:
-    MemoryZip(const uint8_t* data, size_t length);
+    MemoryZip(std::string_view sym, const uint8_t* data, size_t length);
     
     // Volume interface
-    std::string getClass() const override { return "mz"; }
+    std::string getClass() const override;
     std::string getId() const override;
-    VolumeType getType() const override { return VolumeType::ARCHIVE; }
+    VolumeType getType() const override;
+    std::string getSource() const override;
     bool isLocal() const override { return false; }
     void setLabel(std::string_view) override {}
     

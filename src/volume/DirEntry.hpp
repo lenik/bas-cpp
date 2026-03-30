@@ -20,21 +20,20 @@ public:
     DirEntry()
         : name()
         , type(REGULAR_FILE)
-        , size(0)
-        , modifiedTime(0)
     {}
     
     DirEntry(std::string_view name, FileType type = REGULAR_FILE)
         : name(name)
         , type(type)
-        , size(0)
-        , modifiedTime(0)
     {}
     
     std::string name;
     int type;
-    uint64_t size;
-    time_t modifiedTime;
+    uint64_t size{0};
+    time_t modifiedTime{0};
+    time_t creationTime{0};
+    unsigned int uid{0};
+    unsigned int gid{0};
 
 public:
     inline bool isRegularFile() const { return (type & REGULAR_FILE) != 0; }

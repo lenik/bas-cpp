@@ -25,19 +25,23 @@ public:
         return std::make_unique<OverlayVolume>(label, std::move(vec));
     }
 
+    Volume* bottomLayer();
+    Volume* topLayer();
+    const Volume* bottomLayer() const;
+    const Volume* topLayer() const;
+    
+    const std::vector<Volume*>& getLayers() const;
+    std::vector<Volume*>& layers();
+
     void pushLayer(Volume* vol);
     void popLayer();
     void removeLayer(Volume* vol);
 
-    Volume* bottomLayer() { return m_layers.front(); }
-    Volume* topLayer() { return m_layers.back(); }
-    const Volume* bottomLayer() const { return m_layers.front(); }
-    const Volume* topLayer() const { return m_layers.back(); }
+    std::string getClass() const override;
+    std::string getId() const override;
+    VolumeType getType() const override;
+    std::string getSource() const override;
 
-    std::string getClass() const override { return m_class; }
-    std::string getId() const override { return m_id; }
-    VolumeType getType() const override { return m_volumeType; }
-    
     void setClass(std::string_view c) { m_class = std::string(c); }
     void setId(std::string_view id) { m_id = std::string(id); }
     void setVolumeType(VolumeType t) { m_volumeType = t; }

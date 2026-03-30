@@ -7,9 +7,9 @@ int main(int argc, char** argv) {
     argc--;
     argv++;
 
-    const char* options = NULL;
+    ListOptions opts;
     if (argc > 0 && argv[0][0] == '-') {
-        options = argv[0] + 1;
+        opts = ListOptions::parse(argv[0] + 1);
         argc--;
         argv++;
     }
@@ -21,12 +21,7 @@ int main(int argc, char** argv) {
         argv++;
     }
 
-    if (options) {
-        std::cout << "Assets list:" << std::endl;
-        AssetsRegistry::instance()->ls(options, path);
-    } else {
-        std::cout << "Assets tree:" << std::endl;
-        AssetsRegistry::instance()->tree(path);
-    }
+    std::cout << "Assets list:" << std::endl;
+    AssetsRegistry::instance()->ls(path, opts);
     return 0;
 }

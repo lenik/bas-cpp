@@ -1,6 +1,6 @@
 #include "ImageFormat.hpp"
 
-#include "proc/UseAssets.hpp"
+#include "UseAssets.hpp"
 
 #ifdef _WIN32
 #include <windows.h>

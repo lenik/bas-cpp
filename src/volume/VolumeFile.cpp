@@ -148,7 +148,7 @@ std::unique_ptr<VolumeFile> VolumeFile::getParentFile() const {
     if (!m_volume || m_path.empty()) {
         return nullptr;
     }
-    int lastSlash = m_path.find_last_of('/');
+    size_t lastSlash = m_path.find_last_of('/');
     if (lastSlash == std::string::npos) {
         return nullptr;
     }

@@ -168,6 +168,7 @@ cpp_sources = files(
     './src/volume/LocalVolume.cpp',
     './src/volume/OverlayVolume.cpp',
     './src/volume/Volume.cpp',
+    './src/volume/Volume_utils.cpp',
     './src/volume/VolumeFile.cpp',
     './src/volume/VolumeManager.cpp',
     './src/volume/ext4/Ext4FileInputStream.cpp',

@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <unordered_set>
 #include <vector>
+
 #include <sys/stat.h>
 
 #if defined(BAS_HAS_EXT2FS) && BAS_HAS_EXT2FS
@@ -58,6 +59,8 @@ std::string Ext4Volume::getLocalFile(std::string_view /*path*/) const {
     return "";
 }
 
+std::string Ext4Volume::getSource() const { return "ext4 " + m_imagePath; }
+
 bool Ext4Volume::exists(std::string_view path) const {
     Node node;
     return resolveNode(path, &node);
@@ -86,11 +89,11 @@ bool Ext4Volume::stat(std::string_view path, FileStatus* status) const {
     status->type = node.isDirectory ? DIRECTORY : REGULAR_FILE;
     status->size = node.size;
     status->mode = node.mode;
-    status->uid = node.uid;
-    status->gid = node.gid;
-    status->modifiedTime = 0;
-    status->accessTime = 0;
-    status->createTime = 0;
+    status->uid = static_cast<unsigned int>(node.uid);
+    status->gid = static_cast<unsigned int>(node.gid);
+    status->modifiedTime = node.mtime;
+    status->accessTime = node.atime;
+    status->creationTime = node.ctime;
     return true;
 }
 
@@ -112,6 +115,12 @@ void Ext4Volume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list,
             st->name = name;
             st->type = node.isDirectory ? DIRECTORY : REGULAR_FILE;
             st->size = node.size;
+            st->modifiedTime = node.mtime;
+            st->accessTime = node.atime;
+            st->creationTime = node.ctime;
+            st->uid = static_cast<unsigned int>(node.uid);
+            st->gid = static_cast<unsigned int>(node.gid);
+            st->mode = static_cast<int>(node.mode);
             list.push_back(std::move(st));
         }
         return;
@@ -132,6 +141,12 @@ void Ext4Volume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list,
             st->name = relPath;
             st->type = child.isDirectory ? DIRECTORY : REGULAR_FILE;
             st->size = child.size;
+            st->modifiedTime = child.mtime;
+            st->accessTime = child.atime;
+            st->creationTime = child.ctime;
+            st->uid = static_cast<unsigned int>(child.uid);
+            st->gid = static_cast<unsigned int>(child.gid);
+            st->mode = static_cast<int>(child.mode);
             list.push_back(std::move(st));
 
             m_nodes[absPath] = child;
@@ -235,14 +250,20 @@ void Ext4Volume::buildIndex() {
     // Rebuild lightweight caches only. Full tree scan is intentionally avoided.
     m_nodes.clear();
     m_dirIndexCache.clear();
-    m_nodes["/"] = Node{true, 0, kRootInode, static_cast<uint16_t>(S_IFDIR | 0755), 0, 0};
 
 #if defined(BAS_HAS_EXT2FS) && BAS_HAS_EXT2FS
-    // Probe open/close once so mount-time failures are immediate.
     ext2_filsys fs = nullptr;
     errcode_t rc = ext2fs_open(m_imagePath.c_str(), EXT2_FLAG_64BITS, 0, 0, unix_io_manager, &fs);
     if (rc) {
         throw IOException("Ext4Volume", m_imagePath, "ext2fs_open failed");
+    }
+    struct ext2_inode rootIno{};
+    if (ext2fs_read_inode(fs, kRootInode, &rootIno) == 0) {
+        m_nodes["/"] = Node{true, 0, kRootInode, static_cast<uint16_t>(rootIno.i_mode), rootIno.i_uid,
+            rootIno.i_gid, static_cast<time_t>(rootIno.i_atime),
+            static_cast<time_t>(rootIno.i_mtime), static_cast<time_t>(rootIno.i_ctime)};
+    } else {
+        m_nodes["/"] = Node{true, 0, kRootInode, static_cast<uint16_t>(S_IFDIR | 0755), 0, 0, 0, 0, 0};
     }
     ext2fs_close(fs);
 #else
@@ -327,8 +348,10 @@ const std::unordered_map<std::string, Ext4Volume::Node>& Ext4Volume::getDirector
             if (ext2fs_read_inode(c->fs, dirent->inode, &inodeBuf) != 0) return 0;
             const bool isDir = LINUX_S_ISDIR(inodeBuf.i_mode);
             const uint64_t size = EXT2_I_SIZE(&inodeBuf);
-            (*c->entries)[name] = Node{isDir, size, dirent->inode, inodeBuf.i_mode, inodeBuf.i_uid,
-                                       inodeBuf.i_gid};
+            (*c->entries)[name] =
+                Node{isDir, size, dirent->inode, inodeBuf.i_mode, inodeBuf.i_uid, inodeBuf.i_gid,
+                     static_cast<time_t>(inodeBuf.i_atime), static_cast<time_t>(inodeBuf.i_mtime),
+                     static_cast<time_t>(inodeBuf.i_ctime)};
             return 0;
         },
         &ctx);
