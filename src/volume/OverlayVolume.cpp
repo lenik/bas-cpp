@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <iomanip>
+#include <iostream>
 #include <map>
 #include <random>
 #include <sstream>
@@ -181,22 +182,24 @@ std::string OverlayVolume::getLocalFile(std::string_view path) const {
     return w ? w->getLocalFile(path) : std::string();
 }
 
-Volume* OverlayVolume::layerExists(std::string_view path) const {
-    std::string p = normalize(path);
+Volume* OverlayVolume::layerExists(std::string_view _path) const {
+    std::string path(_path);
     for (size_t i = m_layers.size(); i > 0; --i) {
         Volume* v = m_layers[i - 1];
-        if (v->exists(p)) {
+        bool exists = v->exists(path);
+        // std::cout << "layerExists: " << v->getSource() << " " << path << " exists: " << exists << std::endl;
+        if (exists) {
             return v;
         }
     }
     return nullptr;
 }
 
-Volume* OverlayVolume::layerForFile(std::string_view path) const {
-    std::string p = normalize(path);
+Volume* OverlayVolume::layerForFile(std::string_view _path) const {
+    std::string path(_path);
     for (size_t i = m_layers.size(); i > 0; --i) {
         Volume* v = m_layers[i - 1];
-        if (v->exists(p) && v->isFile(p)) {
+        if (v->isFile(path)) {
             return v;
         }
     }

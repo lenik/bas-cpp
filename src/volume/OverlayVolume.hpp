@@ -33,6 +33,9 @@ public:
     const std::vector<Volume*>& getLayers() const;
     std::vector<Volume*>& layers();
 
+    Volume* layerExists(std::string_view path) const;
+    Volume* layerForFile(std::string_view path) const;
+
     void pushLayer(Volume* vol);
     void popLayer();
     void removeLayer(Volume* vol);
@@ -85,9 +88,6 @@ protected:
     void renameFileThrowsUnchecked(std::string_view src, std::string_view dest) override;
 
 private:
-    Volume* layerExists(std::string_view path) const;
-    Volume* layerForFile(std::string_view path) const;
-
     std::vector<Volume*> m_layers;
     std::string m_class = "overlay";
     std::string m_id;

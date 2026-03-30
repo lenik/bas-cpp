@@ -213,7 +213,16 @@ std::string MemoryZip::getDefaultLabel() const { return "Memory Zip"; }
 
 bool MemoryZip::exists(std::string_view path) const {
     std::string pathStr(path);
-    return findEntry(pathStr) != nullptr;
+    if (pathStr.empty() || pathStr == "/") return true;
+    if (findEntry(pathStr) != nullptr)
+        return true;
+    if (!pathStr.empty()) {
+        if (pathStr.back() != '/') {
+            if (findEntry(pathStr + "/") != nullptr)
+                return true;
+        }
+    }
+    return false;
 }
 
 bool MemoryZip::isFile(std::string_view path) const {

@@ -1,5 +1,6 @@
 #include "Volume.hpp"
 
+#include "VolumeExceptions.hpp"
 #include "VolumeFile.hpp"
 
 #include "../io/IOException.hpp"
@@ -227,9 +228,9 @@ void Volume::createDirectoryThrows(std::string_view _path) {
         throw std::invalid_argument("Volume::createDirectoryThrows: path is root");
     if (exists(path)) {
         if (isDirectory(path)) {
-            throw IOException("createDirectoryThrows", path, "Directory already exists");
+            throw VolumeException(this, "createDirectoryThrows", path, "Directory already exists");
         } else {
-            throw IOException("createDirectoryThrows", path, "File with same name exists");
+            throw VolumeException("createDirectoryThrows", path, "File with same name exists");
         }
     }
     createDirectoryThrowsUnchecked(path);
@@ -282,7 +283,7 @@ void Volume::createDirectoriesThrows(std::string_view _path) {
 
     if (exists(path)) {
         if (!isDirectory(path))
-            throw IOException("createDirectories", std::string(path), "Path is not a directory");
+            throw VolumeException(this, "createDirectories", std::string(path), "Path is not a directory");
     }
 
     std::vector<std::string> mkdir_list;
@@ -321,7 +322,7 @@ bool Volume::removeDirectory(std::string_view _path) {
     if (!exists(path))
         return false;
     if (!isDirectory(path))
-        throw IOException("removeDirectory", std::string(path), "Path is not a directory");
+        throw VolumeException(this, "removeDirectory", std::string(path), "Path is not a directory");
     try {
         removeDirectoryThrows(path);
     } catch (...) {
@@ -333,9 +334,9 @@ bool Volume::removeDirectory(std::string_view _path) {
 void Volume::removeDirectoryThrows(std::string_view _path) {
     std::string path = normalizeArg(_path);
     if (!exists(path))
-        throw IOException("removeDirectory", path, "Path does not exist");
+        throw VolumeException(this, "removeDirectory", path, "Path does not exist");
     if (!isDirectory(path))
-        throw IOException("removeDirectory", path, "Path is not a directory");
+        throw VolumeException(this, "removeDirectory", path, "Path is not a directory");
     removeDirectoryThrowsUnchecked(path);
 }
 
@@ -356,9 +357,9 @@ bool Volume::removeFile(std::string_view _path) {
 void Volume::removeFileThrows(std::string_view _path) {
     std::string path = normalizeArg(_path);
     if (!exists(path))
-        throw IOException("removeFile", path, "Path does not exist");
+        throw VolumeException(this, "removeFile", path, "Path does not exist");
     if (!isFile(path))
-        throw IOException("removeFile", path, "Path is not a file");
+        throw VolumeException(this, "removeFile", path, "Path is not a file");
     removeFileThrowsUnchecked(path);
 }
 
@@ -394,9 +395,9 @@ void Volume::copyFileThrows(std::string_view _src, std::string_view _dest, bool 
     std::string src = normalizeArg(_src);
     std::string dest = normalizeArg(_dest);
     if (!exists(src))
-        throw IOException("copyFile", std::string(src), "Source file does not exist");
+        throw VolumeException(this, "copyFile", std::string(src), "Source file does not exist");
     if (!isFile(src))
-        throw IOException("copyFile", std::string(src), "Source path is not a file");
+        throw VolumeException(this, "copyFile", std::string(src), "Source path is not a file");
 
     if (isDirectory(dest)) {
         size_t last_slash = src.find_last_of('/');
@@ -408,7 +409,7 @@ void Volume::copyFileThrows(std::string_view _src, std::string_view _dest, bool 
         if (overwrite)
             removeFile(dest);
         else
-            throw IOException("copyFile", std::string(dest), "Destination file already exists");
+            throw VolumeException(this, "copyFile", std::string(dest), "Destination file already exists");
     }
     copyFileThrowsUnchecked(src, dest);
 }
@@ -446,7 +447,7 @@ void Volume::moveFileThrows(std::string_view _src, std::string_view _dest, bool 
     std::string src = normalizeArg(_src);
     std::string dest = normalizeArg(_dest);
     if (!exists(src))
-        throw IOException("moveFile", std::string(src), "Source file does not exist");
+        throw VolumeException(this, "moveFile", std::string(src), "Source file does not exist");
 
     if (isDirectory(dest)) {
         size_t last_slash = src.find_last_of('/');
@@ -457,10 +458,10 @@ void Volume::moveFileThrows(std::string_view _src, std::string_view _dest, bool 
     if (exists(dest)) {
         if (overwrite) {
             if (!removeFile(dest))
-                throw IOException("moveFile", std::string(dest),
+                throw VolumeException(this, "moveFile", std::string(dest),
                                   "Failed to remove destination file");
         } else {
-            throw IOException("moveFile", std::string(dest), "Destination file already exists");
+            throw VolumeException(this, "moveFile", std::string(dest), "Destination file already exists");
         }
     }
 
@@ -471,7 +472,7 @@ bool Volume::rename(std::string_view _src, std::string_view _dest, bool overwrit
     std::string src = normalizeArg(_src);
     std::string dest = normalizeArg(_dest);
     if (!exists(src))
-        throw IOException("rename", std::string(src), "Source file does not exist");
+        throw VolumeException(this, "rename", std::string(src), "Source file does not exist");
 
     if (isDirectory(dest)) {
         size_t last_slash = src.find_last_of('/');
@@ -482,9 +483,9 @@ bool Volume::rename(std::string_view _src, std::string_view _dest, bool overwrit
     if (exists(dest)) {
         if (overwrite) {
             if (!removeFile(dest))
-                throw IOException("rename", std::string(dest), "Failed to remove destination file");
+                throw VolumeException(this, "rename", std::string(dest), "Failed to remove destination file");
         } else {
-            throw IOException("rename", std::string(dest), "Destination file already exists");
+            throw VolumeException(this, "rename", std::string(dest), "Destination file already exists");
         }
     }
     try {
@@ -499,7 +500,7 @@ void Volume::renameFileThrows(std::string_view _src, std::string_view _dest, boo
     std::string src = normalizeArg(_src);
     std::string dest = normalizeArg(_dest);
     if (!exists(src))
-        throw IOException("rename", std::string(src), "Source file does not exist");
+        throw VolumeException(this, "rename", std::string(src), "Source file does not exist");
 
     if (isDirectory(dest)) {
         size_t last_slash = src.find_last_of('/');
@@ -510,9 +511,9 @@ void Volume::renameFileThrows(std::string_view _src, std::string_view _dest, boo
     if (exists(dest)) {
         if (overwrite) {
             if (!removeFile(dest))
-                throw IOException("rename", std::string(dest), "Failed to remove destination file");
+                throw VolumeException(this, "rename", std::string(dest), "Failed to remove destination file");
         } else {
-            throw IOException("rename", std::string(dest), "Destination file already exists");
+            throw VolumeException(this, "rename", std::string(dest), "Destination file already exists");
         }
     }
     renameFileThrowsUnchecked(src, dest);
@@ -595,11 +596,11 @@ std::unique_ptr<RandomReader> Volume::newRandomReader(std::string_view path,
 
 std::vector<uint8_t> Volume::readFile(std::string_view _path) {
     if (!exists(_path))
-        throw IOException("readFile", 
-        getLabel() + "::" + std::string(_path), "Path does not exist");
+        throw VolumeException(this, "readFile", 
+        std::string(_path), "Path does not exist");
     if (!isFile(_path))
-        throw IOException("readFile", 
-        getLabel() + "::" + std::string(_path), "Path is not a regular file");
+        throw VolumeException(this, "readFile", 
+        std::string(_path), "Path is not a regular file");
 
     return readFileUnchecked(_path);
 }
@@ -701,7 +702,7 @@ std::deque<std::string> Volume::readLastLines(std::string_view path, int maxLine
 
 void Volume::writeFile(std::string_view _path, const std::vector<uint8_t>& data) {
     if (exists(_path) && !isFile(_path))
-        throw IOException("writeFile", std::string(_path), //
+        throw VolumeException(this, "writeFile", std::string(_path), //
                           "Path is not a regular file: " + std::string(_path));
     writeFileUnchecked(_path, data);
 }
