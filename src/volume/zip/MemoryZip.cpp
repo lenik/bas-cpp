@@ -6,6 +6,7 @@
 #include "../../io/StringReader.hpp"
 #include "../../io/Uint8ArrayInputStream.hpp"
 
+#include <algorithm>
 #include <cstring>
 #include <ctime>
 #include <map>
@@ -483,13 +484,30 @@ std::unique_ptr<Writer> MemoryZip::newWriter(std::string_view path, bool append,
     throw IOException("newWriter", std::string(path), "MemoryZip is read-only");
 }
 
-std::vector<uint8_t> MemoryZip::readFileUnchecked(std::string_view path) {
+std::vector<uint8_t> MemoryZip::readFileUnchecked(std::string_view path, int64_t off,
+                                                  size_t len) {
     std::string pathStr(path);
     const ZipEntry* entry = findEntry(pathStr);
     if (!entry || entry->isDirectory) {
         throw IOException("readFile", pathStr, "File not found or is directory");
     }
-    return decompressEntry(*entry);
+    auto data = decompressEntry(*entry);
+
+    int64_t start64 = (off >= 0) ? off : (static_cast<int64_t>(data.size()) + off + 1);
+    if (start64 < 0) {
+        start64 = 0;
+    }
+    size_t start = static_cast<size_t>(start64);
+    if (start >= data.size()) {
+        return {};
+    }
+
+    size_t end = data.size();
+    if (len > 0) {
+        end = std::min(end, start + len);
+    }
+
+    return std::vector<uint8_t>(data.begin() + start, data.begin() + end);
 }
 
 void MemoryZip::writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) {

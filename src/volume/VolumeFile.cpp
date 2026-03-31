@@ -9,8 +9,8 @@ extern "C" {
 #include <bas/proc/env.h>
 }
 
-#include <unistd.h>
 #include <limits.h>
+#include <unistd.h>
 
 #include <algorithm>
 #include <filesystem>
@@ -18,18 +18,11 @@ extern "C" {
 
 namespace fs = std::filesystem;
 
-VolumeFile::VolumeFile(Volume* volume, std::string path)
-    : m_volume(volume)
-    , m_path(path)
-{}
+VolumeFile::VolumeFile(Volume* volume, std::string path) : m_volume(volume), m_path(path) {}
 
-void VolumeFile::setVolume(Volume* volume) {
-    m_volume = volume;
-}
+void VolumeFile::setVolume(Volume* volume) { m_volume = volume; }
 
-void VolumeFile::setPath(std::string path) {
-    m_path = path;
-}
+void VolumeFile::setPath(std::string path) { m_path = path; }
 
 std::string VolumeFile::getLocalFile() const {
     if (!m_volume || m_path.empty()) {
@@ -42,7 +35,8 @@ std::string VolumeFile::getLocalFile() const {
     return localFile;
 }
 
-size_t VolumeFile::readFile(uint8_t* buf, size_t off, size_t len, int64_t file_offset, std::ios::seekdir seek_dir) const {
+size_t VolumeFile::cReadFile(uint8_t* buf, size_t off, size_t len, int64_t file_offset,
+                            std::ios::seekdir seek_dir) const {
     if (!m_volume || m_path.empty()) {
         return 0;
     }
@@ -56,7 +50,7 @@ size_t VolumeFile::readFile(uint8_t* buf, size_t off, size_t len, int64_t file_o
     return stream->read(buf, off, len);
 }
 
-size_t VolumeFile::writeFile(const uint8_t* buf, size_t off, size_t len, bool append) const {
+size_t VolumeFile::cWriteFile(const uint8_t* buf, size_t off, size_t len, bool append) const {
     if (!m_volume || m_path.empty()) {
         return 0;
     }
@@ -67,35 +61,23 @@ size_t VolumeFile::writeFile(const uint8_t* buf, size_t off, size_t len, bool ap
     return stream->write(buf, off, len);
 }
 
-std::vector<uint8_t> VolumeFile::readFile() const {
+std::vector<uint8_t> VolumeFile::readFile(int64_t off, size_t len,
+                                          std::optional<std::vector<uint8_t>> default_data) const {
     if (!m_volume) {
         return std::vector<uint8_t>();
     }
     if (m_path.empty()) {
         return std::vector<uint8_t>();
     }
-    return m_volume->readFile(m_path);
+    return m_volume->readFile(m_path, off, len, default_data);
 }
 
-std::string VolumeFile::readFileString(std::string_view encoding) const {
+std::string VolumeFile::readFileString(std::string_view encoding,
+                                       std::optional<std::string> default_data) const {
     if (!m_volume || m_path.empty()) {
         return "";
     }
-    
-    std::vector<uint8_t> data = m_volume->readFile(m_path);
-    if (data.empty()) {
-        return "";
-    }
-    
-    // For UTF-8 encoding (default), convert directly
-    if (encoding == "UTF-8" || encoding.empty()) {
-        return std::string(data.begin(), data.end());
-    }
-    
-    // Convert from specified encoding to UTF-8 using boost::locale
-    auto unicode = unicode::fromEncoding(data, encoding);
-    auto utf8 = unicode::convertToUTF8(unicode);
-    return utf8;
+    return m_volume->readFileString(m_path, encoding, default_data);
 }
 
 std::vector<std::string> VolumeFile::readFileLines(std::string_view encoding) const {
@@ -120,7 +102,7 @@ void VolumeFile::writeFileString(std::string_view data, std::string_view encodin
     if (!m_volume || m_path.empty()) {
         throw IOException("writeFile", m_path, "Volume or path is null/empty");
     }
-    
+
     // Convert string to bytes based on encoding
     std::vector<uint8_t> bytes;
     if (encoding == "UTF-8" || encoding.empty()) {
@@ -131,11 +113,12 @@ void VolumeFile::writeFileString(std::string_view data, std::string_view encodin
         auto utf8 = unicode::convertToUTF8(unicode);
         bytes.assign(utf8.begin(), utf8.end());
     }
-    
+
     m_volume->writeFile(m_path, bytes);
 }
 
-void VolumeFile::writeFileLines(const std::vector<std::string>& lines, std::string_view encoding) const {
+void VolumeFile::writeFileLines(const std::vector<std::string>& lines,
+                                std::string_view encoding) const {
     // join lines with newline
     std::string content;
     for (const auto& line : lines) {
@@ -159,23 +142,21 @@ std::unique_ptr<VolumeFile> VolumeFile::getParentFile() const {
     return std::make_unique<VolumeFile>(m_volume, parentPath);
 }
 
-std::unique_ptr<VolumeFile> VolumeFile::getRootFile() const {
-    return m_volume->getRootFile();
-}
+std::unique_ptr<VolumeFile> VolumeFile::getRootFile() const { return m_volume->getRootFile(); }
 
 std::unique_ptr<VolumeFile> VolumeFile::resolve(std::string_view relativePath) const {
     if (!m_volume) {
         throw IOException("VolumeFile::resolve: null volume");
     }
-    
+
     if (relativePath.empty()) {
         // Return a copy of this VolumeFile
         return std::make_unique<VolumeFile>(m_volume, m_path);
     }
-    
+
     // Determine base path for resolution
     std::string basePath = m_path;
-    
+
     // If current path is a file, resolve relative to its parent directory
     if (!basePath.empty() && m_volume->isFile(basePath)) {
         // Get parent directory
@@ -185,12 +166,12 @@ std::unique_ptr<VolumeFile> VolumeFile::resolve(std::string_view relativePath) c
             basePath = "/";
         }
     }
-    
+
     // If basePath is empty, use root
     if (basePath.empty()) {
         basePath = "/";
     }
-    
+
     // Handle absolute paths
     if (relativePath[0] == '/') {
         // Absolute path - use as-is (but ensure it's normalized)
@@ -198,19 +179,19 @@ std::unique_ptr<VolumeFile> VolumeFile::resolve(std::string_view relativePath) c
         resolved = resolved.lexically_normal();
         return std::make_unique<VolumeFile>(m_volume, resolved.string());
     }
-    
+
     // Relative path - resolve it
     fs::path basePathObj(basePath);
     fs::path relativePathObj(relativePath);
     fs::path resolved = basePathObj / relativePathObj;
     resolved = resolved.lexically_normal();
-    
+
     // Ensure it starts with "/" for virtual filesystem paths
     std::string resolvedStr = resolved.string();
     if (resolvedStr[0] != '/') {
         resolvedStr = "/" + resolvedStr;
     }
-    
+
     return std::make_unique<VolumeFile>(m_volume, resolvedStr);
 }
 
@@ -255,38 +236,33 @@ bool VolumeFile::canWrite() const {
     return exists();
 }
 
-bool VolumeFile::createDirectory() const {
-    return m_volume->createDirectory(m_path);
-}
+bool VolumeFile::createDirectory() const { return m_volume->createDirectory(m_path); }
 
-bool VolumeFile::createDirectories() const {
-    return m_volume->createDirectories(m_path);
-}
+bool VolumeFile::createDirectories() const { return m_volume->createDirectories(m_path); }
 
 bool VolumeFile::createParentDirectories() const {
     return m_volume->createParentDirectories(m_path);
 }
 
-bool VolumeFile::removeDirectory() const {
-    return m_volume->removeDirectory(m_path);
-}
+bool VolumeFile::removeDirectory() const { return m_volume->removeDirectory(m_path); }
 
-bool VolumeFile::removeFile() const {
-    return m_volume->removeFile(m_path);
-}
+bool VolumeFile::removeFile() const { return m_volume->removeFile(m_path); }
 
 bool VolumeFile::renameTo(std::string_view destPath, bool overwrite) const {
-    if (destPath.empty()) throw std::invalid_argument("VolumeFile::renameTo: destPath is required");
+    if (destPath.empty())
+        throw std::invalid_argument("VolumeFile::renameTo: destPath is required");
     return m_volume->rename(m_path, destPath, overwrite);
 }
 
 bool VolumeFile::copyTo(std::string_view destPath, bool overwrite) const {
-    if (destPath.empty()) throw std::invalid_argument("VolumeFile::copyTo: destPath is required");
+    if (destPath.empty())
+        throw std::invalid_argument("VolumeFile::copyTo: destPath is required");
     return m_volume->copyFile(m_path, destPath, overwrite);
 }
 
 bool VolumeFile::moveTo(std::string_view destPath, bool overwrite) const {
-    if (destPath.empty()) throw std::invalid_argument("VolumeFile::moveTo: destPath is required");
+    if (destPath.empty())
+        throw std::invalid_argument("VolumeFile::moveTo: destPath is required");
     return m_volume->moveFile(m_path, destPath, overwrite);
 }
 
@@ -301,7 +277,8 @@ bool VolumeFile::stat(FileStatus* status) const {
     if (!m_volume || m_path.empty()) {
         throw IOException("stat", m_path, "Volume or path is null/empty");
     }
-    if (!status) throw std::invalid_argument("VolumeFile::stat: null status");
+    if (!status)
+        throw std::invalid_argument("VolumeFile::stat: null status");
     return m_volume->stat(m_path, status);
 }
 
@@ -309,7 +286,7 @@ std::string VolumeFile::exportToTempFile() const {
     if (!m_volume || m_path.empty()) {
         return "";
     }
-    
+
     // First, try to get local file (works for LocalVolume)
     std::string localFile = getLocalFile();
     if (!localFile.empty()) {
@@ -325,12 +302,11 @@ std::string VolumeFile::exportToTempFile() const {
     if (!ext.empty()) {
         ext = "." + ext;
     }
-    
+
     char tmpname[PATH_MAX];
     std::string templ = baseName + "_XXXXXX" + ext;
 
-    FILE *out = emktemp_open(tmpname, sizeof(tmpname), 
-        templ.c_str(), NULL, NULL);
+    FILE* out = emktemp_open(tmpname, sizeof(tmpname), templ.c_str(), NULL, NULL);
     if (!out) {
         return "";
     }
@@ -340,39 +316,39 @@ std::string VolumeFile::exportToTempFile() const {
     if (data.empty()) {
         return "";
     }
-    
+
     // Write to temporary file
     size_t cb = fwrite(data.data(), 1, data.size(), out);
     fclose(out);
-    
+
     if (cb != data.size()) {
         fs::remove(tmpname);
         return "";
     }
-    
+
     return std::string(tmpname);
 }
 
 bool VolumeFile::requiresTempFileForPlayback(std::string_view fileName) const {
     if (fileName.empty()) {
-        return true;  // Be conservative, use temp file
+        return true; // Be conservative, use temp file
     }
-    
+
     fs::path filePath(fileName);
     std::string ext = filePath.extension().string();
     if (!ext.empty() && ext[0] == '.') {
         ext = ext.substr(1);
     }
-    
+
     // Convert to lowercase
     std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-    
+
     // Formats that typically don't support streaming and require temp file
     // These formats often have backends that don't support streaming
     if (ext == "wmv" || ext == "asf" || ext == "rm" || ext == "rmvb") {
         return true;
     }
-    
+
     return false;
 }
 

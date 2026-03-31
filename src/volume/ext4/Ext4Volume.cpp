@@ -6,6 +6,7 @@
 #include "../../io/IOException.hpp"
 #include "../../io/StringReader.hpp"
 
+#include <algorithm>
 #include <functional>
 #include <stdexcept>
 #include <unordered_set>
@@ -201,7 +202,8 @@ std::string Ext4Volume::createTempFile(std::string_view /*prefix*/, std::string_
     throw IOException("createTempFile", "", "Ext4Volume does not support temp file operations");
 }
 
-std::vector<uint8_t> Ext4Volume::readFileUnchecked(std::string_view path) {
+std::vector<uint8_t> Ext4Volume::readFileUnchecked(std::string_view path, int64_t off,
+                                                   size_t len) {
     const std::string normalized = normalizeArg(path);
     Node node;
     if (!resolveNode(normalized, &node) || node.isDirectory) {
@@ -215,7 +217,22 @@ std::vector<uint8_t> Ext4Volume::readFileUnchecked(std::string_view path) {
     if (!in) return {};
     auto data = in->readBytesUntilEOF();
     if (data.size() > node.size) data.resize(static_cast<size_t>(node.size));
-    return data;
+
+    int64_t start64 = (off >= 0) ? off : (static_cast<int64_t>(data.size()) + off + 1);
+    if (start64 < 0) {
+        start64 = 0;
+    }
+    size_t start = static_cast<size_t>(start64);
+    if (start >= data.size()) {
+        return {};
+    }
+
+    size_t end = data.size();
+    if (len > 0) {
+        end = std::min(end, start + len);
+    }
+
+    return std::vector<uint8_t>(data.begin() + start, data.begin() + end);
 }
 
 void Ext4Volume::writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& /*data*/) {

@@ -283,7 +283,8 @@ void Volume::createDirectoriesThrows(std::string_view _path) {
 
     if (exists(path)) {
         if (!isDirectory(path))
-            throw VolumeException(this, "createDirectories", std::string(path), "Path is not a directory");
+            throw VolumeException(this, "createDirectories", std::string(path),
+                                  "Path is not a directory");
     }
 
     std::vector<std::string> mkdir_list;
@@ -322,7 +323,8 @@ bool Volume::removeDirectory(std::string_view _path) {
     if (!exists(path))
         return false;
     if (!isDirectory(path))
-        throw VolumeException(this, "removeDirectory", std::string(path), "Path is not a directory");
+        throw VolumeException(this, "removeDirectory", std::string(path),
+                              "Path is not a directory");
     try {
         removeDirectoryThrows(path);
     } catch (...) {
@@ -409,7 +411,8 @@ void Volume::copyFileThrows(std::string_view _src, std::string_view _dest, bool 
         if (overwrite)
             removeFile(dest);
         else
-            throw VolumeException(this, "copyFile", std::string(dest), "Destination file already exists");
+            throw VolumeException(this, "copyFile", std::string(dest),
+                                  "Destination file already exists");
     }
     copyFileThrowsUnchecked(src, dest);
 }
@@ -459,9 +462,10 @@ void Volume::moveFileThrows(std::string_view _src, std::string_view _dest, bool 
         if (overwrite) {
             if (!removeFile(dest))
                 throw VolumeException(this, "moveFile", std::string(dest),
-                                  "Failed to remove destination file");
+                                      "Failed to remove destination file");
         } else {
-            throw VolumeException(this, "moveFile", std::string(dest), "Destination file already exists");
+            throw VolumeException(this, "moveFile", std::string(dest),
+                                  "Destination file already exists");
         }
     }
 
@@ -483,9 +487,11 @@ bool Volume::rename(std::string_view _src, std::string_view _dest, bool overwrit
     if (exists(dest)) {
         if (overwrite) {
             if (!removeFile(dest))
-                throw VolumeException(this, "rename", std::string(dest), "Failed to remove destination file");
+                throw VolumeException(this, "rename", std::string(dest),
+                                      "Failed to remove destination file");
         } else {
-            throw VolumeException(this, "rename", std::string(dest), "Destination file already exists");
+            throw VolumeException(this, "rename", std::string(dest),
+                                  "Destination file already exists");
         }
     }
     try {
@@ -511,9 +517,11 @@ void Volume::renameFileThrows(std::string_view _src, std::string_view _dest, boo
     if (exists(dest)) {
         if (overwrite) {
             if (!removeFile(dest))
-                throw VolumeException(this, "rename", std::string(dest), "Failed to remove destination file");
+                throw VolumeException(this, "rename", std::string(dest),
+                                      "Failed to remove destination file");
         } else {
-            throw VolumeException(this, "rename", std::string(dest), "Destination file already exists");
+            throw VolumeException(this, "rename", std::string(dest),
+                                  "Destination file already exists");
         }
     }
     renameFileThrowsUnchecked(src, dest);
@@ -594,27 +602,46 @@ std::unique_ptr<RandomReader> Volume::newRandomReader(std::string_view path,
     return std::make_unique<U32stringReader>(u32);
 }
 
-std::vector<uint8_t> Volume::readFile(std::string_view _path) {
-    if (!exists(_path))
-        throw VolumeException(this, "readFile", 
-        std::string(_path), "Path does not exist");
-    if (!isFile(_path))
-        throw VolumeException(this, "readFile", 
-        std::string(_path), "Path is not a regular file");
+std::vector<uint8_t> Volume::readFile(std::string_view _path, int64_t off, size_t len,
+                                      std::optional<std::vector<uint8_t>> default_data) {
+    if (!exists(_path)) {
+        if (default_data) {
+            return *default_data;
+        }
+        throw VolumeException(this, "readFile", std::string(_path), "Path does not exist");
+    }
+    if (!isFile(_path)) {
+        throw VolumeException(this, "readFile", std::string(_path), "Path is not a regular file");
+    }
 
-    return readFileUnchecked(_path);
+    return readFileUnchecked(_path, off, len);
 }
 
-std::string Volume::readFileUTF8(std::string_view path) {
+std::string Volume::readFileUTF8(std::string_view path, std::optional<std::string> default_data) {
     if (path.empty())
         throw std::invalid_argument("Volume::readFileUTF8: path is required");
+
+    if (!exists(path)) {
+        if (default_data) {
+            return *default_data;
+        }
+    }
+
     std::vector<uint8_t> data = readFile(path);
     return std::string(data.begin(), data.end());
 }
 
-std::string Volume::readFileString(std::string_view path, std::string_view encoding) {
+std::string Volume::readFileString(std::string_view path, std::string_view encoding,
+                                   std::optional<std::string> default_data) {
     if (path.empty())
         throw std::invalid_argument("Volume::readFileString: path is required");
+
+    if (!exists(path)) {
+        if (default_data) {
+            return *default_data;
+        }
+    }
+
     std::vector<uint8_t> data = readFile(path);
 
     if (data.empty()) {
@@ -703,7 +730,7 @@ std::deque<std::string> Volume::readLastLines(std::string_view path, int maxLine
 void Volume::writeFile(std::string_view _path, const std::vector<uint8_t>& data) {
     if (exists(_path) && !isFile(_path))
         throw VolumeException(this, "writeFile", std::string(_path), //
-                          "Path is not a regular file: " + std::string(_path));
+                              "Path is not a regular file: " + std::string(_path));
     writeFileUnchecked(_path, data);
 }
 

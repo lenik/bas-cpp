@@ -295,12 +295,13 @@ std::string OverlayVolume::createTempFile(std::string_view prefix, std::string_v
     return m_layers.back()->createTempFile(prefix, suffix);
 }
 
-std::vector<uint8_t> OverlayVolume::readFileUnchecked(std::string_view path) {
+std::vector<uint8_t> OverlayVolume::readFileUnchecked(std::string_view path, int64_t off,
+                                                      size_t len) {
     Volume* v = layerForFile(path);
     if (!v) {
         throw IOException("readFile", std::string(normalize(path)), "Path is not a readable file");
     }
-    return v->readFile(path);
+    return v->readFile(path, off, len);
 }
 
 void OverlayVolume::writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) {

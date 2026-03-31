@@ -6,6 +6,7 @@
 #include "../../io/IOException.hpp"
 #include "../../io/StringReader.hpp"
 
+#include <algorithm>
 #include <cctype>
 #include <cstring>
 #include <ctime>
@@ -215,7 +216,8 @@ std::unique_ptr<Writer> Fat32Volume::newWriter(std::string_view path, bool /*app
     throw IOException("newWriter", std::string(path), "Fat32Volume write operations are not implemented yet");
 }
 
-std::vector<uint8_t> Fat32Volume::readFileUnchecked(std::string_view path) {
+std::vector<uint8_t> Fat32Volume::readFileUnchecked(std::string_view path, int64_t off,
+                                                    size_t len) {
     const std::string normalized = normalizeArg(path);
     auto it = m_nodes.find(normalized);
     if (it == m_nodes.end() || it->second.isDirectory) {
@@ -236,7 +238,22 @@ std::vector<uint8_t> Fat32Volume::readFileUnchecked(std::string_view path) {
     }
     out = stream->readBytesUntilEOF();
     if (out.size() > node.size) out.resize(node.size);
-    return out;
+
+    int64_t start64 = (off >= 0) ? off : (static_cast<int64_t>(out.size()) + off + 1);
+    if (start64 < 0) {
+        start64 = 0;
+    }
+    size_t start = static_cast<size_t>(start64);
+    if (start >= out.size()) {
+        return {};
+    }
+
+    size_t end = out.size();
+    if (len > 0) {
+        end = std::min(end, start + len);
+    }
+
+    return std::vector<uint8_t>(out.begin() + start, out.begin() + end);
 }
 
 void Fat32Volume::writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& /*data*/) {

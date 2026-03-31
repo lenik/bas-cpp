@@ -87,13 +87,14 @@ class Volume {
     virtual std::string getClass() const = 0; // "local", "seczure", etc.
     virtual std::string getId() const = 0;
     inline std::string getClassId() const { return getClass() + ":" + getId(); }
-    
+
     virtual VolumeType getType() const = 0;
     virtual std::string getTypeString() const;
 
-    /** Human-readable backing source, e.g. "dev /dev/sda1", "dir /path", "img /file.ext2", "mem #addr". */
+    /** Human-readable backing source, e.g. "dev /dev/sda1", "dir /path", "img /file.ext2", "mem
+     * #addr". */
     virtual std::string getSource() const;
-    
+
     virtual bool isEncrypted() const { return false; }
     virtual bool isLocal() const { return false; }
     virtual std::string getLocalFile(std::string_view path) const = 0;
@@ -114,7 +115,8 @@ class Volume {
     // check if path is valid, returns normalized form.
     // empty means not specified, returns empty.
     // throws exception if path is empty and optional is false.
-    std::string normalizeArg(std::string_view path, std::optional<std::string> fallback = std::nullopt) const;
+    std::string normalizeArg(std::string_view path,
+                             std::optional<std::string> fallback = std::nullopt) const;
 
     // normalized path:
     // @path not empty.
@@ -204,10 +206,22 @@ class Volume {
     virtual std::unique_ptr<RandomReader> newRandomReader(std::string_view path,
                                                           std::string_view encoding = "UTF-8");
 
-    // readFile can throw IOException or AccessException
-    std::vector<uint8_t> readFile(std::string_view path);
-    std::string readFileUTF8(std::string_view path);
-    std::string readFileString(std::string_view path, std::string_view encoding = "UTF-8");
+    /**
+     * @param len maximum size in bytes of the data to read (0 means read all)
+     * @param off byte offset from start when >= 0; when negative, from EOF+1
+     *               (e.g. -1 = EOF -> read nothing, -11 with len=0 -> last 10 bytes)
+     * @param default_data if file does not exist
+     * @return data read from the file
+     */
+    std::vector<uint8_t> readFile(std::string_view path, int64_t off = 0, size_t len = 0,
+                                  std::optional<std::vector<uint8_t>> default_data = std::nullopt);
+
+    std::string readFileUTF8(std::string_view path,
+                             std::optional<std::string> default_data = std::nullopt);
+
+    std::string readFileString(std::string_view path, std::string_view encoding = "UTF-8",
+                               std::optional<std::string> default_data = std::nullopt);
+
     std::deque<std::string> readLines(std::string_view path, int maxLines = -1,
                                       std::string_view encoding = "UTF-8");
     std::deque<std::string> readLastLines(std::string_view path, int maxLines = -1,
@@ -227,7 +241,8 @@ class Volume {
                                        std::string_view suffix = "") = 0;
 
     void ls(std::string_view path, std::optional<ListOptions> options = std::nullopt);
-    void tree(std::string_view path, const std::string& prefix = "", std::optional<ListOptions> options = std::nullopt);
+    void tree(std::string_view path, const std::string& prefix = "",
+              std::optional<ListOptions> options = std::nullopt);
 
   protected:
     friend class OverlayVolume;
@@ -238,7 +253,14 @@ class Volume {
 
     // unchecked operations: no exception handling, no return value
 
-    virtual std::vector<uint8_t> readFileUnchecked(std::string_view path) = 0;
+    /**
+     * @param path path to the file
+     * @param off byte offset from start when >= 0; when negative, from EOF+1
+     *               (e.g. -1 = EOF -> read nothing, -11 with len=0 -> last 10 bytes)
+     * @param len maximum size in bytes of the data to read (0 means read all)
+     * @return data read from the file
+     */
+    virtual std::vector<uint8_t> readFileUnchecked(std::string_view path, int64_t off = 0, size_t len = 0) = 0;
     virtual void writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) = 0;
 
     virtual void createDirectoryThrowsUnchecked(std::string_view path) = 0;
