@@ -15,6 +15,26 @@
 #include <string>
 #include <vector>
 
+// ZIP parsing structures
+struct ZipEntry {
+    std::string name;
+    size_t localHeaderOffset;
+    size_t compressedSize;
+    size_t uncompressedSize;
+    uint16_t compressionMethod;
+    bool isDirectory;
+    /** From central directory (DOS or UT extra); 0 if unknown. */
+    time_t modifiedTime = 0;
+    /** From UT extra (0x5455) atime; 0 if absent. */
+    time_t accessTime = 0;
+    /** From UT extra ctime; 0 if absent. */
+    time_t creationTime = 0;
+    /** From Info-ZIP "New Unix" extra (0x7875), if present. */
+    bool hasUnixIds = false;
+    unsigned int uid = 0;
+    unsigned int gid = 0;
+};
+
 /**
  * MemoryZip provides read-only access to a ZIP archive embedded in memory
  */
@@ -23,26 +43,6 @@ private:
     std::string m_sym;
     const uint8_t* m_data;
     size_t m_size;
-    
-    // ZIP parsing structures
-    struct ZipEntry {
-        std::string name;
-        size_t localHeaderOffset;
-        size_t compressedSize;
-        size_t uncompressedSize;
-        uint16_t compressionMethod;
-        bool isDirectory;
-        /** From central directory (DOS or UT extra); 0 if unknown. */
-        time_t modifiedTime = 0;
-        /** From UT extra (0x5455) atime; 0 if absent. */
-        time_t accessTime = 0;
-        /** From UT extra ctime; 0 if absent. */
-        time_t creationTime = 0;
-        /** From Info-ZIP "New Unix" extra (0x7875), if present. */
-        bool hasUnixIds = false;
-        unsigned int uid = 0;
-        unsigned int gid = 0;
-    };
     
     std::map<std::string, ZipEntry> m_entries; // Use map for faster lookup
     

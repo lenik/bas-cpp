@@ -1,18 +1,18 @@
 #include "Volume.hpp"
 
-#include <string>
-#include <fstream>
-#include <filesystem>
-#include <iostream>
-#include <iomanip>
-#include <sstream>
-#include <ctime>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <cmath>
-#include <vector>
+#include <ctime>
+#include <filesystem>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <sstream>
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 #include <sys/stat.h>
 
@@ -99,14 +99,30 @@ ListOptions ListOptions::parse(std::string_view options) {
     ListOptions opts;
     for (char c : options) {
         switch (c) {
-            case 'R': opts.recursive = true; break;
-            case 'l': opts.longFormat = true; break;
-            case 'a': opts.includeDotFiles = opts.includeDotDot = true; break;
-            case 'A': opts.includeDotFiles = true; break;
-            case 'F': opts.formatSuffix = true; break;
-            case 'h': opts.human = true; break;
-            case 'C': opts.color = true; break;
-            case 'T': opts.tree = true; break;
+        case 'R':
+            opts.recursive = true;
+            break;
+        case 'l':
+            opts.longFormat = true;
+            break;
+        case 'a':
+            opts.includeDotFiles = opts.includeDotDot = true;
+            break;
+        case 'A':
+            opts.includeDotFiles = true;
+            break;
+        case 'F':
+            opts.formatSuffix = true;
+            break;
+        case 'h':
+            opts.human = true;
+            break;
+        case 'C':
+            opts.color = true;
+            break;
+        case 'T':
+            opts.tree = true;
+            break;
         }
     }
     return opts;
@@ -142,19 +158,32 @@ std::string format_uid(unsigned int uid) {
         return uid_map[uid];
     }
     switch (uid) {
-        case 0: return "root";
-        case 1: return "daemon";
-        case 2: return "bin";
-        case 3: return "sync";
-        case 4: return "sync";
-        case 5: return "games";
-        case 6: return "man";
-        case 7: return "lp";
-        case 8: return "mail";
-        case 9: return "news";
-        case 10: return "uucp";
-        case 13: return "proxy";
-        default: return std::to_string(uid);
+    case 0:
+        return "root";
+    case 1:
+        return "daemon";
+    case 2:
+        return "bin";
+    case 3:
+        return "sync";
+    case 4:
+        return "sync";
+    case 5:
+        return "games";
+    case 6:
+        return "man";
+    case 7:
+        return "lp";
+    case 8:
+        return "mail";
+    case 9:
+        return "news";
+    case 10:
+        return "uucp";
+    case 13:
+        return "proxy";
+    default:
+        return std::to_string(uid);
     }
     return std::to_string(uid);
 }
@@ -181,19 +210,32 @@ std::string format_gid(unsigned int gid) {
         return gid_map[gid];
     }
     switch (gid) {
-        case 0: return "root";
-        case 1: return "daemon";
-        case 2: return "bin";
-        case 3: return "sync";
-        case 4: return "sync";
-        case 5: return "games";
-        case 6: return "man";
-        case 7: return "lp";
-        case 8: return "mail";
-        case 9: return "news";
-        case 10: return "uucp";
-        case 13: return "proxy";
-        default: return std::to_string(gid);
+    case 0:
+        return "root";
+    case 1:
+        return "daemon";
+    case 2:
+        return "bin";
+    case 3:
+        return "sync";
+    case 4:
+        return "sync";
+    case 5:
+        return "games";
+    case 6:
+        return "man";
+    case 7:
+        return "lp";
+    case 8:
+        return "mail";
+    case 9:
+        return "news";
+    case 10:
+        return "uucp";
+    case 13:
+        return "proxy";
+    default:
+        return std::to_string(gid);
     }
     return std::to_string(gid);
 }
@@ -210,17 +252,33 @@ void Volume::ls(std::string_view path, std::optional<ListOptions> options) {
 
     std::vector<std::unique_ptr<FileStatus>> list = readDir(path, opts.recursive);
 
-    int max_width = 0;
+    int max_size_width = 0;
+    int max_user_width = 0;
+    int max_group_width = 0;
+    int max_time_width = 0;
+    int max_name_width = 0;
     for (const auto& st : list) {
-        int width = st->name.size();
-        if (width > max_width)
-            max_width = width;
+        int size_width = format_size(st->size, opts.human).size();
+        int user_width = format_uid(st->uid).size();
+        int group_width = format_gid(st->gid).size();
+        int time_width = format_time(st->modifiedTime).size();
+        int name_width = st->name.size();
+
+        if (name_width > max_name_width)
+            max_name_width = name_width;
+        if (size_width > max_size_width)
+            max_size_width = size_width;
+        if (user_width > max_user_width)
+            max_user_width = user_width;
+        if (group_width > max_group_width)
+            max_group_width = group_width;
+        if (time_width > max_time_width)
+            max_time_width = time_width;
     }
-    max_width += path.size() + 1;
 
     const char* env_columns = getenv("COLUMNS");
     int columns = env_columns ? std::stoi(env_columns) : 80;
-    int names_per_line = columns / (max_width + 1);
+    int names_per_line = columns / (max_name_width + 1);
 
     int count_in_line = 0;
     for (const auto& st : list) {
@@ -238,12 +296,14 @@ void Volume::ls(std::string_view path, std::optional<ListOptions> options) {
         std::string color_size = "";
         std::string color_user = "";
         std::string color_group = "";
+        std::string color_time = "";
         std::string color_reset = opts.color ? opts.color_end : "";
         if (opts.color) {
             color_mode = opts.color_mode;
             color_size = opts.color_size;
             color_user = opts.color_user;
             color_group = opts.color_group;
+            color_time = opts.color_time;
         }
 
         if (opts.formatSuffix || opts.color) {
@@ -286,28 +346,32 @@ void Volume::ls(std::string_view path, std::optional<ListOptions> options) {
 
         if (opts.longFormat) {
             std::string mode = format_mode(st->mode);
-            std::cout << " " << color_mode << std::setw(10) << mode << color_reset;
+            std::cout << color_mode << std::setw(10) << mode << color_reset;
 
             std::string size = format_size(st->size, opts.human);
-            std::cout << " " << color_size << std::setw(10) << size << color_reset;
-            
-                      std::string user = format_uid(st->uid);
+            std::cout << " " << color_size << std::setw(max_size_width + 1) << size << color_reset;
+
+            std::string user = format_uid(st->uid);
+            std::cout << " " << color_user << std::setw(max_user_width + 1) << user << color_reset;
+
             std::string group = format_gid(st->gid);
-            std::cout << " " << color_user << std::setw(10) << user << color_reset
-                      << " " << color_group << std::setw(10) << group << color_reset;
+            std::cout << color_group << std::setw(max_group_width + 1) << group << color_reset;
 
             std::string modifiedTime = format_time(st->modifiedTime);
             if (accessTime)
                 (void)format_time(st->accessTime);
             if (createTime)
                 (void)format_time(st->creationTime);
+            std::cout << " " << color_time << std::setw(max_time_width + 1) << modifiedTime
+                      << color_reset;
+
             std::cout << " " << color_name << childPath << color_reset;
             if (opts.formatSuffix) {
                 std::cout << opts.color_suffix << suffix << color_reset;
             }
             std::cout << std::endl;
         } else {
-            std::cout << std::setw(max_width + 1) << color_name << childPath << color_reset;
+            std::cout << std::setw(max_name_width + 1) << color_name << childPath << color_reset;
             if (opts.formatSuffix)
                 std::cout << opts.color_suffix << suffix << color_reset;
             count_in_line++;
@@ -320,27 +384,28 @@ void Volume::ls(std::string_view path, std::optional<ListOptions> options) {
     if (count_in_line > 0) {
         std::cout << std::endl;
     }
-    if (opts.recursive) {
-        for (const auto& st : list) {
-            if (st->name.front() == '.') {
-                if (st->name == "." || st->name == "..")
-                    continue;
-                if (!opts.includeDotFiles)
-                    continue;
-            }
-            if (st->isDirectory()) {
-                std::string childPath(path);
-                if (!childPath.empty())
-                    if (childPath.back() != '/')
-                        childPath += "/";
-                childPath += st->name;
-                ls(childPath, opts);
-            }
-        }
-    }
+    // if (opts.recursive) {
+    //     for (const auto& st : list) {
+    //         if (st->name.front() == '.') {
+    //             if (st->name == "." || st->name == "..")
+    //                 continue;
+    //             if (!opts.includeDotFiles)
+    //                 continue;
+    //         }
+    //         if (st->isDirectory()) {
+    //             std::string childPath(path);
+    //             if (!childPath.empty())
+    //                 if (childPath.back() != '/')
+    //                     childPath += "/";
+    //             childPath += st->name;
+    //             ls(childPath, opts);
+    //         }
+    //     }
+    // }
 }
 
-void Volume::tree(std::string_view path, const std::string& prefix, std::optional<ListOptions> options) {
+void Volume::tree(std::string_view path, const std::string& prefix,
+                  std::optional<ListOptions> options) {
     std::vector<std::unique_ptr<FileStatus>> list;
     try {
         list = this->readDir(path);
@@ -353,7 +418,7 @@ void Volume::tree(std::string_view path, const std::string& prefix, std::optiona
     std::string color_reset = opts.color ? opts.color_end : "";
     std::string color_name = opts.color ? opts.color_regular : "";
     std::string color_suffix = opts.color ? opts.color_suffix : "";
-    
+
     for (const auto& st : list) {
         if (!st)
             continue;

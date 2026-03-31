@@ -56,6 +56,7 @@ struct ListOptions {
     std::string color_size = "\033[35m";
     std::string color_user = "\033[32m";
     std::string color_group = "\033[33m";
+    std::string color_time = "\033[36m";
 
     static ListOptions parse(std::string_view options);
     static const ListOptions DEFAULT;

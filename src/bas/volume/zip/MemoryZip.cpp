@@ -6,6 +6,8 @@
 #include "../../io/StringReader.hpp"
 #include "../../io/Uint8ArrayInputStream.hpp"
 
+#include <bas/log/uselog.h>
+
 #include <algorithm>
 #include <cstring>
 #include <ctime>
@@ -192,6 +194,28 @@ template <typename T> std::string toHex(T value) {
     return ss.str();
 }
 
+std::string to_file_path(std::string_view _path) {
+    std::string path(_path);
+    // remove leading slash if present
+    while (!path.empty() && path[0] == '/') {
+        path = path.substr(1);
+    }
+    return path;
+}
+
+std::string to_dir_path(std::string_view _path) {
+    std::string path(_path);
+    // remove leading slash if present
+    while (!path.empty() && path[0] == '/') {
+        path = path.substr(1);
+    }
+    // add trailing slash if not present
+    if (path.empty() || path.back() != '/') {
+        path += "/";
+    }
+    return path;
+}
+
 std::string MemoryZip::getClass() const { return "mz"; }
 
 std::string MemoryZip::getId() const {
@@ -205,7 +229,7 @@ VolumeType MemoryZip::getType() const { return VolumeType::ARCHIVE; }
 
 std::string MemoryZip::getSource() const {
     // mem sym:offset:length
-    return std::string("mz ") + m_sym                        //
+    return std::string("mz ") + m_sym                         //
            + ":" + toHex(reinterpret_cast<uintptr_t>(m_data)) //
            + ":" + toHex(m_size);
 }
@@ -213,222 +237,105 @@ std::string MemoryZip::getSource() const {
 std::string MemoryZip::getDefaultLabel() const { return "Memory Zip"; }
 
 bool MemoryZip::exists(std::string_view path) const {
-    std::string pathStr(path);
-    if (pathStr.empty() || pathStr == "/") return true;
-    if (findEntry(pathStr) != nullptr)
+    std::string file_path = to_file_path(path);
+    if (findEntry(file_path) != nullptr)
         return true;
-    if (!pathStr.empty()) {
-        if (pathStr.back() != '/') {
-            if (findEntry(pathStr + "/") != nullptr)
-                return true;
-        }
-    }
+    std::string dir_path = to_dir_path(path);
+    if (findEntry(dir_path) != nullptr)
+        return true;
     return false;
 }
-
+        
 bool MemoryZip::isFile(std::string_view path) const {
-    std::string pathStr(path);
-    const ZipEntry* entry = findEntry(pathStr);
+    std::string file_path = to_file_path(path);
+    const ZipEntry* entry = findEntry(file_path);
     return entry != nullptr && !entry->isDirectory;
 }
 
-bool MemoryZip::isDirectory(std::string_view path) const {
-    std::string pathStr(path);
-    const ZipEntry* entry = findEntry(pathStr);
-    if (entry && entry->isDirectory) {
-        return true;
-    }
-
-    // Also check if there are any entries under this path
-    std::string normalizedPath = pathStr;
-    if (!normalizedPath.empty() && normalizedPath[0] != '/') {
-        normalizedPath = "/" + normalizedPath;
-    }
-    if (!normalizedPath.empty() && normalizedPath.back() != '/') {
-        normalizedPath += "/";
-    }
-
-    for (const auto& pair : m_entries) {
-        if (pair.first.find(normalizedPath) == 0 && pair.first != normalizedPath) {
-            return true;
-        }
-    }
-
-    return false;
+bool MemoryZip::isDirectory(std::string_view _path) const {
+    std::string dir_path = to_dir_path(_path);
+    if (dir_path == "/") return true;
+    const ZipEntry* entry = findEntry(dir_path);
+    return entry != nullptr && entry->isDirectory;
 }
+
+static void item_entry(FileStatus* st, const ZipEntry& entry, const std::string& name) {
+    st->name = name;
+    st->type = entry.isDirectory ? DIRECTORY : REGULAR_FILE;
+    st->size = entry.uncompressedSize;
+    st->modifiedTime = entry.modifiedTime;
+    st->accessTime = entry.accessTime != 0 ? entry.accessTime : entry.modifiedTime;
+    st->creationTime = entry.creationTime != 0 ? entry.creationTime : entry.modifiedTime;
+    if (entry.hasUnixIds) {
+        st->uid = entry.uid;
+        st->gid = entry.gid;
+    }
+    st->mode = S_IRUSR | S_IRGRP | S_IROTH;
+    if (st->type == DIRECTORY)
+        st->mode |= S_IFDIR | S_IXUSR | S_IXGRP | S_IXOTH;
+    else
+        st->mode |= S_IFREG;
+}
+
+// static void item_directory(FileStatus* st, const std::string& name) {
+//     st->name = name;
+//     st->type = DIRECTORY;
+//     st->size = 0;
+//     st->modifiedTime = 0;
+//     st->accessTime = 0;
+//     st->creationTime = 0;
+//     st->mode = S_IRUSR | S_IRGRP | S_IROTH;
+//     st->mode |= S_IFDIR | S_IXUSR | S_IXGRP | S_IXOTH;
+// }
 
 void MemoryZip::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list,
                                 std::string_view path, bool recursive) {
-    std::string pathStr(path);
-
-    // Normalize path
-    if (pathStr.empty() || pathStr == "/") {
-        pathStr = "";
-    } else {
-        if (pathStr[0] != '/') {
-            pathStr = "/" + pathStr;
-        }
-        if (pathStr.back() != '/') {
-            pathStr += "/";
-        }
-    }
-
-    // Find all entries under this path
-    std::map<std::string, bool> seen; // Track seen entries to avoid duplicates
+    std::string dir_path = to_dir_path(path);
+    std::string prefix = (dir_path == "/") ? "" : dir_path;
 
     for (const auto& pair : m_entries) {
         const std::string& entryName = pair.first;
 
+        if (entryName.find(prefix) != 0) {
+            continue;
+        }
+
+        std::string path_info = entryName.substr(prefix.length());
+        if (path_info.empty()) // skip self entry
+            continue;
+
+        if (path_info.back() == '/')
+            path_info = path_info.substr(0, path_info.length() - 1);
+
+        bool top_level = path_info.find('/') == std::string::npos;
+        if (!top_level && !recursive)
+            continue;
+
         auto st = std::make_unique<FileStatus>();
-        // Skip if not under this path
-        if (pathStr.empty()) {
-            // Root directory - only show top-level entries
-            size_t firstSlash = entryName.find('/', 1);
-            if (firstSlash == std::string::npos) {
-                // Top-level entry (no subdirectories)
-                std::string name = entryName.substr(1); // Remove leading /
-                if (name.back() == '/') {
-                    name.pop_back();
-                }
-                if (seen.find(name) != seen.end()) {
-                    continue;
-                }
-                seen[name] = true;
-
-                st->name = name;
-                st->type = pair.second.isDirectory ? DIRECTORY : REGULAR_FILE;
-                st->size = pair.second.uncompressedSize;
-                st->modifiedTime = pair.second.modifiedTime;
-                st->accessTime =
-                    pair.second.accessTime != 0 ? pair.second.accessTime : pair.second.modifiedTime;
-                st->creationTime = pair.second.creationTime != 0 ? pair.second.creationTime
-                                                                 : pair.second.modifiedTime;
-                if (pair.second.hasUnixIds) {
-                    st->uid = pair.second.uid;
-                    st->gid = pair.second.gid;
-                }
-            } else {
-                // Extract first component
-                std::string topLevel = entryName.substr(1, firstSlash - 1);
-                if (seen.find(topLevel) != seen.end()) {
-                    continue;
-                }
-                seen[topLevel] = true;
-
-                st->name = topLevel;
-                st->type = DIRECTORY;
-                st->size = 0;
-                st->modifiedTime = 0;
-            }
-        } else {
-            if (entryName.find(pathStr) != 0) {
-                continue;
-            }
-
-            // Extract relative name
-            std::string relative = entryName.substr(pathStr.length());
-            if (relative.empty()) {
-                continue;
-            }
-
-            // Remove leading slash if present
-            if (relative[0] == '/') {
-                relative = relative.substr(1);
-            }
-
-            // Check if it's a direct child (not nested)
-            size_t nextSlash = relative.find('/');
-            if (nextSlash != std::string::npos) {
-                // It's nested - extract the directory name
-                std::string dirName = relative.substr(0, nextSlash);
-                std::string fullDirName = pathStr + dirName + "/";
-                if (seen.find(fullDirName) != seen.end()) {
-                    continue;
-                }
-                seen[fullDirName] = true;
-
-                st->name = dirName;
-                st->type = DIRECTORY;
-                st->size = 0;
-                st->modifiedTime = 0;
-            } else {
-                // Direct child
-                if (seen.find(relative) != seen.end()) {
-                    continue;
-                }
-                seen[relative] = true;
-
-                st->name = relative;
-                st->type = pair.second.isDirectory ? DIRECTORY : REGULAR_FILE;
-                st->size = pair.second.uncompressedSize;
-                st->modifiedTime = pair.second.modifiedTime;
-                st->accessTime =
-                    pair.second.accessTime != 0 ? pair.second.accessTime : pair.second.modifiedTime;
-                st->creationTime = pair.second.creationTime != 0 ? pair.second.creationTime
-                                                                 : pair.second.modifiedTime;
-                if (pair.second.hasUnixIds) {
-                    st->uid = pair.second.uid;
-                    st->gid = pair.second.gid;
-                }
-            }
-        } // if pathStr.empty()
-
-        st->mode = S_IRUSR | S_IRGRP | S_IROTH;
-        if (st->type == DIRECTORY)
-            st->mode |= S_IFDIR | S_IXUSR | S_IXGRP | S_IXOTH;
-        else
-            st->mode |= S_IFREG;
+        item_entry(st.get(), pair.second, path_info);
 
         list.push_back(std::move(st));
     } // for m_entries
 }
 
 bool MemoryZip::stat(std::string_view path, FileStatus* status) const {
-    std::string pathStr(path);
-    const ZipEntry* entry = findEntry(pathStr);
+    std::string file_path = to_file_path(path);
+    const ZipEntry* entry = findEntry(file_path);
+
+    auto last_slash = file_path.find_last_of('/');
+    std::string base = last_slash == std::string::npos ? file_path : file_path.substr(last_slash + 1);
 
     if (entry) {
         *status = FileStatus();
-        status->name = pathStr;
-        status->type = entry->isDirectory ? DIRECTORY : REGULAR_FILE;
-        status->size = entry->uncompressedSize;
-        status->modifiedTime = entry->modifiedTime;
-        status->accessTime =
-            entry->accessTime != 0 ? entry->accessTime : entry->modifiedTime;
-        status->creationTime =
-            entry->creationTime != 0 ? entry->creationTime : entry->modifiedTime;
-        if (entry->hasUnixIds) {
-            status->uid = entry->uid;
-            status->gid = entry->gid;
-        }
+        item_entry(status, *entry, base);
         return true;
     }
 
-    // Check if it's a directory by looking for entries under this path
-    std::string normalizedPath = pathStr;
-    if (!normalizedPath.empty() && normalizedPath[0] != '/') {
-        normalizedPath = "/" + normalizedPath;
-    }
-    if (!normalizedPath.empty() && normalizedPath.back() != '/') {
-        normalizedPath += "/";
-    }
-
-    bool found = false;
-    for (const auto& pair : m_entries) {
-        if (pair.first.find(normalizedPath) == 0 && pair.first != normalizedPath) {
-            found = true;
-            break;
-        }
-    }
-
-    if (found) {
+    std::string dir_path = to_dir_path(path);
+    entry = findEntry(dir_path);
+    if (entry) {
         *status = FileStatus();
-        status->name = pathStr;
-        status->type = DIRECTORY;
-        status->size = 0;
-        status->modifiedTime = 0;
-        status->accessTime = 0;
-        status->creationTime = 0;
+        item_entry(status, *entry, base);
         return true;
     }
 
@@ -451,12 +358,14 @@ bool MemoryZip::stat(std::string_view path, FileStatus* status) const {
 // }
 
 std::unique_ptr<InputStream> MemoryZip::newInputStream(std::string_view path) {
-    std::vector<uint8_t> data = readFile(path);
+    std::string file_path = to_file_path(path);
+    std::vector<uint8_t> data = readFile(file_path);
     return std::make_unique<Uint8ArrayInputStream>(std::move(data));
 }
 
 std::unique_ptr<RandomInputStream> MemoryZip::newRandomInputStream(std::string_view path) {
-    std::vector<uint8_t> data = readFile(path);
+    std::string file_path = to_file_path(path);
+    std::vector<uint8_t> data = readFile(file_path);
     return std::make_unique<Uint8ArrayInputStream>(std::move(data));
 }
 
@@ -470,7 +379,8 @@ std::unique_ptr<OutputStream> MemoryZip::newOutputStream(std::string_view path, 
 }
 
 std::unique_ptr<Reader> MemoryZip::newReader(std::string_view path, std::string_view encoding) {
-    std::vector<uint8_t> data = readFile(path);
+    std::string file_path = to_file_path(path);
+    std::vector<uint8_t> data = readFile(file_path);
     // icu decode the data
     icu::UnicodeString unicodeString = icu::UnicodeString::fromUTF8(
         icu::StringPiece(reinterpret_cast<const char*>(data.data()), data.size()));
@@ -484,12 +394,11 @@ std::unique_ptr<Writer> MemoryZip::newWriter(std::string_view path, bool append,
     throw IOException("newWriter", std::string(path), "MemoryZip is read-only");
 }
 
-std::vector<uint8_t> MemoryZip::readFileUnchecked(std::string_view path, int64_t off,
-                                                  size_t len) {
-    std::string pathStr(path);
-    const ZipEntry* entry = findEntry(pathStr);
+std::vector<uint8_t> MemoryZip::readFileUnchecked(std::string_view path, int64_t off, size_t len) {
+    std::string file_path = to_file_path(path);
+    const ZipEntry* entry = findEntry(file_path);
     if (!entry || entry->isDirectory) {
-        throw IOException("readFile", pathStr, "File not found or is directory");
+        throw IOException("readFile", file_path, "File not found or is directory");
     }
     auto data = decompressEntry(*entry);
 
@@ -643,26 +552,15 @@ void MemoryZip::parseZip() {
         // Check if it's a directory (ZIP convention: ends with /)
         entry.isDirectory = (!filename.empty() && filename.back() == '/');
 
-        // Normalize path (ensure it starts with /)
-        std::string normalizedName = filename;
-        if (!normalizedName.empty() && normalizedName[0] != '/') {
-            normalizedName = "/" + normalizedName;
-        }
-
-        m_entries[normalizedName] = entry;
+        m_entries[filename] = entry;
 
         cdOffset +=
             sizeof(ZipCentralDirEntry) + cde->filenameLen + cde->extraFieldLen + cde->commentLen;
     }
 }
 
-const MemoryZip::ZipEntry* MemoryZip::findEntry(const std::string& path) const {
-    std::string normalizedPath = path;
-    if (!normalizedPath.empty() && normalizedPath[0] != '/') {
-        normalizedPath = "/" + normalizedPath;
-    }
-
-    auto it = m_entries.find(normalizedPath);
+const ZipEntry* MemoryZip::findEntry(const std::string& path) const {
+    auto it = m_entries.find(path);
     if (it != m_entries.end()) {
         return &it->second;
     }
