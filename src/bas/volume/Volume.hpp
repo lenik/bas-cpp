@@ -1,7 +1,7 @@
 #ifndef IVOLUME_H
 #define IVOLUME_H
 
-#include "FileStatus.hpp"
+#include "DirNode.hpp"
 #include "VolumeFile.hpp"
 
 #include "../io/InputStream.hpp"
@@ -132,19 +132,19 @@ class Volume {
     virtual bool exists(std::string_view path) const = 0;
     virtual bool isFile(std::string_view path) const = 0;
     virtual bool isDirectory(std::string_view path) const = 0;
-    virtual bool stat(std::string_view path, FileStatus* status) const = 0;
+    virtual bool stat(std::string_view path, DirNode* status) const = 0;
 
     // Directory operations
     // readDir can throw IOException or AccessException
-    virtual void readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list,
+    virtual void readDir_inplace(std::vector<std::unique_ptr<DirNode>>& list,
                                  std::string_view path, bool recursive = false) {
         printf("readDir(list, path, rec) not implemented yet\n");
     }
 
-    virtual std::vector<std::unique_ptr<FileStatus>> readDir(std::string_view path,
+    virtual std::vector<std::unique_ptr<DirNode>> readDir(std::string_view path,
                                                              bool recursive = false);
     //  {
-    //     std::vector<std::unique_ptr<FileStatus>> list;
+    //     std::vector<std::unique_ptr<DirNode>> list;
     //     readDir(list, path, recursive);
     //     return list;
     // }

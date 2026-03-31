@@ -62,9 +62,9 @@ public:
     bool exists(std::string_view path) const override;
     bool isFile(std::string_view path) const override;
     bool isDirectory(std::string_view path) const override;
-    bool stat(std::string_view path, FileStatus* status) const override;
+    bool stat(std::string_view path, DirNode* status) const override;
 
-    void readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list, std::string_view path,
+    void readDir_inplace(std::vector<std::unique_ptr<DirNode>>& list, std::string_view path,
                          bool recursive = false) override;
 
     std::unique_ptr<InputStream> newInputStream(std::string_view path) override;

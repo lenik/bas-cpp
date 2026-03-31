@@ -266,14 +266,14 @@ bool VolumeFile::moveTo(std::string_view destPath, bool overwrite) const {
     return m_volume->moveFile(m_path, destPath, overwrite);
 }
 
-void VolumeFile::readDir(std::vector<std::unique_ptr<FileStatus>>& list, bool recursive) const {
+void VolumeFile::readDir(std::vector<std::unique_ptr<DirNode>>& list, bool recursive) const {
     if (!m_volume || m_path.empty()) {
         throw IOException("readDir", m_path, "Volume or path is null/empty");
     }
     m_volume->readDir_inplace(list, m_path, recursive);
 }
 
-bool VolumeFile::stat(FileStatus* status) const {
+bool VolumeFile::stat(DirNode* status) const {
     if (!m_volume || m_path.empty()) {
         throw IOException("stat", m_path, "Volume or path is null/empty");
     }

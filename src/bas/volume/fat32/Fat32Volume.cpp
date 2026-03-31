@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <chrono>
 #include <cstring>
 #include <ctime>
 #include <fstream>
@@ -106,7 +107,7 @@ bool Fat32Volume::isDirectory(std::string_view path) const {
     return it != m_nodes.end() && it->second.isDirectory;
 }
 
-bool Fat32Volume::stat(std::string_view path, FileStatus* status) const {
+bool Fat32Volume::stat(std::string_view path, DirNode* status) const {
     if (!status) {
         throw std::invalid_argument("Fat32Volume::stat: status is null");
     }
@@ -115,17 +116,17 @@ bool Fat32Volume::stat(std::string_view path, FileStatus* status) const {
         return false;
     }
     status->name = normalizeArg(path);
-    status->type = it->second.isDirectory ? DIRECTORY : REGULAR_FILE;
+    status->type = it->second.isDirectory ? FileType::Directory : FileType::Regular;
     status->size = it->second.size;
-    status->modifiedTime = it->second.mtime;
-    status->accessTime = it->second.atime;
-    status->creationTime = it->second.creationTime;
+    status->epochSeconds(it->second.mtime);
+    status->accessTime(std::chrono::system_clock::from_time_t(it->second.atime));
+    status->creationTime(std::chrono::system_clock::from_time_t(it->second.creationTime));
     status->mode =
         static_cast<int>((it->second.isDirectory ? S_IFDIR : S_IFREG) | 0444);
     return true;
 }
 
-void Fat32Volume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list, std::string_view path,
+void Fat32Volume::readDir_inplace(std::vector<std::unique_ptr<DirNode>>& list, std::string_view path,
                                   bool recursive) {
     const std::string parent = normalizeArg(path);
     auto pit = m_nodes.find(parent);
@@ -149,20 +150,20 @@ void Fat32Volume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list
             continue;
         }
 
-        auto st = std::make_unique<FileStatus>();
+        auto st = std::make_unique<DirNode>();
         st->name = recursive ? rel : rel.substr(0, rel.find('/'));
-        st->type = node.isDirectory ? DIRECTORY : REGULAR_FILE;
+        st->type = node.isDirectory ? FileType::Directory : FileType::Regular;
         st->size = node.size;
-        st->modifiedTime = node.mtime;
-        st->accessTime = node.atime;
-        st->creationTime = node.creationTime;
+        st->epochSeconds(node.mtime);
+        st->accessTime(std::chrono::system_clock::from_time_t(node.atime));
+        st->creationTime(std::chrono::system_clock::from_time_t(node.creationTime));
         st->mode = (node.isDirectory ? S_IFDIR : S_IFREG) | 0444;
         list.push_back(std::move(st));
     }
 
     if (!recursive) {
         std::unordered_set<std::string> seen;
-        std::vector<std::unique_ptr<FileStatus>> unique;
+        std::vector<std::unique_ptr<DirNode>> unique;
         unique.reserve(list.size());
         for (auto& item : list) {
             if (seen.insert(item->name).second) {

@@ -1,7 +1,7 @@
 #include "LocalVolume.hpp"
 
 #include "DirEntry.hpp"
-#include "FileStatus.hpp"
+#include "DirNode.hpp"
 #include "mountinfo.hpp"
 
 #include "../io/IOException.hpp"
@@ -172,29 +172,15 @@ bool LocalVolume::isDirectory(std::string_view _path) const {
     return fs::is_directory(localPath);
 }
 
-bool LocalVolume::stat(std::string_view _path, FileStatus* st) const {
+bool LocalVolume::stat(std::string_view _path, DirNode* st) const {
     std::string localPath = resolveLocal(_path);
 
 #if defined(__linux__)
     struct statx sx;
-    const unsigned mask = STATX_TYPE | STATX_MODE | STATX_SIZE | STATX_UID | STATX_GID | STATX_ATIME
-                          | STATX_MTIME | STATX_CTIME | STATX_BTIME;
+    const unsigned mask = STATX_TYPE | STATX_MODE | STATX_SIZE | STATX_UID | STATX_GID |
+                          STATX_ATIME | STATX_MTIME | STATX_CTIME | STATX_BTIME;
     if (statx(AT_FDCWD, localPath.c_str(), 0, mask, &sx) == 0) {
-        *st = FileStatus();
-        st->type = S_ISDIR(sx.stx_mode) ? DIRECTORY : REGULAR_FILE;
-        if (S_ISREG(sx.stx_mode))
-            st->size = sx.stx_size;
-        else
-            st->size = 0;
-        st->modifiedTime = sx.stx_mtime.tv_sec;
-        st->accessTime = sx.stx_atime.tv_sec;
-        if (sx.stx_mask & STATX_BTIME)
-            st->creationTime = sx.stx_btime.tv_sec;
-        else
-            st->creationTime = sx.stx_mtime.tv_sec;
-        st->uid = sx.stx_uid;
-        st->gid = sx.stx_gid;
-        st->mode = static_cast<int>(sx.stx_mode);
+        st->assign(sx);
         return true;
     }
 #endif
@@ -202,23 +188,12 @@ bool LocalVolume::stat(std::string_view _path, FileStatus* st) const {
     if (::stat(localPath.c_str(), &sb) != 0) {
         return false;
     }
-    *st = FileStatus();
-    st->type = S_ISDIR(sb.st_mode) ? DIRECTORY : REGULAR_FILE;
-    if (S_ISREG(sb.st_mode))
-        st->size = static_cast<uint64_t>(sb.st_size);
-    else
-        st->size = 0;
-    st->modifiedTime = sb.st_mtime;
-    st->accessTime = sb.st_atime;
-    st->creationTime = sb.st_mtime;
-    st->uid = static_cast<unsigned>(sb.st_uid);
-    st->gid = static_cast<unsigned>(sb.st_gid);
-    st->mode = static_cast<int>(sb.st_mode);
+    st->assign(sb);
     return true;
 }
 
 // Add one directory's entries to list using POSIX opendir/readdir (avoids libstdc++ path segfault).
-static void readDirOne(const std::string& dirPath, std::vector<std::unique_ptr<FileStatus>>& list) {
+static void readDirOne(const std::string& dirPath, std::vector<std::unique_ptr<DirNode>>& list) {
     DIR* dir = opendir(dirPath.c_str());
     if (!dir) {
         throw IOException("readDir", dirPath, std::strerror(errno));
@@ -237,16 +212,9 @@ static void readDirOne(const std::string& dirPath, std::vector<std::unique_ptr<F
         if (stat(fullPath.c_str(), &st) != 0)
             continue;
 
-        auto fileStatus = std::make_unique<FileStatus>();
+        auto fileStatus = std::make_unique<DirNode>();
         fileStatus->name = ent->d_name;
-        fileStatus->type = S_ISDIR(st.st_mode) ? FileType::DIRECTORY : FileType::REGULAR_FILE;
-        fileStatus->size = S_ISREG(st.st_mode) ? static_cast<uint64_t>(st.st_size) : 0;
-        fileStatus->modifiedTime = st.st_mtime;
-        fileStatus->accessTime = st.st_atime;
-        fileStatus->creationTime = st.st_mtime;
-        fileStatus->uid = static_cast<unsigned>(st.st_uid);
-        fileStatus->gid = static_cast<unsigned>(st.st_gid);
-        fileStatus->mode = static_cast<int>(st.st_mode);
+        fileStatus->assign(st);
         list.push_back(std::move(fileStatus));
     }
     closedir(dir);
@@ -254,7 +222,7 @@ static void readDirOne(const std::string& dirPath, std::vector<std::unique_ptr<F
 
 // Recursively collect entries under dirPath (relative names for subdirs).
 static void readDirRecursive(const std::string& dirPath, const std::string& prefix,
-                             std::vector<std::unique_ptr<FileStatus>>& list) {
+                             std::vector<std::unique_ptr<DirNode>>& list) {
     DIR* dir = opendir(dirPath.c_str());
     if (!dir)
         return;
@@ -273,16 +241,9 @@ static void readDirRecursive(const std::string& dirPath, const std::string& pref
             continue;
 
         std::string displayName = prefix.empty() ? ent->d_name : prefix + "/" + ent->d_name;
-        auto fileStatus = std::make_unique<FileStatus>();
+        auto fileStatus = std::make_unique<DirNode>();
         fileStatus->name = displayName;
-        fileStatus->type = S_ISDIR(st.st_mode) ? FileType::DIRECTORY : FileType::REGULAR_FILE;
-        fileStatus->size = S_ISREG(st.st_mode) ? static_cast<uint64_t>(st.st_size) : 0;
-        fileStatus->modifiedTime = st.st_mtime;
-        fileStatus->accessTime = st.st_atime;
-        fileStatus->creationTime = st.st_mtime;
-        fileStatus->uid = static_cast<unsigned>(st.st_uid);
-        fileStatus->gid = static_cast<unsigned>(st.st_gid);
-        fileStatus->mode = static_cast<int>(st.st_mode);
+        fileStatus->assign(st);
         list.push_back(std::move(fileStatus));
         if (S_ISDIR(st.st_mode)) {
             readDirRecursive(fullPath, displayName, list);
@@ -291,7 +252,7 @@ static void readDirRecursive(const std::string& dirPath, const std::string& pref
     closedir(dir);
 }
 
-void LocalVolume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list,
+void LocalVolume::readDir_inplace(std::vector<std::unique_ptr<DirNode>>& list,
                                   std::string_view _path, bool recursive) {
     std::string dirPath = resolveLocal(_path);
 

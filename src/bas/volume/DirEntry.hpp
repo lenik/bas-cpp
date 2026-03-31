@@ -1,48 +1,75 @@
 #ifndef DIRENTRY_H
 #define DIRENTRY_H
 
+#include <date/tz.h>
+
 #include <cstdint>
 #include <ctime>
 #include <string>
 
-enum FileType {
-    REGULAR_FILE = 1,
-    DIRECTORY = 2,
-    SYMBOLIC_LINK = 4,
-    BLOCK_DEVICE = 8,
-    CHARACTER_DEVICE = 16,
-    FIFO = 32,
-    SOCKET = 64,
+enum class FileType : uint8_t {
+    Unknown = 0,
+    Regular,
+    Directory,
+    Symlink,
+    CharacterDevice,
+    BlockDevice,
+    FIFO,
+    Socket
 };
 
-class DirEntry {
-public:
-    DirEntry()
-        : name()
-        , type(REGULAR_FILE)
-    {}
-    
-    DirEntry(std::string_view name, FileType type = REGULAR_FILE)
-        : name(name)
-        , type(type)
-    {}
-    
-    std::string name;
-    int type;
-    uint64_t size{0};
-    time_t modifiedTime{0};
-    time_t creationTime{0};
-    unsigned int uid{0};
-    unsigned int gid{0};
+struct DirEntry {
 
-public:
-    inline bool isRegularFile() const { return (type & REGULAR_FILE) != 0; }
-    inline bool isDirectory() const { return (type & DIRECTORY) != 0; }
-    inline bool isSymbolicLink() const { return (type & SYMBOLIC_LINK) != 0; }
-    inline bool isBlockDevice() const { return (type & BLOCK_DEVICE) != 0; }
-    inline bool isCharacterDevice() const { return (type & CHARACTER_DEVICE) != 0; }
-    inline bool isFIFO() const { return (type & FIFO) != 0; }
-    inline bool isSocket() const { return (type & SOCKET) != 0; }
+    int64_t inode{0};
+    std::string name;
+    FileType type{FileType::Unknown};
+    int64_t size{0};
+
+    // Nanoseconds since Unix Epoch (1970-01-01)
+    int64_t epochNano{0};
+
+  public:
+    DirEntry() = default;
+
+    DirEntry(std::string_view name, FileType type = FileType::Unknown, int64_t size = 0,
+             int64_t epochNano = 0)
+        : name(name), type(type), size(size), epochNano(epochNano) {}
+
+  public:
+    inline bool isRegularFile() const { return type == FileType::Regular; }
+    inline bool isDirectory() const { return type == FileType::Directory; }
+    inline bool isSymbolicLink() const { return type == FileType::Symlink; }
+    inline bool isBlockDevice() const { return type == FileType::BlockDevice; }
+    inline bool isCharacterDevice() const { return type == FileType::CharacterDevice; }
+    inline bool isFIFO() const { return type == FileType::FIFO; }
+    inline bool isSocket() const { return type == FileType::Socket; }
+
+    inline int64_t epochSeconds() const { return epochNano / 1'000'000'000LL; }
+    inline void epochSeconds(int64_t seconds) { epochNano = seconds * 1'000'000'000LL; }
+
+    inline std::chrono::system_clock::time_point epochTime() const {
+        auto duration = std::chrono::nanoseconds(epochNano);
+        return std::chrono::system_clock::time_point(
+            std::chrono::duration_cast<std::chrono::system_clock::duration>(duration));
+    }
+
+    inline void epochTime(std::chrono::system_clock::duration duration) {
+        epochNano = std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();
+    }
+    inline void epochTime(std::chrono::system_clock::time_point time) {
+        epochTime(time.time_since_epoch());
+    }
+
+    inline auto zonedTime() const { return date::zoned_time{date::current_zone(), epochTime()}; }
+    inline auto localTime() const { return zonedTime().get_local_time(); }
+
+    inline void zonedTime(date::zoned_time<std::chrono::system_clock::duration> zoned) {
+        epochTime(zoned.get_sys_time());
+    }
+    inline void localTime(date::local_time<std::chrono::system_clock::duration> local) {
+        auto zoned = date::zoned_time{date::current_zone(), local};
+        epochTime(zoned.get_sys_time());
+    }
 };
 
 #endif // DIRENTRY_H

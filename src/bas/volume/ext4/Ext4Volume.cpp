@@ -7,6 +7,7 @@
 #include "../../io/StringReader.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <functional>
 #include <stdexcept>
 #include <unordered_set>
@@ -77,7 +78,7 @@ bool Ext4Volume::isDirectory(std::string_view path) const {
     return resolveNode(path, &node) && node.isDirectory;
 }
 
-bool Ext4Volume::stat(std::string_view path, FileStatus* status) const {
+bool Ext4Volume::stat(std::string_view path, DirNode* status) const {
     if (!status) {
         throw std::invalid_argument("Ext4Volume::stat: status is null");
     }
@@ -87,18 +88,19 @@ bool Ext4Volume::stat(std::string_view path, FileStatus* status) const {
         return false;
     }
     status->name = normalized;
-    status->type = node.isDirectory ? DIRECTORY : REGULAR_FILE;
+    status->type = node.isDirectory ? FileType::Directory : FileType::Regular;
     status->size = node.size;
+    status->inode = node.inode;
     status->mode = node.mode;
-    status->uid = static_cast<unsigned int>(node.uid);
-    status->gid = static_cast<unsigned int>(node.gid);
-    status->modifiedTime = node.mtime;
-    status->accessTime = node.atime;
-    status->creationTime = node.ctime;
+    status->uid = node.uid;
+    status->gid = node.gid;
+    status->epochSeconds(node.mtime);
+    status->accessTime(std::chrono::system_clock::from_time_t(node.atime));
+    status->creationTime(std::chrono::system_clock::from_time_t(node.ctime));
     return true;
 }
 
-void Ext4Volume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list, std::string_view path,
+void Ext4Volume::readDir_inplace(std::vector<std::unique_ptr<DirNode>>& list, std::string_view path,
                                  bool recursive) {
     const std::string parent = normalizeArg(path);
     Node parentNode;
@@ -112,16 +114,17 @@ void Ext4Volume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list,
     const auto& children = getDirectoryEntries(parentNode.inode);
     if (!recursive) {
         for (const auto& [name, node] : children) {
-            auto st = std::make_unique<FileStatus>();
+            auto st = std::make_unique<DirNode>();
             st->name = name;
-            st->type = node.isDirectory ? DIRECTORY : REGULAR_FILE;
+            st->type = node.isDirectory ? FileType::Directory : FileType::Regular;
             st->size = node.size;
-            st->modifiedTime = node.mtime;
-            st->accessTime = node.atime;
-            st->creationTime = node.ctime;
-            st->uid = static_cast<unsigned int>(node.uid);
-            st->gid = static_cast<unsigned int>(node.gid);
-            st->mode = static_cast<int>(node.mode);
+            st->inode = node.inode;
+            st->mode = node.mode;
+            st->uid = node.uid;
+            st->gid = node.gid;
+            st->epochSeconds(node.mtime);
+            st->accessTime(std::chrono::system_clock::from_time_t(node.atime));
+            st->creationTime(std::chrono::system_clock::from_time_t(node.ctime));
             list.push_back(std::move(st));
         }
         return;
@@ -138,16 +141,17 @@ void Ext4Volume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list,
             std::string absPath = (basePath == "/") ? ("/" + name) : (basePath + "/" + name);
             std::string relPath = (parent == "/") ? absPath.substr(1) : absPath.substr(parent.size() + 1);
 
-            auto st = std::make_unique<FileStatus>();
+            auto st = std::make_unique<DirNode>();
             st->name = relPath;
-            st->type = child.isDirectory ? DIRECTORY : REGULAR_FILE;
+            st->type = child.isDirectory ? FileType::Directory : FileType::Regular;
             st->size = child.size;
-            st->modifiedTime = child.mtime;
-            st->accessTime = child.atime;
-            st->creationTime = child.ctime;
-            st->uid = static_cast<unsigned int>(child.uid);
-            st->gid = static_cast<unsigned int>(child.gid);
-            st->mode = static_cast<int>(child.mode);
+            st->inode = child.inode;
+            st->mode = child.mode;
+            st->uid = child.uid;
+            st->gid = child.gid;
+            st->epochSeconds(child.mtime);
+            st->accessTime(std::chrono::system_clock::from_time_t(child.atime));
+            st->creationTime(std::chrono::system_clock::from_time_t(child.ctime));
             list.push_back(std::move(st));
 
             m_nodes[absPath] = child;

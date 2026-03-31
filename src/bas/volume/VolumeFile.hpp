@@ -1,7 +1,7 @@
 #ifndef VOLUMEFILE_H
 #define VOLUMEFILE_H
 
-#include "FileStatus.hpp"
+#include "DirNode.hpp"
 
 #include "../io/InputStream.hpp"
 #include "../io/OutputStream.hpp"
@@ -100,13 +100,13 @@ struct VolumeFile {
     bool renameTo(std::string_view destPath, bool overwrite = true) const;
 
     // readDir and stat can throw IOException or AccessException
-    void readDir(std::vector<std::unique_ptr<FileStatus>>& list, bool recursive = false) const;
-    std::vector<std::unique_ptr<FileStatus>> readDir(bool recursive = false) const {
-        std::vector<std::unique_ptr<FileStatus>> list;
+    void readDir(std::vector<std::unique_ptr<DirNode>>& list, bool recursive = false) const;
+    std::vector<std::unique_ptr<DirNode>> readDir(bool recursive = false) const {
+        std::vector<std::unique_ptr<DirNode>> list;
         readDir(list, recursive);
         return list;
     }
-    bool stat(FileStatus* status) const;
+    bool stat(DirNode* status) const;
 
     // std::unique_ptr<IReadStream> openForRead() const;
     // std::unique_ptr<IWriteStream> openForWrite(bool append = false) const;

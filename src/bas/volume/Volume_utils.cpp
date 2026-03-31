@@ -87,10 +87,11 @@ std::string format_size(size_t size, bool human) {
     return ss.str();
 }
 
-std::string format_time(time_t time) {
-    std::stringstream ss;
-    ss << std::put_time(std::localtime(&time), "%Y-%m-%d %H:%M:%S");
-    return ss.str();
+std::string format_time(int64_t epochNano) {
+    auto time = std::chrono::system_clock::time_point(std::chrono::nanoseconds(epochNano));
+    auto zoned = date::zoned_time{date::current_zone(), time};
+    auto local = zoned.get_local_time();
+    return date::format("%Y-%m-%d %H:%M:%S", local);
 }
 
 const ListOptions ListOptions::DEFAULT;
@@ -250,7 +251,7 @@ void Volume::ls(std::string_view path, std::optional<ListOptions> options) {
     bool accessTime = false;
     bool createTime = false;
 
-    std::vector<std::unique_ptr<FileStatus>> list = readDir(path, opts.recursive);
+    std::vector<std::unique_ptr<DirNode>> list = readDir(path, opts.recursive);
 
     int max_size_width = 0;
     int max_user_width = 0;
@@ -261,7 +262,7 @@ void Volume::ls(std::string_view path, std::optional<ListOptions> options) {
         int size_width = format_size(st->size, opts.human).size();
         int user_width = format_uid(st->uid).size();
         int group_width = format_gid(st->gid).size();
-        int time_width = format_time(st->modifiedTime).size();
+        int time_width = format_time(st->modifiedNano()).size();
         int name_width = st->name.size();
 
         if (name_width > max_name_width)
@@ -357,11 +358,11 @@ void Volume::ls(std::string_view path, std::optional<ListOptions> options) {
             std::string group = format_gid(st->gid);
             std::cout << color_group << std::setw(max_group_width + 1) << group << color_reset;
 
-            std::string modifiedTime = format_time(st->modifiedTime);
+            std::string modifiedTime = format_time(st->modifiedNano());
             if (accessTime)
-                (void)format_time(st->accessTime);
+                (void)format_time(st->accessNano());
             if (createTime)
-                (void)format_time(st->creationTime);
+                (void)format_time(st->creationNano());
             std::cout << " " << color_time << std::setw(max_time_width + 1) << modifiedTime
                       << color_reset;
 
@@ -406,7 +407,7 @@ void Volume::ls(std::string_view path, std::optional<ListOptions> options) {
 
 void Volume::tree(std::string_view path, const std::string& prefix,
                   std::optional<ListOptions> options) {
-    std::vector<std::unique_ptr<FileStatus>> list;
+    std::vector<std::unique_ptr<DirNode>> list;
     try {
         list = this->readDir(path);
     } catch (const std::exception& e) {

@@ -1,6 +1,6 @@
 #include "MemoryZip.hpp"
 
-#include "../FileStatus.hpp"
+#include "../DirNode.hpp"
 
 #include "../../io/IOException.hpp"
 #include "../../io/StringReader.hpp"
@@ -9,6 +9,7 @@
 #include <bas/log/uselog.h>
 
 #include <algorithm>
+#include <chrono>
 #include <cstring>
 #include <ctime>
 #include <map>
@@ -245,7 +246,7 @@ bool MemoryZip::exists(std::string_view path) const {
         return true;
     return false;
 }
-        
+
 bool MemoryZip::isFile(std::string_view path) const {
     std::string file_path = to_file_path(path);
     const ZipEntry* entry = findEntry(file_path);
@@ -254,42 +255,34 @@ bool MemoryZip::isFile(std::string_view path) const {
 
 bool MemoryZip::isDirectory(std::string_view _path) const {
     std::string dir_path = to_dir_path(_path);
-    if (dir_path == "/") return true;
+    if (dir_path == "/")
+        return true;
     const ZipEntry* entry = findEntry(dir_path);
     return entry != nullptr && entry->isDirectory;
 }
 
-static void item_entry(FileStatus* st, const ZipEntry& entry, const std::string& name) {
+static void item_entry(DirNode* st, const ZipEntry& entry, const std::string& name) {
     st->name = name;
-    st->type = entry.isDirectory ? DIRECTORY : REGULAR_FILE;
+    st->type = entry.isDirectory ? FileType::Directory : FileType::Regular;
     st->size = entry.uncompressedSize;
-    st->modifiedTime = entry.modifiedTime;
-    st->accessTime = entry.accessTime != 0 ? entry.accessTime : entry.modifiedTime;
-    st->creationTime = entry.creationTime != 0 ? entry.creationTime : entry.modifiedTime;
+    st->epochSeconds(entry.modifiedTime);
+    st->accessTime(std::chrono::system_clock::from_time_t(
+        entry.accessTime != 0 ? entry.accessTime : entry.modifiedTime));
+    st->creationTime(std::chrono::system_clock::from_time_t(
+        entry.creationTime != 0 ? entry.creationTime : entry.modifiedTime));
     if (entry.hasUnixIds) {
-        st->uid = entry.uid;
-        st->gid = entry.gid;
+        st->uid = static_cast<uint32_t>(entry.uid);
+        st->gid = static_cast<uint32_t>(entry.gid);
     }
     st->mode = S_IRUSR | S_IRGRP | S_IROTH;
-    if (st->type == DIRECTORY)
+    if (st->type == FileType::Directory)
         st->mode |= S_IFDIR | S_IXUSR | S_IXGRP | S_IXOTH;
     else
         st->mode |= S_IFREG;
 }
 
-// static void item_directory(FileStatus* st, const std::string& name) {
-//     st->name = name;
-//     st->type = DIRECTORY;
-//     st->size = 0;
-//     st->modifiedTime = 0;
-//     st->accessTime = 0;
-//     st->creationTime = 0;
-//     st->mode = S_IRUSR | S_IRGRP | S_IROTH;
-//     st->mode |= S_IFDIR | S_IXUSR | S_IXGRP | S_IXOTH;
-// }
-
-void MemoryZip::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list,
-                                std::string_view path, bool recursive) {
+void MemoryZip::readDir_inplace(std::vector<std::unique_ptr<DirNode>>& list, std::string_view path,
+                                bool recursive) {
     std::string dir_path = to_dir_path(path);
     std::string prefix = (dir_path == "/") ? "" : dir_path;
 
@@ -311,22 +304,22 @@ void MemoryZip::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list,
         if (!top_level && !recursive)
             continue;
 
-        auto st = std::make_unique<FileStatus>();
+        auto st = std::make_unique<DirNode>();
         item_entry(st.get(), pair.second, path_info);
 
         list.push_back(std::move(st));
     } // for m_entries
 }
 
-bool MemoryZip::stat(std::string_view path, FileStatus* status) const {
+bool MemoryZip::stat(std::string_view path, DirNode* status) const {
     std::string file_path = to_file_path(path);
     const ZipEntry* entry = findEntry(file_path);
 
     auto last_slash = file_path.find_last_of('/');
-    std::string base = last_slash == std::string::npos ? file_path : file_path.substr(last_slash + 1);
+    std::string base =
+        last_slash == std::string::npos ? file_path : file_path.substr(last_slash + 1);
 
     if (entry) {
-        *status = FileStatus();
         item_entry(status, *entry, base);
         return true;
     }
@@ -334,7 +327,6 @@ bool MemoryZip::stat(std::string_view path, FileStatus* status) const {
     std::string dir_path = to_dir_path(path);
     entry = findEntry(dir_path);
     if (entry) {
-        *status = FileStatus();
         item_entry(status, *entry, base);
         return true;
     }

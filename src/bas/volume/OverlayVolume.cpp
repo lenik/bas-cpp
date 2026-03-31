@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <utility>
 
-static void eraseSubtreeKeys(std::map<std::string, std::unique_ptr<FileStatus>>& m,
+static void eraseSubtreeKeys(std::map<std::string, std::unique_ptr<DirNode>>& m,
                              const std::string& prefix) {
     auto it = m.lower_bound(prefix);
     while (it != m.end() && it->first.size() >= prefix.size() &&
@@ -20,8 +20,8 @@ static void eraseSubtreeKeys(std::map<std::string, std::unique_ptr<FileStatus>>&
     }
 }
 
-static void mergeDirEntry(std::map<std::string, std::unique_ptr<FileStatus>>& m,
-                          std::unique_ptr<FileStatus> st) {
+static void mergeDirEntry(std::map<std::string, std::unique_ptr<DirNode>>& m,
+                          std::unique_ptr<DirNode> st) {
     const std::string& key = st->name;
     // A non-directory at `key` masks any directory tree below; drop stale descendants.
     // Two directories at `key` merge: keep existing `key/...` from lower layers unless
@@ -226,7 +226,7 @@ bool OverlayVolume::isDirectory(std::string_view path) const {
     return w && w->isDirectory(path);
 }
 
-bool OverlayVolume::stat(std::string_view path, FileStatus* status) const {
+bool OverlayVolume::stat(std::string_view path, DirNode* status) const {
     Volume* w = layerExists(path);
     if (!w) {
         return false;
@@ -234,7 +234,7 @@ bool OverlayVolume::stat(std::string_view path, FileStatus* status) const {
     return w->stat(path, status);
 }
 
-void OverlayVolume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& list,
+void OverlayVolume::readDir_inplace(std::vector<std::unique_ptr<DirNode>>& out,
                                     std::string_view path, bool recursive) {
     bool anyDir = false;
     for (const auto& layer : m_layers) {
@@ -247,22 +247,22 @@ void OverlayVolume::readDir_inplace(std::vector<std::unique_ptr<FileStatus>>& li
         throw IOException("readDir", path, "Path is not a directory");
     }
 
-    std::map<std::string, std::unique_ptr<FileStatus>> merged;
+    std::map<std::string, std::unique_ptr<DirNode>> union_map;
     for (auto& layer : m_layers) {
         if (!layer->isDirectory(path)) {
             continue;
         }
-        std::vector<std::unique_ptr<FileStatus>> sub;
-        layer->readDir_inplace(sub, path, recursive);
-        for (auto& e : sub) {
-            mergeDirEntry(merged, std::move(e));
+        std::vector<std::unique_ptr<DirNode>> layer_list;
+        layer->readDir_inplace(layer_list, path, recursive);
+        for (auto& e : layer_list) {
+            mergeDirEntry(union_map, std::move(e));
         }
     }
 
-    list.clear();
-    list.reserve(merged.size());
-    for (auto& kv : merged) {
-        list.push_back(std::move(kv.second));
+    out.clear();
+    out.reserve(union_map.size());
+    for (auto& kv : union_map) {
+        out.push_back(std::move(kv.second));
     }
 }
 

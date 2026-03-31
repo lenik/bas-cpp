@@ -18,7 +18,7 @@ cpp = meson.get_compiler('cpp')
 stdcxxfs_deps = []
 stdcxxfs_lib = cpp.find_library('stdc++fs', required: false)
 if stdcxxfs_lib.found()
-  stdcxxfs_deps += stdcxxfs_lib
+    stdcxxfs_deps += stdcxxfs_lib
 endif
 # Disable all warnings (wx 3.0 and deps are noisy)
 cpp_nowarn = []
@@ -32,6 +32,8 @@ bas_c_static_dep = dependency('bas-c-static', required: true)
 boost_sub = subproject('boost')
 boost_json_dep = boost_sub.get_variable('boost_json_dep')
 boost_locale_dep = boost_sub.get_variable('boost_locale_dep')
+
+date_dep = subproject('date_tz').get_variable('date_dep')
 
 # GLib for scriptable UI stack (GList)
 glib_dep = dependency('glib-2.0', required: true)
@@ -142,12 +144,13 @@ cpp_sources = files(
     './src/bas/util/LogBuffer.cpp',
     './src/bas/util/Path.cpp',
     './src/bas/util/PathHelper.cpp',
+    './src/bas/volume/DirNode.cpp',
     './src/bas/volume/LocalVolume.cpp',
     './src/bas/volume/OverlayVolume.cpp',
     './src/bas/volume/Volume.cpp',
-    './src/bas/volume/Volume_utils.cpp',
     './src/bas/volume/VolumeFile.cpp',
     './src/bas/volume/VolumeManager.cpp',
+    './src/bas/volume/Volume_utils.cpp',
     './src/bas/volume/ext4/Ext4FileInputStream.cpp',
     './src/bas/volume/ext4/Ext4FileOutputStream.cpp',
     './src/bas/volume/ext4/Ext4Volume.cpp',
@@ -200,6 +203,7 @@ exe_deps = [
     bas_c_dep,
     boost_json_dep,
     boost_locale_dep,
+    date_dep,
     glib_dep,
     icu_uc_dep,
     libcurl_dep,
@@ -211,6 +215,7 @@ exe_static_deps = [
     bas_c_static_dep,
     boost_json_dep,
     boost_locale_dep,
+    date_dep,
     glib_dep,
     icu_uc_dep,
     libcurl_dep,
@@ -222,7 +227,7 @@ exe_inc = [
     include_directories('src'),
 ]
 
-override_options = ['b_lundef=false']  # Allows undefined symbols at link time
+override_options = ['b_lundef=false'] # Allows undefined symbols at link time
 
 lib_bas_cpp = library(
     'bas-cpp',
@@ -272,7 +277,7 @@ pkgconfig.generate(
     description: 'C++ base library: I/O, network, volume, formatting, scripting',
     version: meson.project_version(),
     subdirs: 'bas',
-    requires: ['bas-c', 'glib-2.0', 'libcurl', 'openssl', 'zlib', 'icu-uc'],
+    requires: ['bas-c', 'date-tz', 'glib-2.0', 'icu-uc', 'libcurl', 'openssl', 'zlib'],
 )
 
 pkgconfig.generate(
@@ -281,7 +286,7 @@ pkgconfig.generate(
     description: 'C++ base library: I/O, network, volume, formatting, scripting',
     version: meson.project_version(),
     subdirs: 'bas',
-    requires: ['glib-2.0', 'libcurl', 'openssl', 'zlib', 'icu-uc'],
+    requires: ['date-tz', 'glib-2.0', 'icu-uc', 'libcurl', 'openssl', 'zlib'],
 )
 
 # ---- Headers for libbas-c package (includedir/bas-c) ----
