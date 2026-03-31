@@ -1,8 +1,8 @@
-#include "volume/LocalVolume.hpp"
-#include "volume/VolumeManager.hpp"
+#include "bas/volume/LocalVolume.hpp"
+#include "bas/volume/VolumeManager.hpp"
 
-#include <log/logger.h>
-#include <log/uselog.h>
+#include <bas/log/logger.h>
+#include <bas/log/uselog.h>
 
 #include <getopt.h>
 

@@ -1,5 +1,5 @@
-#include "proc/UseAssets.hpp"
-#include "proc/AssetsRegistry.hpp"
+#include "bas/proc/UseAssets.hpp"
+#include "bas/proc/AssetsRegistry.hpp"
 
 #include <iostream>
 

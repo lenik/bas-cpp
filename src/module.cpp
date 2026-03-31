@@ -1,5 +1,5 @@
-#include "proc/AssetsRegistry.hpp"
-#include "proc/DefAssets.hpp"
+#include "bas/proc/AssetsRegistry.hpp"
+#include "bas/proc/DefAssets.hpp"
 
 #include <bas/log/deflog.h>
 
