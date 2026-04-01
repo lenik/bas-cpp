@@ -149,6 +149,7 @@ private:
     void updateDirectoryEntryOnDisk(std::string_view path, const Dirent& dirent);
     void markDirectoryEntryAsDeleted(uint32_t dirCluster, std::string_view name);
     uint32_t findFreeDirEntrySlot(uint32_t dirCluster);
+    uint32_t findFreeDirEntrySlots(uint32_t dirCluster, uint32_t count);
     void expandDirectoryIfNeeded(uint32_t dirCluster);
     
     // LFN support

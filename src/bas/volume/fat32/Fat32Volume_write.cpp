@@ -444,31 +444,48 @@ void Fat32Volume::deleteDirectoryEntry(std::string_view path) {
 }
 
 uint32_t Fat32Volume::findFreeDirEntrySlot(uint32_t dirCluster) {
-    // Read directory clusters and find free slot (marked with 0x00 or 0xE5)
+    return findFreeDirEntrySlots(dirCluster, 1);
+}
+
+uint32_t Fat32Volume::findFreeDirEntrySlots(uint32_t dirCluster, uint32_t count) {
+    // Read directory clusters and find consecutive free slots
     std::vector<uint32_t> chain = readClusterChain(dirCluster);
 
     uint32_t clusterIndex = 0;
+    uint32_t consecutiveFree = 0;
+    uint32_t startOffset = 0xFFFFFFFF;
+    
     for (uint32_t cluster : chain) {
         uint64_t offset = clusterToOffset(cluster);
         std::vector<uint8_t> block(m_clusterSize);
 
         if (!readAt(offset, block.data(), block.size())) {
             clusterIndex++;
+            consecutiveFree = 0;
+            startOffset = 0xFFFFFFFF;
             continue;
         }
 
-        // Scan for free entry
+        // Scan for consecutive free entries
         for (uint32_t pos = 0; pos + 32 <= m_clusterSize; pos += 32) {
             uint8_t firstByte = block[pos];
             if (firstByte == 0x00 || firstByte == 0xE5) {
-                // Found free slot - return absolute byte offset in cluster chain
-                return (clusterIndex * m_clusterSize) + pos;
+                if (consecutiveFree == 0) {
+                    startOffset = (clusterIndex * m_clusterSize) + pos;
+                }
+                consecutiveFree++;
+                if (consecutiveFree >= count) {
+                    return startOffset;
+                }
+            } else {
+                consecutiveFree = 0;
+                startOffset = 0xFFFFFFFF;
             }
         }
         clusterIndex++;
     }
 
-    return 0xFFFFFFFF; // No free slot found
+    return 0xFFFFFFFF; // No consecutive free slots found
 }
 
 void Fat32Volume::expandDirectoryIfNeeded(uint32_t dirCluster) {
@@ -531,15 +548,57 @@ void Fat32Volume::writeDirectoryEntryToDisk(std::string_view path, const Dirent&
         throw IOException("writeDirectoryEntryToDisk", std::string(path), "Invalid cluster index");
     }
 
-    // Use short name for disk storage (8.3 format)
-    uint64_t clusterOffset = clusterToOffset(chain[clusterIndex]) + offsetInCluster;
-    std::vector<uint8_t> entry(32);
-    std::string shortName = createShortName(fileName);
-    writeDirEntry(entry.data(), shortName, dirent.firstCluster, dirent.size, dirent.isDirectory,
-                  dirent.mtime, dirent.atime, dirent.creationTime);
-    if (!writeAt(clusterOffset, entry.data(), entry.size())) {
-        throw IOException("writeDirectoryEntryToDisk", std::string(path),
-                          "Failed to write entry to disk");
+    // Check if LFN entries are needed (name > 8 chars or has extension > 3 chars or has special chars)
+    bool needsLFN = fileName.size() > 12 || fileName.find('.') != std::string::npos;
+    
+    if (needsLFN) {
+        // Write LFN entries first, then short name entry
+        uint8_t checksum = calculateLFNChecksumForShortName(fileName);
+        
+        // Calculate how many LFN entries we need (13 chars per entry)
+        size_t lfnEntries = (fileName.size() + 12) / 13;
+        
+        // Find enough consecutive slots for LFN + short name
+        uint32_t totalSlotsNeeded = lfnEntries + 1;  // LFN entries + 1 short name entry
+        uint32_t slotOffset = findFreeDirEntrySlots(parentCluster, totalSlotsNeeded);
+        if (slotOffset == 0xFFFFFFFF) {
+            throw IOException("writeDirectoryEntryToDisk", std::string(path), 
+                              "No space for LFN entries in directory");
+        }
+        
+        // Write LFN entries
+        writeLFNEntries(parentCluster, slotOffset, fileName, checksum);
+        
+        // Write short name entry after LFN entries
+        uint32_t shortNameSlot = slotOffset + (lfnEntries * 32);
+        clusterIndex = shortNameSlot / m_clusterSize;
+        offsetInCluster = shortNameSlot % m_clusterSize;
+        
+        if (clusterIndex >= chain.size()) {
+            throw IOException("writeDirectoryEntryToDisk", std::string(path), 
+                              "Invalid cluster index for short name");
+        }
+        
+        uint64_t clusterOffset = clusterToOffset(chain[clusterIndex]) + offsetInCluster;
+        std::vector<uint8_t> entry(32);
+        std::string shortName = createShortName(fileName);
+        writeDirEntry(entry.data(), shortName, dirent.firstCluster, dirent.size, dirent.isDirectory,
+                      dirent.mtime, dirent.atime, dirent.creationTime);
+        if (!writeAt(clusterOffset, entry.data(), entry.size())) {
+            throw IOException("writeDirectoryEntryToDisk", std::string(path),
+                              "Failed to write short name entry to disk");
+        }
+    } else {
+        // Simple 8.3 name, just write one entry
+        uint64_t clusterOffset = clusterToOffset(chain[clusterIndex]) + offsetInCluster;
+        std::vector<uint8_t> entry(32);
+        std::string shortName = createShortName(fileName);
+        writeDirEntry(entry.data(), shortName, dirent.firstCluster, dirent.size, dirent.isDirectory,
+                      dirent.mtime, dirent.atime, dirent.creationTime);
+        if (!writeAt(clusterOffset, entry.data(), entry.size())) {
+            throw IOException("writeDirectoryEntryToDisk", std::string(path),
+                              "Failed to write entry to disk");
+        }
     }
 }
 
