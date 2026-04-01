@@ -26,6 +26,13 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
     if (rc) {
         throw IOException("writeFile", std::string(path), "ext2fs_open failed");
     }
+    
+    // Read bitmaps and initialize filesystem state
+    rc = ext2fs_read_bitmaps(fs);
+    if (rc) {
+        ext2fs_close(fs);
+        throw IOException("writeFile", std::string(path), "Failed to read bitmaps");
+    }
 
     struct ext2_inode inode{};
     ext2_ino_t ino = 0;
@@ -100,11 +107,18 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
             throw IOException("writeFile", std::string(path), "Failed to create directory entry");
         }
     }
+    
+    // Flush filesystem to ensure changes are written to disk
+    rc = ext2fs_flush(fs);
+    if (rc) {
+        ext2fs_close(fs);
+        throw IOException("writeFile", std::string(path), "Failed to flush filesystem");
+    }
 
     ext2fs_close(fs);
     
-    // Update cache
-    invalidateCache(normalized);
+    // Rebuild cache from disk to pick up new file
+    buildIndex();
 }
 
 void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
@@ -128,6 +142,13 @@ void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
                                unix_io_manager, &fs);
     if (rc) {
         throw IOException("createDirectory", std::string(path), "ext2fs_open failed");
+    }
+    
+    // Read bitmaps and initialize filesystem state
+    rc = ext2fs_read_bitmaps(fs);
+    if (rc) {
+        ext2fs_close(fs);
+        throw IOException("createDirectory", std::string(path), "Failed to read bitmaps");
     }
 
     // Allocate new inode for directory

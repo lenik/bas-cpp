@@ -201,6 +201,9 @@ void Fat32Volume::moveFileThrowsUnchecked(std::string_view src, std::string_view
 
     // Remove source
     removeFileThrowsUnchecked(src);
+    
+    // Invalidate index to force re-read from disk with updated state
+    invalidateIndex();
 }
 
 void Fat32Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::string_view newPath) {
@@ -263,6 +266,9 @@ void Fat32Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::strin
         }
         markDirectoryEntryAsDeleted(oldParentCluster, oldFileName);
     }
+    
+    // Invalidate index to force re-read from disk with updated state
+    invalidateIndex();
 }
 
 bool Fat32Volume::writeAt(uint64_t offset, const uint8_t* src, size_t len) {
