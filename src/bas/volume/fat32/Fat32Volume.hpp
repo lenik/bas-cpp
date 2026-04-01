@@ -132,6 +132,8 @@ class Fat32Volume : public Volume {
     void writeLFNEntries(uint32_t dirCluster, uint32_t slotOffset, const std::string& longName, uint8_t checksum);
     std::vector<std::string> splitLFNChunks(const std::string& longName);
     uint8_t calculateLFNChecksum(const std::string& shortName);
+    uint8_t calculateLFNChecksumForShortName(const std::string& longName);
+    std::string createShortName(const std::string& longName);
 };
 
 #endif // FAT32VOLUME_H

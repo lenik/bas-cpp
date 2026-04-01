@@ -314,8 +314,8 @@ void Fat32Volume::createFileEntry(std::string_view path, uint32_t firstCluster, 
     time_t now = getCurrentTime();
     m_dirents[normalized] = Dirent{false, firstCluster, size, now, now, now};
 
-    // TODO: Write directory entry to disk - infrastructure implemented but needs debugging
-    // writeDirectoryEntryToDisk(normalized, m_dirents[normalized]);
+    // Write directory entry to disk
+    writeDirectoryEntryToDisk(normalized, m_dirents[normalized]);
 }
 
 void Fat32Volume::updateFileEntry(std::string_view path, uint32_t firstCluster, uint32_t size) {
@@ -327,6 +327,19 @@ void Fat32Volume::deleteFileEntry(std::string_view path) {
     auto it = m_dirents.find(normalized);
     if (it != m_dirents.end() && !it->second.isDirectory) {
         freeClusterChain(it->second.firstCluster);
+        
+        // Mark directory entry as deleted on disk
+        const std::string parent = getParentPath(normalized);
+        const std::string fileName = getFileName(normalized);
+        auto pit = m_dirents.find(parent);
+        if (pit != m_dirents.end() && pit->second.isDirectory) {
+            uint32_t parentCluster = pit->second.firstCluster;
+            if (parent == "/" && parentCluster == 0) {
+                parentCluster = m_rootCluster;
+            }
+            markDirectoryEntryAsDeleted(parentCluster, fileName);
+        }
+        
         m_dirents.erase(normalized);
     }
 }
@@ -336,14 +349,26 @@ void Fat32Volume::createDirectoryEntry(std::string_view path, uint32_t firstClus
     time_t now = getCurrentTime();
     m_dirents[normalized] = Dirent{true, firstCluster, 0, now, now, now};
 
-    // TODO: Write directory entry to disk - infrastructure implemented but needs debugging
-    // writeDirectoryEntryToDisk(normalized, m_dirents[normalized]);
+    // Write directory entry to disk
+    writeDirectoryEntryToDisk(normalized, m_dirents[normalized]);
 }
 
 void Fat32Volume::deleteDirectoryEntry(std::string_view path) {
     const std::string normalized = normalizeArg(path);
     auto it = m_dirents.find(normalized);
     if (it != m_dirents.end() && it->second.isDirectory) {
+        // Mark directory entry as deleted on disk
+        const std::string parent = getParentPath(normalized);
+        const std::string fileName = getFileName(normalized);
+        auto pit = m_dirents.find(parent);
+        if (pit != m_dirents.end() && pit->second.isDirectory) {
+            uint32_t parentCluster = pit->second.firstCluster;
+            if (parent == "/" && parentCluster == 0) {
+                parentCluster = m_rootCluster;
+            }
+            markDirectoryEntryAsDeleted(parentCluster, fileName);
+        }
+        
         m_dirents.erase(normalized);
     }
 }
@@ -398,7 +423,7 @@ void Fat32Volume::expandDirectoryIfNeeded(uint32_t dirCluster) {
 void Fat32Volume::writeDirectoryEntryToDisk(std::string_view path, const Dirent& dirent) {
     const std::string normalized = normalizeArg(path);
     const std::string parent = getParentPath(normalized);
-    const std::string fileName = getFileName(normalized);
+    std::string fileName = getFileName(normalized);
 
     if (fileName.empty()) {
         throw IOException("writeDirectoryEntryToDisk", std::string(path), "Invalid file name");
@@ -427,25 +452,24 @@ void Fat32Volume::writeDirectoryEntryToDisk(std::string_view path, const Dirent&
         throw IOException("writeDirectoryEntryToDisk", std::string(path), "No space in directory");
     }
 
-    // Prepare directory entry
-    std::vector<uint8_t> entry(32);
-    writeDirEntry(entry.data(), fileName, dirent.firstCluster, dirent.size, dirent.isDirectory,
-                  dirent.mtime, dirent.atime, dirent.creationTime);
-
     // Write to disk - calculate which cluster and offset
     std::vector<uint32_t> chain = readClusterChain(parentCluster);
-    uint32_t entriesPerCluster = m_clusterSize / 32;
     uint32_t clusterIndex = slotOffset / m_clusterSize;
     uint32_t offsetInCluster = slotOffset % m_clusterSize;
 
-    if (clusterIndex < chain.size()) {
-        uint64_t clusterOffset = clusterToOffset(chain[clusterIndex]) + offsetInCluster;
-        if (!writeAt(clusterOffset, entry.data(), entry.size())) {
-            throw IOException("writeDirectoryEntryToDisk", std::string(path),
-                              "Failed to write entry to disk");
-        }
-    } else {
+    if (clusterIndex >= chain.size()) {
         throw IOException("writeDirectoryEntryToDisk", std::string(path), "Invalid cluster index");
+    }
+
+    // Use short name for disk storage (8.3 format)
+    uint64_t clusterOffset = clusterToOffset(chain[clusterIndex]) + offsetInCluster;
+    std::vector<uint8_t> entry(32);
+    std::string shortName = createShortName(fileName);
+    writeDirEntry(entry.data(), shortName, dirent.firstCluster, dirent.size, dirent.isDirectory,
+                  dirent.mtime, dirent.atime, dirent.creationTime);
+    if (!writeAt(clusterOffset, entry.data(), entry.size())) {
+        throw IOException("writeDirectoryEntryToDisk", std::string(path),
+                          "Failed to write entry to disk");
     }
 }
 
@@ -457,7 +481,113 @@ void Fat32Volume::updateDirectoryEntryOnDisk(std::string_view path, const Dirent
 
 void Fat32Volume::markDirectoryEntryAsDeleted(uint32_t dirCluster, std::string_view name) {
     // Mark first byte of directory entry as 0xE5 (deleted)
-    // TODO: Implement full deletion with cluster chain freeing
+    std::vector<uint32_t> chain = readClusterChain(dirCluster);
+    
+    // Convert to short name for matching
+    std::string shortName = createShortName(std::string(name));
+    
+    // Build 11-byte FAT name
+    uint8_t fatName[11];
+    for (int i = 0; i < 8; ++i)
+        fatName[i] = (i < static_cast<int>(shortName.size()) && shortName[i] != '.') ? shortName[i] : ' ';
+    for (int i = 8; i < 11; ++i) {
+        size_t extIdx = i - 8;
+        size_t dotPos = shortName.find('.');
+        if (dotPos != std::string::npos && dotPos + extIdx < shortName.size()) {
+            fatName[i] = shortName[dotPos + extIdx + 1];
+        } else {
+            fatName[i] = ' ';
+        }
+    }
+    
+    for (uint32_t cluster : chain) {
+        uint64_t offset = clusterToOffset(cluster);
+        std::vector<uint8_t> block(m_clusterSize);
+        
+        if (!readAt(offset, block.data(), block.size())) {
+            continue;
+        }
+        
+        // Scan for matching entry
+        for (uint32_t pos = 0; pos + 32 <= m_clusterSize; pos += 32) {
+            if (block[pos] == 0x00) {
+                // End of directory entries
+                return;
+            }
+            
+            if (block[pos] == 0xE5 || block[pos] == 0x05) {
+                // Deleted entry, skip
+                continue;
+            }
+            
+            // Check if this is an LFN entry
+            if (block[11] == 0x0F) {
+                continue;
+            }
+            
+            // Compare name
+            bool matches = true;
+            for (int i = 0; i < 11; ++i) {
+                if (block[pos + i] != fatName[i]) {
+                    matches = false;
+                    break;
+                }
+            }
+            
+            if (matches) {
+                // Mark as deleted
+                block[pos] = 0xE5;
+                writeAt(offset + pos, block.data() + pos, 32);
+                return;
+            }
+        }
+    }
+}
+
+uint8_t Fat32Volume::calculateLFNChecksumForShortName(const std::string& longName) {
+    std::string shortName = createShortName(longName);
+    return calculateLFNChecksum(shortName);
+}
+
+std::string Fat32Volume::createShortName(const std::string& longName) {
+    // Extract base name and extension
+    std::string base = longName;
+    std::string ext = "";
+    
+    size_t dotPos = longName.find_last_of('.');
+    if (dotPos != std::string::npos && dotPos < longName.size() - 1) {
+        ext = longName.substr(dotPos + 1);
+        base = longName.substr(0, dotPos);
+    }
+    
+    // Truncate base to 6 chars + ~1 if needed
+    if (base.size() > 8) {
+        base = base.substr(0, 6) + "~1";
+    }
+    
+    // Truncate extension to 3 chars
+    if (ext.size() > 3) {
+        ext = ext.substr(0, 3);
+    }
+    
+    // Convert to uppercase
+    for (char& c : base)
+        c = static_cast<char>(toupper(static_cast<unsigned char>(c)));
+    for (char& c : ext)
+        c = static_cast<char>(toupper(static_cast<unsigned char>(c)));
+    
+    // Pad base name to 8 chars
+    while (base.size() < 8)
+        base += ' ';
+    
+    // Build full 8.3 name
+    std::string result = base;
+    if (!ext.empty()) {
+        result += ".";
+        result += ext;
+    }
+    
+    return result;
 }
 
 void Fat32Volume::writeLFNEntries(uint32_t dirCluster, uint32_t slotOffset,
@@ -465,7 +595,6 @@ void Fat32Volume::writeLFNEntries(uint32_t dirCluster, uint32_t slotOffset,
     auto chunks = splitLFNChunks(longName);
 
     std::vector<uint32_t> chain = readClusterChain(dirCluster);
-    uint32_t entriesPerCluster = m_clusterSize / 32;
 
     for (size_t i = 0; i < chunks.size(); ++i) {
         uint8_t order = static_cast<uint8_t>(i + 1);
