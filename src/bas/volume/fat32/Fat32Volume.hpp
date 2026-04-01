@@ -95,12 +95,43 @@ class Fat32Volume : public Volume {
 
     std::vector<uint32_t> readClusterChain(uint32_t firstCluster) const;
     uint32_t getFatEntry(uint32_t cluster) const;
+    void setFatEntry(uint32_t cluster, uint32_t value);
     uint64_t clusterToOffset(uint32_t cluster) const;
     bool readAt(uint64_t offset, uint8_t* dst, size_t len) const;
+    bool writeAt(uint64_t offset, const uint8_t* src, size_t len);
 
     std::string normalizePath(std::string_view path) const;
     std::string decodeShortName(const uint8_t* entry) const;
     std::string decodeLfnChunk(const uint8_t* entry) const;
+
+    // Write support
+    uint32_t allocateCluster(uint32_t prevCluster);
+    void freeClusterChain(uint32_t firstCluster);
+    void writeClusterChain(uint32_t firstCluster, const std::vector<uint8_t>& data);
+    uint32_t findFreeCluster() const;
+    
+    void createFileEntry(std::string_view path, uint32_t firstCluster, uint32_t size);
+    void updateFileEntry(std::string_view path, uint32_t firstCluster, uint32_t size);
+    void deleteFileEntry(std::string_view path);
+    void createDirectoryEntry(std::string_view path, uint32_t firstCluster);
+    void deleteDirectoryEntry(std::string_view path);
+    
+    std::string getParentPath(std::string_view path) const;
+    std::string getFileName(std::string_view path) const;
+    
+    void invalidateIndex();
+    
+    // Directory entry writing to disk
+    void writeDirectoryEntryToDisk(std::string_view path, const Dirent& dirent);
+    void updateDirectoryEntryOnDisk(std::string_view path, const Dirent& dirent);
+    void markDirectoryEntryAsDeleted(uint32_t dirCluster, std::string_view name);
+    uint32_t findFreeDirEntrySlot(uint32_t dirCluster);
+    void expandDirectoryIfNeeded(uint32_t dirCluster);
+    
+    // LFN support
+    void writeLFNEntries(uint32_t dirCluster, uint32_t slotOffset, const std::string& longName, uint8_t checksum);
+    std::vector<std::string> splitLFNChunks(const std::string& longName);
+    uint8_t calculateLFNChecksum(const std::string& shortName);
 };
 
 #endif // FAT32VOLUME_H

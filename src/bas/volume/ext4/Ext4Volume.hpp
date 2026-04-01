@@ -7,16 +7,19 @@
 
 #include <cstdint>
 #include <ctime>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
+typedef std::vector<uint8_t> ByteArray;
+
 class Ext4Volume : public Volume {
-  private:
+  public:
     struct Inode {
         bool isDirectory = false;
         uint64_t size = 0;
-        uint32_t ino = 0;
+        ino_t ino = 0;
         uint16_t mode = 0;
         uint32_t uid = 0;
         uint32_t gid = 0;
@@ -25,27 +28,34 @@ class Ext4Volume : public Volume {
         time_t ctime = 0;
 
         Inode() = default;
-        Inode(bool isDirectory, uint64_t size, uint32_t ino, uint16_t mode, uint32_t uid,
+        Inode(bool isDirectory, uint64_t size, ino_t ino, uint16_t mode, uint32_t uid,
               uint32_t gid, time_t atime, time_t mtime, time_t ctime)
             : isDirectory(isDirectory), size(size), ino(ino), mode(mode), uid(uid), gid(gid),
               atime(atime), mtime(mtime), ctime(ctime) {}
     };
 
+    struct RtNode;
+    using RtNodeObj = std::shared_ptr<RtNode>;
+    using RtNodeRef = std::weak_ptr<RtNode>;
+
     // Runtime node for directory traversal
     struct RtNode : public Inode {
-        RtNode* parent{nullptr};
-        std::unordered_map<std::string, std::unique_ptr<RtNode>> children;
+        RtNodeRef parent;
+        std::unordered_map<std::string, RtNodeRef> children;
 
         RtNode() = default;
-        RtNode(bool isDirectory, uint64_t size, uint32_t ino, uint16_t mode, uint32_t uid,
+        RtNode(bool isDirectory, uint64_t size, ino_t ino, uint16_t mode, uint32_t uid,
                uint32_t gid, time_t atime, time_t mtime, time_t ctime)
             : Inode(isDirectory, size, ino, mode, uid, gid, atime, mtime, ctime) {}
     };
 
+private:
     std::string m_imagePath;
-    mutable std::unordered_map<std::string, Inode> m_inodes; // path -> inode metadata cache
-    mutable std::unordered_map<uint32_t, std::unique_ptr<RtNode>>
-        m_rtnodes; // dir inode -> runtime node with children
+    mutable std::unordered_map<std::string, ino_t> m_files; // normalized-path -> ino
+    mutable std::unordered_map<ino_t, Inode> m_nodes;
+    mutable std::unordered_map<ino_t, RtNodeObj> m_rtnodes;
+    mutable std::unordered_map<ino_t, ByteArray> m_mem; // ino -> file content cache
+    
     IUserDb* m_userDb = nullptr;
     int m_contextUid = 0;
     int m_contextGid = 0;
@@ -76,14 +86,7 @@ class Ext4Volume : public Volume {
     std::unique_ptr<InputStream> newInputStream(std::string_view path) override;
     std::unique_ptr<OutputStream> newOutputStream(std::string_view path,
                                                   bool append = false) override;
-    std::unique_ptr<Reader> newReader(std::string_view path,
-                                      std::string_view encoding = "UTF-8") override;
-    std::unique_ptr<Writer> newWriter(std::string_view path, bool append = false,
-                                      std::string_view encoding = "UTF-8") override;
-
     std::unique_ptr<RandomInputStream> newRandomInputStream(std::string_view path) override;
-    std::unique_ptr<RandomReader> newRandomReader(std::string_view path,
-                                                  std::string_view encoding = "UTF-8") override;
 
     std::string getTempDir() override;
     std::string createTempFile(std::string_view prefix = "tmp.",
@@ -111,6 +114,11 @@ class Ext4Volume : public Volume {
     const RtNode* getDirectoryEntries(uint32_t inode) const;
     bool hasGroup(uint32_t gid) const;
     bool checkMode(const Inode& node, int needMask) const;
+
+    // Write support
+    uint32_t resolveParentInode(std::string_view path) const;
+    std::string getBaseName(std::string_view path) const;
+    void invalidateCache(std::string_view path);
 };
 
 #endif // EXT4VOLUME_H

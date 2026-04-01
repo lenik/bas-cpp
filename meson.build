@@ -145,9 +145,12 @@ cpp_sources = files(
     './src/bas/volume/ext4/Ext4FileInputStream.cpp',
     './src/bas/volume/ext4/Ext4FileOutputStream.cpp',
     './src/bas/volume/ext4/Ext4Volume.cpp',
+    './src/bas/volume/ext4/Ext4Volume_write.cpp',
+    './src/bas/volume/fat32/fat32_utils.cpp',
     './src/bas/volume/fat32/Fat32FileInputStream.cpp',
     './src/bas/volume/fat32/Fat32FileOutputStream.cpp',
     './src/bas/volume/fat32/Fat32Volume.cpp',
+    './src/bas/volume/fat32/Fat32Volume_write.cpp',
     './src/bas/volume/mountinfo.cpp',
     './src/bas/volume/zip/MemoryZip.cpp',
     './src/module.cpp',
@@ -372,8 +375,11 @@ all_test_files = [
     'bas/net/DataUriInputStream_test.cpp',
     'bas/net/DataProtocol_test.cpp',
     'bas/script/json_test.cpp',
-    'bas/volume/ext4/Ext4Volume_test.cpp',
-    'bas/volume/fat32/Fat32Volume_test.cpp',
+    'bas/volume/ext4/Ext4_write_test.cpp',
+    'bas/volume/ext4/Ext4_test.cpp',
+    'bas/volume/fat32/Fat32_persistence_test.cpp',
+    'bas/volume/fat32/Fat32_write_test.cpp',
+    'bas/volume/fat32/Fat32_test.cpp',
 ]
 
 # Build each test using the 'includes' utility to get source dependencies
@@ -411,6 +417,7 @@ foreach test_rel_path : all_test_files
         test_name,
         all_sources,
         include_directories: exe_inc,
+        link_with: lib_bas_cpp,
         dependencies: exe_deps,
         cpp_args: cpp_nowarn
         + ['-DLOGGER_NAME=test', '-DASSETS_NAME=bas_cpp'],
@@ -446,8 +453,8 @@ foreach app_cpp : app_cpp_list
     executable(
         app_name,
         app_cpp,
-        link_with: lib_bas_cpp,
         include_directories: exe_inc,
+        link_with: lib_bas_cpp,
         dependencies: exe_deps,
         cpp_args: cpp_nowarn
         + ['-DLOGGER_NAME=' + app_logger, '-DASSETS_NAME=bas_cpp'],

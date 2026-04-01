@@ -30,6 +30,7 @@ t/tmp*
 Thumbs.db
 
 # Build
+/ai
 /.cache
 *.Tpo
 *.gz

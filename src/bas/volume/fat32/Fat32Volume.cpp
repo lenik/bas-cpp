@@ -1,9 +1,12 @@
 #include "Fat32Volume.hpp"
 
+#include "fat32_utils.hpp"
+
 #include "Fat32FileInputStream.hpp"
 #include "Fat32FileOutputStream.hpp"
 
 #include "../../io/IOException.hpp"
+#include "../../io/PrintStream.hpp"
 #include "../../io/StringReader.hpp"
 
 #include <algorithm>
@@ -15,55 +18,6 @@
 #include <stdexcept>
 #include <sys/stat.h>
 #include <unordered_set>
-
-static uint16_t le16(const uint8_t* p) {
-    return static_cast<uint16_t>(p[0]) | (static_cast<uint16_t>(p[1]) << 8);
-}
-static uint32_t le32(const uint8_t* p) {
-    return static_cast<uint32_t>(p[0]) | (static_cast<uint32_t>(p[1]) << 8) |
-           (static_cast<uint32_t>(p[2]) << 16) | (static_cast<uint32_t>(p[3]) << 24);
-}
-static std::string trimRight(const std::string& s) {
-    size_t end = s.size();
-    while (end > 0 && s[end - 1] == ' ')
-        --end;
-    return s.substr(0, end);
-}
-static bool isDotEntry(std::string_view name) { return name == "." || name == ".."; }
-
-/** FAT directory 32-byte entry uses MS-DOS date/time encoding (same as ZIP). */
-static time_t fatDosDateTime(uint16_t dosTime, uint16_t dosDate) {
-    if (dosTime == 0 && dosDate == 0)
-        return 0;
-    int sec = (dosTime & 0x1F) * 2;
-    int min = (dosTime >> 5) & 0x3F;
-    int hour = (dosTime >> 11) & 0x1F;
-    int day = dosDate & 0x1F;
-    int month = (dosDate >> 5) & 0x0F;
-    int year = (dosDate >> 9) + 1980;
-    if (month < 1 || month > 12 || day < 1 || day > 31 || hour > 23 || min > 59 || sec > 59)
-        return 0;
-    struct tm tm = {};
-    tm.tm_sec = sec;
-    tm.tm_min = min;
-    tm.tm_hour = hour;
-    tm.tm_mday = day;
-    tm.tm_mon = month - 1;
-    tm.tm_year = year - 1900;
-    tm.tm_isdst = -1;
-    return mktime(&tm);
-}
-
-static std::string baseName(std::string_view path) {
-    if (path.empty() || path == "/") {
-        return "/";
-    }
-    size_t pos = path.find_last_of('/');
-    if (pos == std::string_view::npos || pos + 1 >= path.size()) {
-        return std::string(path);
-    }
-    return std::string(path.substr(pos + 1));
-}
 
 void Fat32Volume::Dirent::copyTo(DirNode& node) const {
     if (isDirectory) {
@@ -210,10 +164,12 @@ std::unique_ptr<OutputStream> Fat32Volume::newOutputStream(std::string_view path
     return std::make_unique<Fat32FileOutputStream>(m_imagePath, std::string(path), append);
 }
 
-std::unique_ptr<Writer> Fat32Volume::newWriter(std::string_view path, bool /*append*/,
-                                               std::string_view /*encoding*/) {
-    throw IOException("newWriter", std::string(path),
-                      "Fat32Volume write operations are not implemented yet");
+std::unique_ptr<Writer> Fat32Volume::newWriter(std::string_view path, bool append,
+                                               std::string_view encoding) {
+    auto out = newOutputStream(path, append);
+    if (!out)
+        return nullptr;
+    return std::make_unique<PrintStream>(std::move(out), encoding);
 }
 
 std::vector<uint8_t> Fat32Volume::readFileUnchecked(std::string_view path, int64_t off,
@@ -256,42 +212,6 @@ std::vector<uint8_t> Fat32Volume::readFileUnchecked(std::string_view path, int64
     }
 
     return std::vector<uint8_t>(out.begin() + start, out.begin() + end);
-}
-
-void Fat32Volume::writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& /*data*/) {
-    throw IOException("writeFile", std::string(path),
-                      "Fat32Volume write operations are not implemented yet");
-}
-
-void Fat32Volume::createDirectoryThrowsUnchecked(std::string_view path) {
-    throw IOException("createDirectory", std::string(path),
-                      "Fat32Volume write operations are not implemented yet");
-}
-
-void Fat32Volume::removeDirectoryThrowsUnchecked(std::string_view path) {
-    throw IOException("removeDirectory", std::string(path),
-                      "Fat32Volume write operations are not implemented yet");
-}
-
-void Fat32Volume::removeFileThrowsUnchecked(std::string_view path) {
-    throw IOException("removeFile", std::string(path),
-                      "Fat32Volume write operations are not implemented yet");
-}
-
-void Fat32Volume::copyFileThrowsUnchecked(std::string_view src, std::string_view /*dest*/) {
-    throw IOException("copyFile", std::string(src),
-                      "Fat32Volume write operations are not implemented yet");
-}
-
-void Fat32Volume::moveFileThrowsUnchecked(std::string_view src, std::string_view /*dest*/) {
-    throw IOException("moveFile", std::string(src),
-                      "Fat32Volume write operations are not implemented yet");
-}
-
-void Fat32Volume::renameFileThrowsUnchecked(std::string_view oldPath,
-                                            std::string_view /*newPath*/) {
-    throw IOException("renameFile", std::string(oldPath),
-                      "Fat32Volume write operations are not implemented yet");
 }
 
 std::string Fat32Volume::getTempDir() {
@@ -575,4 +495,64 @@ bool Fat32Volume::readAt(uint64_t offset, uint8_t* dst, size_t len) const {
     }
     in.read(reinterpret_cast<char*>(dst), static_cast<std::streamsize>(len));
     return in.good() || in.gcount() == static_cast<std::streamsize>(len);
+}
+
+std::string Fat32Volume::getParentPath(std::string_view path) const {
+    std::string normalized = normalizeArg(path);
+    if (normalized == "/" || normalized.empty()) {
+        return "/";
+    }
+    size_t lastSlash = normalized.find_last_of('/');
+    if (lastSlash == std::string::npos || lastSlash == 0) {
+        return "/";
+    }
+    return normalized.substr(0, lastSlash);
+}
+
+std::string Fat32Volume::getFileName(std::string_view path) const {
+    std::string normalized = normalizeArg(path);
+    if (normalized == "/" || normalized.empty()) {
+        return "";
+    }
+    size_t lastSlash = normalized.find_last_of('/');
+    if (lastSlash == std::string::npos) {
+        return normalized;
+    }
+    return normalized.substr(lastSlash + 1);
+}
+
+void Fat32Volume::invalidateIndex() {
+    m_dirents.clear();
+    buildIndex();
+}
+
+// ============================================================================
+// LFN (Long File Name) Support
+// ============================================================================
+
+std::vector<std::string> Fat32Volume::splitLFNChunks(const std::string& longName) {
+    std::vector<std::string> chunks;
+    // Each LFN entry holds 13 UTF-16 characters
+    const size_t charsPerEntry = 13;
+
+    for (size_t i = 0; i < longName.size(); i += charsPerEntry) {
+        chunks.push_back(longName.substr(i, charsPerEntry));
+    }
+
+    // Reverse so first chunk is last entry (order is important in FAT)
+    std::reverse(chunks.begin(), chunks.end());
+    return chunks;
+}
+
+uint8_t Fat32Volume::calculateLFNChecksum(const std::string& shortName) {
+    // Pad short name to 11 characters
+    std::string padded = shortName;
+    while (padded.size() < 11)
+        padded += ' ';
+
+    uint8_t sum = 0;
+    for (char c : padded) {
+        sum = ((sum & 1) << 7) + (sum >> 1) + static_cast<uint8_t>(c);
+    }
+    return sum;
 }
