@@ -377,9 +377,11 @@ all_test_files = [
     'bas/script/json_test.cpp',
     'bas/volume/ext4/Ext4_write_test.cpp',
     'bas/volume/ext4/Ext4_test.cpp',
+    'bas/volume/ext4/Ext4_forest_test.cpp',
     'bas/volume/fat32/Fat32_persistence_test.cpp',
     'bas/volume/fat32/Fat32_write_test.cpp',
     'bas/volume/fat32/Fat32_test.cpp',
+    'bas/volume/fat32/Fat32_forest_test.cpp',
 ]
 
 # Build each test using the 'includes' utility to get source dependencies

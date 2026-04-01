@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <cstring>
+#include <unistd.h>
 
 
 void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data) {
@@ -104,7 +105,7 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
         }
         if (rc) {
             ext2fs_close(fs);
-            throw IOException("writeFile", std::string(path), "Failed to create directory entry");
+            throw IOException("writeFile", std::string(path), "Failed to create directory entry: " + std::string(error_message(rc)));
         }
     }
     
@@ -117,8 +118,14 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
 
     ext2fs_close(fs);
     
-    // Rebuild cache from disk to pick up new file with correct data
+    // Force OS to sync the file to disk
+    ::sync();
+    
+    // Rebuild cache and force root directory re-scan
     buildIndex();
+    
+    // Force re-scan of root directory by clearing its runtime node cache
+    m_rtnodes.erase(2); // Root inode is 2
 }
 
 void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
