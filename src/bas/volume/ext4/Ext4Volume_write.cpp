@@ -81,14 +81,21 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
 
     ext2fs_file_close(file);
 
-    // Update inode size and times
-    inode.i_size = data.size();
-    inode.i_atime = inode.i_mtime = inode.i_ctime = time(nullptr);
-    
-    rc = ext2fs_write_inode(fs, ino, &inode);
+    // Re-read inode to get updated metadata (ext2fs updates it during write)
+    rc = ext2fs_read_inode(fs, ino, &inode);
     if (rc) {
         ext2fs_close(fs);
-        throw IOException("writeFile", std::string(path), "Failed to write inode");
+        throw IOException("writeFile", std::string(path), "Failed to re-read inode");
+    }
+    
+    // Ensure size is correct
+    if (inode.i_size != data.size()) {
+        inode.i_size = data.size();
+        rc = ext2fs_write_inode(fs, ino, &inode);
+        if (rc) {
+            ext2fs_close(fs);
+            throw IOException("writeFile", std::string(path), "Failed to update inode size");
+        }
     }
 
     // Create directory entry if file doesn't exist
@@ -121,11 +128,33 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
     // Force OS to sync the file to disk
     ::sync();
     
-    // Rebuild cache and force root directory re-scan
-    buildIndex();
+    // Manually add the new file to cache since buildIndex() doesn't scan directories
+    m_files[normalized] = ino;
     
-    // Force re-scan of root directory by clearing its runtime node cache
-    m_rtnodes.erase(2); // Root inode is 2
+    // Add inode to cache
+    Inode newInode;
+    newInode.isDirectory = false;
+    newInode.size = data.size();
+    newInode.ino = ino;
+    newInode.mode = 0100644;
+    newInode.uid = m_contextUid;
+    newInode.gid = m_contextGid;
+    newInode.atime = newInode.mtime = newInode.ctime = time(nullptr);
+    m_nodes[ino] = newInode;
+    
+    // Clear cached file content
+    m_mem.erase(ino);
+    
+    // Clear parent directory cache to force re-scan
+    const std::string parentPath = normalized.substr(0, normalized.find_last_of('/'));
+    if (!parentPath.empty()) {
+        auto pit = m_files.find(parentPath);
+        if (pit != m_files.end()) {
+            m_rtnodes.erase(pit->second);
+        }
+    } else {
+        m_rtnodes.erase(2); // Root
+    }
 }
 
 void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
@@ -200,8 +229,29 @@ void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
 
     ext2fs_close(fs);
 
-    // Update cache
-    invalidateCache(normalized);
+    // Manually add directory to cache
+    m_files[normalized] = ino;
+    
+    Inode dirInode;
+    dirInode.isDirectory = true;
+    dirInode.size = 0;
+    dirInode.ino = ino;
+    dirInode.mode = 040755;
+    dirInode.uid = m_contextUid;
+    dirInode.gid = m_contextGid;
+    dirInode.atime = dirInode.mtime = dirInode.ctime = time(nullptr);
+    m_nodes[ino] = dirInode;
+    
+    // Clear parent directory cache
+    const std::string parentPath = normalized.substr(0, normalized.find_last_of('/'));
+    if (!parentPath.empty()) {
+        auto pit = m_files.find(parentPath);
+        if (pit != m_files.end()) {
+            m_rtnodes.erase(pit->second);
+        }
+    } else {
+        m_rtnodes.erase(2);
+    }
 }
 
 void Ext4Volume::removeDirectoryThrowsUnchecked(std::string_view path) {

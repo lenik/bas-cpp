@@ -210,11 +210,10 @@ void Fat32Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::strin
     const std::string oldNormalized = normalizeArg(oldPath);
     const std::string newNormalized = normalizeArg(newPath);
 
-    // Find old entry using flexible lookup
+    // Find old entry - it should exist with either long or short name
     std::string actualOldPath = oldNormalized;
     auto oldIt = m_dirents.find(actualOldPath);
     if (oldIt == m_dirents.end()) {
-        // Try short name version
         actualOldPath = toShortNamePath(oldNormalized);
         oldIt = m_dirents.find(actualOldPath);
     }
@@ -222,7 +221,7 @@ void Fat32Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::strin
         throw IOException("renameFile", std::string(oldPath), "Source does not exist");
     }
 
-    // Check if new path already exists (try both long and short)
+    // Check destination doesn't exist
     std::string actualNewPath = newNormalized;
     auto newIt = m_dirents.find(actualNewPath);
     if (newIt == m_dirents.end()) {
@@ -233,47 +232,50 @@ void Fat32Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::strin
         throw IOException("renameFile", std::string(newPath), "Destination already exists");
     }
 
-    // Get parent directory for new path
+    // Validate parent directory
     const std::string newParent = getParentPath(newNormalized);
     auto parentIt = m_dirents.find(newParent);
     if (parentIt == m_dirents.end() || !parentIt->second.isDirectory) {
         throw IOException("renameFile", std::string(newPath), "Parent directory does not exist");
     }
 
-    // Create new entry with same data (use short name for consistency)
+    // Get old entry info BEFORE any modifications
     Dirent dirent = oldIt->second;
+    const std::string oldParent = getParentPath(actualOldPath);
+    // Extract the ACTUAL filename from the path we found it with
+    std::string oldFileName = getFileName(actualOldPath);
+    // This should already be the short name since that's how it's stored
     
-    // Convert new path to short name for disk consistency
+    // Create new entry with short name
     std::string newFileName = getFileName(newNormalized);
     newFileName = createShortName(newFileName);
     const std::string newShortPath = (newParent == "/") ? ("/" + newFileName) : (newParent + "/" + newFileName);
     
+    // Write new entry to disk FIRST
+    writeDirectoryEntryToDisk(newShortPath, dirent);
     m_dirents[newShortPath] = dirent;
     
-    // Write new entry to disk
-    writeDirectoryEntryToDisk(newShortPath, dirent);
-
-    // Get old entry info before erasing
-    const std::string oldParent = getParentPath(actualOldPath);
-    std::string oldFileName = getFileName(actualOldPath);
-    // Convert to short name to match what's on disk
-    oldFileName = createShortName(oldFileName);
-    
-    // Mark old entry as deleted on disk FIRST (before erasing from memory)
+    // Mark old entry as deleted on disk - use the exact filename from actualOldPath
     auto oldParentIt = m_dirents.find(oldParent);
     if (oldParentIt != m_dirents.end() && oldParentIt->second.isDirectory) {
         uint32_t oldParentCluster = oldParentIt->second.firstCluster;
         if (oldParent == "/" && oldParentCluster == 0) {
             oldParentCluster = m_rootCluster;
         }
+        // oldFileName is already in the correct format (from actualOldPath which was found in m_dirents)
         markDirectoryEntryAsDeleted(oldParentCluster, oldFileName);
     }
     
-    // Remove old entry from memory
+    // Remove old from memory
     m_dirents.erase(actualOldPath);
     
-    // Invalidate index to force re-read from disk with updated state
+    // Invalidate and rebuild index from disk
     invalidateIndex();
+    
+    // Verify old is gone and new exists
+    if (resolvePath(oldPath) != "") {
+        throw IOException("renameFile", std::string(oldPath), "Failed to delete old entry");
+    }
 }
 
 bool Fat32Volume::writeAt(uint64_t offset, const uint8_t* src, size_t len) {
