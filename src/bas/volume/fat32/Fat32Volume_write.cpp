@@ -295,25 +295,10 @@ void Fat32Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::strin
 }
 
 bool Fat32Volume::writeAt(uint64_t offset, const uint8_t* src, size_t len) {
-    if (!src || len == 0 || offset + len > m_imageSize) {
+    if (!m_device || !src || len == 0 || offset + len > m_device->size()) {
         return false;
     }
-    std::ofstream out(m_imagePath, std::ios::binary | std::ios::in | std::ios::out);
-    if (!out.is_open()) {
-        return false;
-    }
-    out.seekp(static_cast<std::streamoff>(offset), std::ios::beg);
-    if (!out.good()) {
-        return false;
-    }
-    out.write(reinterpret_cast<const char*>(src), static_cast<std::streamsize>(len));
-    out.flush();
-    if (!out.good()) {
-        return false;
-    }
-    out.close();
-    ::sync();  // Force OS to sync all pending writes to disk
-    return true;
+    return m_device->write(offset, src, len);
 }
 
 uint32_t Fat32Volume::findFreeCluster() const {
@@ -357,7 +342,7 @@ void Fat32Volume::freeClusterChain(uint32_t firstCluster) {
 
 void Fat32Volume::setFatEntry(uint32_t cluster, uint32_t value) {
     const uint64_t off = m_fatOffset + static_cast<uint64_t>(cluster) * 4;
-    if (off + 4 > m_imageSize) {
+    if (off + 4 > m_device->size()) {
         throw IOException("Fat32Volume", m_imagePath, "FAT entry out of range");
     }
     uint8_t b[4];

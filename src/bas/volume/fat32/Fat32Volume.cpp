@@ -8,6 +8,7 @@
 #include "../../io/IOException.hpp"
 #include "../../io/PrintStream.hpp"
 #include "../../io/StringReader.hpp"
+#include "../../io/BlockDevice.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -39,31 +40,20 @@ Fat32Volume::Fat32Volume(std::string_view imagePath)
     if (m_imagePath.empty()) {
         throw std::invalid_argument("Fat32Volume: image path is required");
     }
-
-    std::ifstream in(m_imagePath, std::ios::binary | std::ios::ate);
-    if (!in.is_open()) {
-        throw IOException("Fat32Volume", m_imagePath, "Failed to open image file");
-    }
-    const std::streamoff size = in.tellg();
-    if (size <= 0) {
-        throw IOException("Fat32Volume", m_imagePath, "Image file is empty");
-    }
-    m_imageSize = static_cast<uint64_t>(size);
-
+    
+    m_device = createFileDevice(m_imagePath);
     parseBootSector();
     buildIndex();
 }
 
 Fat32Volume::Fat32Volume(const uint8_t* memoryRegion, size_t size)
-    : m_memoryRegion(memoryRegion)
-    , m_memorySize(size)
-    , m_imageSize(size)
-    , m_mountOptions(MountOptions::memory(memoryRegion, size))
+    : m_mountOptions(MountOptions::memory(memoryRegion, size))
 {
     if (!memoryRegion || size == 0) {
         throw std::invalid_argument("Fat32Volume: invalid memory region");
     }
     
+    m_device = createMemDevice(memoryRegion, size);
     parseBootSector();
     buildIndex();
 }
@@ -76,23 +66,24 @@ Fat32Volume::Fat32Volume(const MountOptions& options)
         if (!options.memoryRegion || options.memorySize == 0) {
             throw std::invalid_argument("Fat32Volume: invalid memory region in options");
         }
-        m_memoryRegion = options.memoryRegion;
-        m_memorySize = options.memorySize;
-        m_imageSize = options.memorySize;
+        m_device = createMemDevice(options.memoryRegion, options.memorySize);
     } else if (options.isFileBacked()) {
         // File-backed
         m_imagePath = options.imagePath;
-        std::ifstream in(m_imagePath, std::ios::binary | std::ios::ate);
-        if (!in.is_open()) {
-            throw IOException("Fat32Volume", m_imagePath, "Failed to open image file");
-        }
-        const std::streamoff size = in.tellg();
-        if (size <= 0) {
-            throw IOException("Fat32Volume", m_imagePath, "Image file is empty");
-        }
-        m_imageSize = static_cast<uint64_t>(size);
+        m_device = createFileDevice(m_imagePath);
     } else {
         throw std::invalid_argument("Fat32Volume: must specify either file or memory region");
+    }
+    
+    parseBootSector();
+    buildIndex();
+}
+
+Fat32Volume::Fat32Volume(std::shared_ptr<BlockDevice> device)
+    : m_device(device)
+{
+    if (!m_device || !m_device->isOpen()) {
+        throw std::invalid_argument("Fat32Volume: invalid block device");
     }
     
     parseBootSector();
@@ -329,7 +320,7 @@ std::string Fat32Volume::createTempFile(std::string_view /*prefix*/, std::string
 }
 
 void Fat32Volume::parseBootSector() {
-    if (m_imageSize < 512) {
+    if (m_device->size() < 512) {
         throw IOException("Fat32Volume", m_imagePath, "Invalid image: too small");
     }
     std::vector<uint8_t> boot(512);
@@ -360,7 +351,7 @@ void Fat32Volume::parseBootSector() {
     m_dataOffset =
         static_cast<uint64_t>(m_reservedSectors + (m_numFATs * m_sectorsPerFAT)) * m_bytesPerSector;
 
-    if (m_dataOffset >= m_imageSize) {
+    if (m_dataOffset >= m_device->size()) {
         throw IOException("Fat32Volume", m_imagePath, "Invalid FAT32 offsets");
     }
 }
@@ -380,7 +371,7 @@ uint64_t Fat32Volume::clusterToOffset(uint32_t cluster) const {
 
 uint32_t Fat32Volume::getFatEntry(uint32_t cluster) const {
     const uint64_t off = m_fatOffset + static_cast<uint64_t>(cluster) * 4;
-    if (off + 4 > m_imageSize) {
+    if (off + 4 > m_device->size()) {
         throw IOException("Fat32Volume", m_imagePath, "FAT entry out of range");
     }
     uint8_t b[4] = {0, 0, 0, 0};
@@ -458,7 +449,7 @@ void Fat32Volume::parseDirectoryCluster(std::string_view dirPath, uint32_t first
     std::vector<std::string> lfnParts;
     for (uint32_t cluster : readClusterChain(firstCluster)) {
         const uint64_t off = clusterToOffset(cluster);
-        if (off + m_clusterSize > m_imageSize) {
+        if (off + m_clusterSize > m_device->size()) {
             throw IOException("Fat32Volume", m_imagePath, "Directory cluster out of range");
         }
         std::vector<uint8_t> block(m_clusterSize);
@@ -606,27 +597,10 @@ bool Fat32Volume::ensurePathIndexed(std::string_view path) const {
 }
 
 bool Fat32Volume::readAt(uint64_t offset, uint8_t* dst, size_t len) const {
-    if (!dst || len == 0 || offset + len > m_imageSize) {
+    if (!m_device || !dst || len == 0 || offset + len > m_device->size()) {
         return false;
     }
-    
-    // Memory-backed: copy from memory region
-    if (m_memoryRegion != nullptr) {
-        memcpy(dst, m_memoryRegion + offset, len);
-        return true;
-    }
-    
-    // File-backed: read from file
-    std::ifstream in(m_imagePath, std::ios::binary);
-    if (!in.is_open()) {
-        return false;
-    }
-    in.seekg(static_cast<std::streamoff>(offset), std::ios::beg);
-    if (!in.good()) {
-        return false;
-    }
-    in.read(reinterpret_cast<char*>(dst), static_cast<std::streamsize>(len));
-    return in.good() || in.gcount() == static_cast<std::streamsize>(len);
+    return m_device->read(offset, dst, len);
 }
 
 std::string Fat32Volume::getParentPath(std::string_view path) const {

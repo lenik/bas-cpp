@@ -65,6 +65,7 @@ cpp_sources = files(
     './src/bas/fmt/JsonForm.cpp',
     './src/bas/fmt/OctetStreamForm.cpp',
     './src/bas/fmt/TextForm.cpp',
+    './src/bas/io/BlockDevice.cpp',
     './src/bas/io/BufferedReader.cpp',
     './src/bas/io/ByteBuffer.cpp',
     './src/bas/io/Char32Buffer.cpp',
