@@ -136,18 +136,11 @@ class Volume {
 
     // Directory operations
     // readDir can throw IOException or AccessException
-    virtual void readDir_inplace(std::vector<std::unique_ptr<DirNode>>& list,
-                                 std::string_view path, bool recursive = false) {
-        printf("readDir(list, path, rec) not implemented yet\n");
+    virtual void readDir_inplace(DirNode& context, std::string_view path, bool recursive = false) {
+        printf("readDir_inplace(context, path, recursive) not implemented yet\n");
     }
 
-    virtual std::vector<std::unique_ptr<DirNode>> readDir(std::string_view path,
-                                                             bool recursive = false);
-    //  {
-    //     std::vector<std::unique_ptr<DirNode>> list;
-    //     readDir(list, path, recursive);
-    //     return list;
-    // }
+    virtual std::unique_ptr<DirNode> readDir(std::string_view path, bool recursive = false);
 
     // return true if operation successful, false if directory exists.
     // throws IOException if underlying error, file with same name exists, permission denied,etc.
@@ -261,7 +254,8 @@ class Volume {
      * @param len maximum size in bytes of the data to read (0 means read all)
      * @return data read from the file
      */
-    virtual std::vector<uint8_t> readFileUnchecked(std::string_view path, int64_t off = 0, size_t len = 0) = 0;
+    virtual std::vector<uint8_t> readFileUnchecked(std::string_view path, int64_t off = 0,
+                                                   size_t len = 0) = 0;
     virtual void writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) = 0;
 
     virtual void createDirectoryThrowsUnchecked(std::string_view path) = 0;

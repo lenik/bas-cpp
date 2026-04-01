@@ -192,38 +192,9 @@ bool LocalVolume::stat(std::string_view _path, DirNode* st) const {
     return true;
 }
 
-// Add one directory's entries to list using POSIX opendir/readdir (avoids libstdc++ path segfault).
-static void readDirOne(const std::string& dirPath, std::vector<std::unique_ptr<DirNode>>& list) {
-    DIR* dir = opendir(dirPath.c_str());
-    if (!dir) {
-        throw IOException("readDir", dirPath, std::strerror(errno));
-    }
-    struct dirent* ent;
-    while ((ent = readdir(dir)) != nullptr) {
-        if (ent->d_name[0] == '.' &&
-            (ent->d_name[1] == '\0' || (ent->d_name[1] == '.' && ent->d_name[2] == '\0')))
-            continue;
-        std::string fullPath = dirPath;
-        if (fullPath.back() != '/')
-            fullPath += '/';
-        fullPath += ent->d_name;
-
-        struct stat st;
-        if (stat(fullPath.c_str(), &st) != 0)
-            continue;
-
-        auto fileStatus = std::make_unique<DirNode>();
-        fileStatus->name = ent->d_name;
-        fileStatus->assign(st);
-        list.push_back(std::move(fileStatus));
-    }
-    closedir(dir);
-}
-
 // Recursively collect entries under dirPath (relative names for subdirs).
-static void readDirRecursive(const std::string& dirPath, const std::string& prefix,
-                             std::vector<std::unique_ptr<DirNode>>& list) {
-    DIR* dir = opendir(dirPath.c_str());
+static void _readDir(DirNode& context, const std::string& path, bool recursive) {
+    DIR* dir = opendir(path.c_str());
     if (!dir)
         return;
     struct dirent* ent;
@@ -231,42 +202,35 @@ static void readDirRecursive(const std::string& dirPath, const std::string& pref
         if (ent->d_name[0] == '.' &&
             (ent->d_name[1] == '\0' || (ent->d_name[1] == '.' && ent->d_name[2] == '\0')))
             continue;
-        std::string fullPath = dirPath;
-        if (fullPath.back() != '/')
-            fullPath += '/';
-        fullPath += ent->d_name;
+        std::string ent_path = path;
+        if (ent_path.back() != '/')
+            ent_path += '/';
+        ent_path += ent->d_name;
 
         struct stat st;
-        if (stat(fullPath.c_str(), &st) != 0)
+        if (stat(ent_path.c_str(), &st) != 0)
             continue;
 
-        std::string displayName = prefix.empty() ? ent->d_name : prefix + "/" + ent->d_name;
-        auto fileStatus = std::make_unique<DirNode>();
-        fileStatus->name = displayName;
-        fileStatus->assign(st);
-        list.push_back(std::move(fileStatus));
-        if (S_ISDIR(st.st_mode)) {
-            readDirRecursive(fullPath, displayName, list);
+        auto node = std::make_unique<DirNode>(ent->d_name);
+        node->assign(st);
+        if (S_ISDIR(st.st_mode) && recursive) {
+            _readDir(*node, ent_path, recursive);
         }
+        context.putChild(std::move(node));
     }
     closedir(dir);
 }
 
-void LocalVolume::readDir_inplace(std::vector<std::unique_ptr<DirNode>>& list,
-                                  std::string_view _path, bool recursive) {
-    std::string dirPath = resolveLocal(_path);
+void LocalVolume::readDir_inplace(DirNode& context, std::string_view _path, bool recursive) {
+    std::string localPath = resolveLocal(_path);
 
     struct stat sb;
-    if (::stat(dirPath.c_str(), &sb) != 0 || !S_ISDIR(sb.st_mode)) {
+    if (::stat(localPath.c_str(), &sb) != 0 || !S_ISDIR(sb.st_mode)) {
         throw IOException("readDir", std::string(_path), "Path is not a directory");
     }
 
     try {
-        if (recursive) {
-            readDirRecursive(dirPath, "", list);
-        } else {
-            readDirOne(dirPath, list);
-        }
+        _readDir(context, localPath, recursive);
     } catch (const IOException&) {
         throw;
     } catch (const std::exception& e) {

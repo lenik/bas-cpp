@@ -24,8 +24,8 @@ uint16_t le16(const uint8_t* p) {
 }
 
 uint32_t le32(const uint8_t* p) {
-    return static_cast<uint32_t>(p[0]) | (static_cast<uint32_t>(p[1]) << 8)
-           | (static_cast<uint32_t>(p[2]) << 16) | (static_cast<uint32_t>(p[3]) << 24);
+    return static_cast<uint32_t>(p[0]) | (static_cast<uint32_t>(p[1]) << 8) |
+           (static_cast<uint32_t>(p[2]) << 16) | (static_cast<uint32_t>(p[3]) << 24);
 }
 
 std::string trimRight(const std::string& s) {
@@ -35,9 +35,7 @@ std::string trimRight(const std::string& s) {
     return s.substr(0, end);
 }
 
-bool isDotEntry(std::string_view name) {
-    return name == "." || name == "..";
-}
+bool isDotEntry(std::string_view name) { return name == "." || name == ".."; }
 
 /** FAT directory 32-byte entry uses MS-DOS date/time encoding (same as ZIP). */
 time_t fatDosDateTime(uint16_t dosTime, uint16_t dosDate) {
@@ -83,36 +81,32 @@ Fat32Volume::Fat32Volume(std::string_view imagePath) : m_imagePath(imagePath) {
     buildIndex();
 }
 
-std::string Fat32Volume::getDefaultLabel() const {
-    return "FAT32 Image";
-}
+std::string Fat32Volume::getDefaultLabel() const { return "FAT32 Image"; }
 
-std::string Fat32Volume::getLocalFile(std::string_view /*path*/) const {
-    return "";
-}
+std::string Fat32Volume::getLocalFile(std::string_view /*path*/) const { return ""; }
 
 std::string Fat32Volume::getSource() const { return "fat32 " + m_imagePath; }
 
 bool Fat32Volume::exists(std::string_view path) const {
-    return m_nodes.find(normalizeArg(path)) != m_nodes.end();
+    return m_dirents.find(normalizeArg(path)) != m_dirents.end();
 }
 
 bool Fat32Volume::isFile(std::string_view path) const {
-    auto it = m_nodes.find(normalizeArg(path));
-    return it != m_nodes.end() && !it->second.isDirectory;
+    auto it = m_dirents.find(normalizeArg(path));
+    return it != m_dirents.end() && !it->second.isDirectory;
 }
 
 bool Fat32Volume::isDirectory(std::string_view path) const {
-    auto it = m_nodes.find(normalizeArg(path));
-    return it != m_nodes.end() && it->second.isDirectory;
+    auto it = m_dirents.find(normalizeArg(path));
+    return it != m_dirents.end() && it->second.isDirectory;
 }
 
 bool Fat32Volume::stat(std::string_view path, DirNode* status) const {
     if (!status) {
         throw std::invalid_argument("Fat32Volume::stat: status is null");
     }
-    auto it = m_nodes.find(normalizeArg(path));
-    if (it == m_nodes.end()) {
+    auto it = m_dirents.find(normalizeArg(path));
+    if (it == m_dirents.end()) {
         return false;
     }
     status->name = normalizeArg(path);
@@ -121,22 +115,20 @@ bool Fat32Volume::stat(std::string_view path, DirNode* status) const {
     status->epochSeconds(it->second.mtime);
     status->accessTime(std::chrono::system_clock::from_time_t(it->second.atime));
     status->creationTime(std::chrono::system_clock::from_time_t(it->second.creationTime));
-    status->mode =
-        static_cast<int>((it->second.isDirectory ? S_IFDIR : S_IFREG) | 0444);
+    status->mode = static_cast<int>((it->second.isDirectory ? S_IFDIR : S_IFREG) | 0444);
     return true;
 }
 
-void Fat32Volume::readDir_inplace(std::vector<std::unique_ptr<DirNode>>& list, std::string_view path,
-                                  bool recursive) {
+void Fat32Volume::readDir_inplace(DirNode& context, std::string_view path, bool recursive) {
     const std::string parent = normalizeArg(path);
-    auto pit = m_nodes.find(parent);
-    if (pit == m_nodes.end() || !pit->second.isDirectory) {
+    auto pit = m_dirents.find(parent);
+    if (pit == m_dirents.end() || !pit->second.isDirectory) {
         throw IOException("readDir", std::string(path), "Path is not a directory");
     }
 
     const std::string prefix = (parent == "/") ? "/" : parent + "/";
 
-    for (const auto& [fullPath, node] : m_nodes) {
+    for (const auto& [fullPath, dirent] : m_dirents) {
         if (fullPath == parent || fullPath.rfind(prefix, 0) != 0) {
             continue;
         }
@@ -150,42 +142,45 @@ void Fat32Volume::readDir_inplace(std::vector<std::unique_ptr<DirNode>>& list, s
             continue;
         }
 
-        auto st = std::make_unique<DirNode>();
-        st->name = recursive ? rel : rel.substr(0, rel.find('/'));
-        st->type = node.isDirectory ? FileType::Directory : FileType::Regular;
-        st->size = node.size;
-        st->epochSeconds(node.mtime);
-        st->accessTime(std::chrono::system_clock::from_time_t(node.atime));
-        st->creationTime(std::chrono::system_clock::from_time_t(node.creationTime));
-        st->mode = (node.isDirectory ? S_IFDIR : S_IFREG) | 0444;
-        list.push_back(std::move(st));
+        auto node = std::make_unique<DirNode>();
+        node->name = recursive ? rel : rel.substr(0, rel.find('/'));
+        node->type = dirent.isDirectory ? FileType::Directory : FileType::Regular;
+        node->size = dirent.size;
+        node->epochSeconds(dirent.mtime);
+        node->accessTime(std::chrono::system_clock::from_time_t(dirent.atime));
+        node->creationTime(std::chrono::system_clock::from_time_t(dirent.creationTime));
+        node->mode = (dirent.isDirectory ? S_IFDIR : S_IFREG) | 0444;
+        context.putChild(std::move(node));
     }
 
     if (!recursive) {
         std::unordered_set<std::string> seen;
         std::vector<std::unique_ptr<DirNode>> unique;
-        unique.reserve(list.size());
-        for (auto& item : list) {
+        unique.reserve(context.children.size());
+        for (auto& [name, item] : context.children) {
             if (seen.insert(item->name).second) {
                 unique.push_back(std::move(item));
             }
         }
-        list = std::move(unique);
+        context.children.clear();
+        for (auto& item : unique) {
+            context.children[item->name] = std::move(item);
+        }
     }
 }
 
 std::unique_ptr<InputStream> Fat32Volume::newInputStream(std::string_view path) {
     const std::string normalized = normalizeArg(path);
-    auto it = m_nodes.find(normalized);
-    if (it == m_nodes.end() || it->second.isDirectory) {
+    auto it = m_dirents.find(normalized);
+    if (it == m_dirents.end() || it->second.isDirectory) {
         throw IOException("newInputStream", std::string(path), "File not found or is a directory");
     }
     std::vector<uint32_t> chain;
     if (it->second.firstCluster >= 2 && it->second.size > 0) {
         chain = readClusterChain(it->second.firstCluster);
     }
-    auto stream = std::make_unique<Fat32FileInputStream>(m_imagePath, std::move(chain), m_dataOffset,
-                                                          m_clusterSize, it->second.size);
+    auto stream = std::make_unique<Fat32FileInputStream>(
+        m_imagePath, std::move(chain), m_dataOffset, m_clusterSize, it->second.size);
     if (!stream->isOpen()) {
         throw IOException("newInputStream", normalized, "Failed to open image");
     }
@@ -197,7 +192,8 @@ std::unique_ptr<RandomInputStream> Fat32Volume::newRandomInputStream(std::string
     return std::unique_ptr<RandomInputStream>(dynamic_cast<RandomInputStream*>(stream.release()));
 }
 
-std::unique_ptr<Reader> Fat32Volume::newReader(std::string_view path, std::string_view /*encoding*/) {
+std::unique_ptr<Reader> Fat32Volume::newReader(std::string_view path,
+                                               std::string_view /*encoding*/) {
     std::vector<uint8_t> bytes = readFile(path);
     std::string text(bytes.begin(), bytes.end());
     return std::make_unique<StringReader>(text);
@@ -214,22 +210,23 @@ std::unique_ptr<OutputStream> Fat32Volume::newOutputStream(std::string_view path
 
 std::unique_ptr<Writer> Fat32Volume::newWriter(std::string_view path, bool /*append*/,
                                                std::string_view /*encoding*/) {
-    throw IOException("newWriter", std::string(path), "Fat32Volume write operations are not implemented yet");
+    throw IOException("newWriter", std::string(path),
+                      "Fat32Volume write operations are not implemented yet");
 }
 
 std::vector<uint8_t> Fat32Volume::readFileUnchecked(std::string_view path, int64_t off,
                                                     size_t len) {
     const std::string normalized = normalizeArg(path);
-    auto it = m_nodes.find(normalized);
-    if (it == m_nodes.end() || it->second.isDirectory) {
+    auto it = m_dirents.find(normalized);
+    if (it == m_dirents.end() || it->second.isDirectory) {
         throw IOException("readFile", std::string(path), "File not found or is a directory");
     }
 
-    const Node& node = it->second;
+    const Dirent& dirent = it->second;
     std::vector<uint8_t> out;
-    out.reserve(node.size);
+    out.reserve(dirent.size);
 
-    if (node.size == 0 || node.firstCluster < 2) {
+    if (dirent.size == 0 || dirent.firstCluster < 2) {
         return out;
     }
 
@@ -238,7 +235,8 @@ std::vector<uint8_t> Fat32Volume::readFileUnchecked(std::string_view path, int64
         return {};
     }
     out = stream->readBytesUntilEOF();
-    if (out.size() > node.size) out.resize(node.size);
+    if (out.size() > dirent.size)
+        out.resize(dirent.size);
 
     int64_t start64 = (off >= 0) ? off : (static_cast<int64_t>(out.size()) + off + 1);
     if (start64 < 0) {
@@ -258,7 +256,8 @@ std::vector<uint8_t> Fat32Volume::readFileUnchecked(std::string_view path, int64
 }
 
 void Fat32Volume::writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& /*data*/) {
-    throw IOException("writeFile", std::string(path), "Fat32Volume write operations are not implemented yet");
+    throw IOException("writeFile", std::string(path),
+                      "Fat32Volume write operations are not implemented yet");
 }
 
 void Fat32Volume::createDirectoryThrowsUnchecked(std::string_view path) {
@@ -272,19 +271,24 @@ void Fat32Volume::removeDirectoryThrowsUnchecked(std::string_view path) {
 }
 
 void Fat32Volume::removeFileThrowsUnchecked(std::string_view path) {
-    throw IOException("removeFile", std::string(path), "Fat32Volume write operations are not implemented yet");
+    throw IOException("removeFile", std::string(path),
+                      "Fat32Volume write operations are not implemented yet");
 }
 
 void Fat32Volume::copyFileThrowsUnchecked(std::string_view src, std::string_view /*dest*/) {
-    throw IOException("copyFile", std::string(src), "Fat32Volume write operations are not implemented yet");
+    throw IOException("copyFile", std::string(src),
+                      "Fat32Volume write operations are not implemented yet");
 }
 
 void Fat32Volume::moveFileThrowsUnchecked(std::string_view src, std::string_view /*dest*/) {
-    throw IOException("moveFile", std::string(src), "Fat32Volume write operations are not implemented yet");
+    throw IOException("moveFile", std::string(src),
+                      "Fat32Volume write operations are not implemented yet");
 }
 
-void Fat32Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::string_view /*newPath*/) {
-    throw IOException("renameFile", std::string(oldPath), "Fat32Volume write operations are not implemented yet");
+void Fat32Volume::renameFileThrowsUnchecked(std::string_view oldPath,
+                                            std::string_view /*newPath*/) {
+    throw IOException("renameFile", std::string(oldPath),
+                      "Fat32Volume write operations are not implemented yet");
 }
 
 std::string Fat32Volume::getTempDir() {
@@ -314,8 +318,8 @@ void Fat32Volume::parseBootSector() {
     m_sectorsPerFAT = le32(b + 36);
     m_rootCluster = le32(b + 44);
 
-    if (m_bytesPerSector == 0 || m_sectorsPerCluster == 0 || m_reservedSectors == 0 || m_numFATs == 0
-        || m_sectorsPerFAT == 0 || m_rootCluster < 2) {
+    if (m_bytesPerSector == 0 || m_sectorsPerCluster == 0 || m_reservedSectors == 0 ||
+        m_numFATs == 0 || m_sectorsPerFAT == 0 || m_rootCluster < 2) {
         throw IOException("Fat32Volume", m_imagePath, "Invalid FAT32 boot parameters");
     }
     if (rootEntryCount != 0 || fat16Sectors != 0) {
@@ -324,7 +328,8 @@ void Fat32Volume::parseBootSector() {
 
     m_clusterSize = static_cast<uint32_t>(m_bytesPerSector) * m_sectorsPerCluster;
     m_fatOffset = static_cast<uint64_t>(m_reservedSectors) * m_bytesPerSector;
-    m_dataOffset = static_cast<uint64_t>(m_reservedSectors + (m_numFATs * m_sectorsPerFAT)) * m_bytesPerSector;
+    m_dataOffset =
+        static_cast<uint64_t>(m_reservedSectors + (m_numFATs * m_sectorsPerFAT)) * m_bytesPerSector;
 
     if (m_dataOffset >= m_imageSize) {
         throw IOException("Fat32Volume", m_imagePath, "Invalid FAT32 offsets");
@@ -332,8 +337,8 @@ void Fat32Volume::parseBootSector() {
 }
 
 void Fat32Volume::buildIndex() {
-    m_nodes.clear();
-    m_nodes["/"] = Node{true, m_rootCluster, 0, 0, 0, 0};
+    m_dirents.clear();
+    m_dirents["/"] = Dirent{true, m_rootCluster, 0, 0, 0, 0};
     parseDirectoryCluster("/", m_rootCluster);
 }
 
@@ -475,7 +480,7 @@ void Fat32Volume::parseDirectoryCluster(std::string_view dirPath, uint32_t first
             std::string parent(dirPath);
             const std::string path = (parent == "/") ? ("/" + name) : (parent + "/" + name);
 
-            m_nodes[path] = Node{isDir, startCluster, isDir ? 0u : size, atim, mtime, crt};
+            m_dirents[path] = Dirent{isDir, startCluster, isDir ? 0u : size, atim, mtime, crt};
             if (isDir && startCluster >= 2) {
                 parseDirectoryCluster(path, startCluster);
             }
@@ -498,4 +503,3 @@ bool Fat32Volume::readAt(uint64_t offset, uint8_t* dst, size_t len) const {
     in.read(reinterpret_cast<char*>(dst), static_cast<std::streamsize>(len));
     return in.good() || in.gcount() == static_cast<std::streamsize>(len);
 }
-

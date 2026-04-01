@@ -13,10 +13,10 @@
  * for listing and reads. Mutations and writes go only to the last (top) layer.
  */
 class OverlayVolume : public Volume {
-public:
+  public:
     explicit OverlayVolume(std::string label, std::vector<Volume*> layers);
 
-    template<typename... Ts>
+    template <typename... Ts>
     static std::unique_ptr<OverlayVolume> make(std::string label, Ts&&... vols) {
         static_assert((std::is_convertible_v<Ts*, Volume*> && ...));
         std::vector<Volume*> vec;
@@ -29,7 +29,7 @@ public:
     Volume* topLayer();
     const Volume* bottomLayer() const;
     const Volume* topLayer() const;
-    
+
     const std::vector<Volume*>& getLayers() const;
     std::vector<Volume*>& layers();
 
@@ -48,11 +48,11 @@ public:
     void setClass(std::string_view c) { m_class = std::string(c); }
     void setId(std::string_view id) { m_id = std::string(id); }
     void setVolumeType(VolumeType t) { m_volumeType = t; }
-    
+
     std::string getUUID() override;
     std::string getSerial() override;
     std::string getLabel() override;
-    
+
     void setUUID(std::string_view u);
     void setSerial(std::string_view s);
     void setLabel(std::string_view label) override;
@@ -64,17 +64,18 @@ public:
     bool isDirectory(std::string_view path) const override;
     bool stat(std::string_view path, DirNode* status) const override;
 
-    void readDir_inplace(std::vector<std::unique_ptr<DirNode>>& list, std::string_view path,
-                         bool recursive = false) override;
+    void readDir_inplace(DirNode& context, std::string_view path, bool recursive = false) override;
 
     std::unique_ptr<InputStream> newInputStream(std::string_view path) override;
-    std::unique_ptr<OutputStream> newOutputStream(std::string_view path, bool append = false) override;
+    std::unique_ptr<OutputStream> newOutputStream(std::string_view path,
+                                                  bool append = false) override;
     std::unique_ptr<RandomInputStream> newRandomInputStream(std::string_view path) override;
 
     std::string getTempDir() override;
-    std::string createTempFile(std::string_view prefix = "tmp.", std::string_view suffix = "") override;
+    std::string createTempFile(std::string_view prefix = "tmp.",
+                               std::string_view suffix = "") override;
 
-protected:
+  protected:
     std::string getDefaultLabel() const override;
 
     std::vector<uint8_t> readFileUnchecked(std::string_view path, int64_t off = 0,
@@ -88,12 +89,12 @@ protected:
     void moveFileThrowsUnchecked(std::string_view src, std::string_view dest) override;
     void renameFileThrowsUnchecked(std::string_view src, std::string_view dest) override;
 
-private:
+  private:
     std::vector<Volume*> m_layers;
     std::string m_class = "overlay";
     std::string m_id;
     VolumeType m_volumeType = VolumeType::OTHER;
-    
+
     bool user_attrs = true;
     std::string m_uuid;
     std::string m_serial;

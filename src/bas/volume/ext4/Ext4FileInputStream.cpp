@@ -2,14 +2,11 @@
 
 #include "../../io/IOException.hpp"
 
-#if defined(BAS_HAS_EXT2FS) && BAS_HAS_EXT2FS
 #include <ext2fs/ext2_fs.h>
 #include <ext2fs/ext2fs.h>
-#endif
 
 Ext4FileInputStream::Ext4FileInputStream(std::string imagePath, uint32_t inode)
     : m_imagePath(std::move(imagePath)), m_inode(inode) {
-#if defined(BAS_HAS_EXT2FS) && BAS_HAS_EXT2FS
     errcode_t rc = ext2fs_open(m_imagePath.c_str(), EXT2_FLAG_64BITS, 0, 0, unix_io_manager, &m_fs);
     if (rc) {
         throw IOException("Ext4FileInputStream", m_imagePath, "ext2fs_open failed");
@@ -20,7 +17,6 @@ Ext4FileInputStream::Ext4FileInputStream(std::string imagePath, uint32_t inode)
         m_fs = nullptr;
         throw IOException("Ext4FileInputStream", m_imagePath, "ext2fs_file_open failed");
     }
-#endif
 }
 
 Ext4FileInputStream::~Ext4FileInputStream() {
@@ -33,7 +29,6 @@ int Ext4FileInputStream::read() {
 }
 
 size_t Ext4FileInputStream::read(uint8_t* buf, size_t off, size_t len) {
-#if defined(BAS_HAS_EXT2FS) && BAS_HAS_EXT2FS
     if (!m_file || !buf || len == 0) {
         return 0;
     }
@@ -44,12 +39,6 @@ size_t Ext4FileInputStream::read(uint8_t* buf, size_t off, size_t len) {
     }
     m_pos += static_cast<int64_t>(got);
     return static_cast<size_t>(got);
-#else
-    (void)buf;
-    (void)off;
-    (void)len;
-    throw IOException("read", m_imagePath, "Ext4FileInputStream requires libext2fs");
-#endif
 }
 
 int64_t Ext4FileInputStream::skip(int64_t len) {
@@ -67,7 +56,6 @@ int64_t Ext4FileInputStream::position() const {
 }
 
 bool Ext4FileInputStream::seek(int64_t offset, std::ios::seekdir dir) {
-#if defined(BAS_HAS_EXT2FS) && BAS_HAS_EXT2FS
     if (!m_file) {
         return false;
     }
@@ -91,15 +79,9 @@ bool Ext4FileInputStream::seek(int64_t offset, std::ios::seekdir dir) {
     }
     m_pos = static_cast<int64_t>(target);
     return true;
-#else
-    (void)offset;
-    (void)dir;
-    return false;
-#endif
 }
 
 void Ext4FileInputStream::close() {
-#if defined(BAS_HAS_EXT2FS) && BAS_HAS_EXT2FS
     if (m_file) {
         ext2fs_file_close(m_file);
         m_file = nullptr;
@@ -108,5 +90,4 @@ void Ext4FileInputStream::close() {
         ext2fs_close(m_fs);
         m_fs = nullptr;
     }
-#endif
 }

@@ -12,29 +12,46 @@
 #include <vector>
 
 class Ext4Volume : public Volume {
-private:
-    struct Node {
+  private:
+    struct Inode {
         bool isDirectory = false;
         uint64_t size = 0;
-        uint32_t inode = 0;
+        uint32_t ino = 0;
         uint16_t mode = 0;
         uint32_t uid = 0;
         uint32_t gid = 0;
         time_t atime = 0;
         time_t mtime = 0;
         time_t ctime = 0;
+
+        Inode() = default;
+        Inode(bool isDirectory, uint64_t size, uint32_t ino, uint16_t mode, uint32_t uid,
+              uint32_t gid, time_t atime, time_t mtime, time_t ctime)
+            : isDirectory(isDirectory), size(size), ino(ino), mode(mode), uid(uid), gid(gid),
+              atime(atime), mtime(mtime), ctime(ctime) {}
+    };
+
+    // Runtime node for directory traversal
+    struct RtNode : public Inode {
+        RtNode* parent{nullptr};
+        std::unordered_map<std::string, std::unique_ptr<RtNode>> children;
+
+        RtNode() = default;
+        RtNode(bool isDirectory, uint64_t size, uint32_t ino, uint16_t mode, uint32_t uid,
+               uint32_t gid, time_t atime, time_t mtime, time_t ctime)
+            : Inode(isDirectory, size, ino, mode, uid, gid, atime, mtime, ctime) {}
     };
 
     std::string m_imagePath;
-    mutable std::unordered_map<std::string, Node> m_nodes; // path -> inode metadata cache
-    mutable std::unordered_map<uint32_t, std::unordered_map<std::string, Node>>
-        m_dirIndexCache; // dir inode -> direct children
+    mutable std::unordered_map<std::string, Inode> m_inodes; // path -> inode metadata cache
+    mutable std::unordered_map<uint32_t, std::unique_ptr<RtNode>>
+        m_rtnodes; // dir inode -> runtime node with children
     IUserDb* m_userDb = nullptr;
     int m_contextUid = 0;
     int m_contextGid = 0;
     std::vector<int> m_contextGroupIds;
 
-public:
+  public:
     explicit Ext4Volume(std::string_view imagePath);
     ~Ext4Volume() override;
 
@@ -49,17 +66,18 @@ public:
     std::string getSource() const override;
     bool isLocal() const override { return false; }
     std::string getLocalFile(std::string_view path) const override;
-    
+
     bool exists(std::string_view path) const override;
     bool isFile(std::string_view path) const override;
     bool isDirectory(std::string_view path) const override;
     bool stat(std::string_view path, DirNode* status) const override;
-    void readDir_inplace(std::vector<std::unique_ptr<DirNode>>& list, std::string_view path,
-                         bool recursive = false) override;
+    void readDir_inplace(DirNode& context, std::string_view path, bool recursive = false) override;
 
     std::unique_ptr<InputStream> newInputStream(std::string_view path) override;
-    std::unique_ptr<OutputStream> newOutputStream(std::string_view path, bool append = false) override;
-    std::unique_ptr<Reader> newReader(std::string_view path, std::string_view encoding = "UTF-8") override;
+    std::unique_ptr<OutputStream> newOutputStream(std::string_view path,
+                                                  bool append = false) override;
+    std::unique_ptr<Reader> newReader(std::string_view path,
+                                      std::string_view encoding = "UTF-8") override;
     std::unique_ptr<Writer> newWriter(std::string_view path, bool append = false,
                                       std::string_view encoding = "UTF-8") override;
 
@@ -68,9 +86,10 @@ public:
                                                   std::string_view encoding = "UTF-8") override;
 
     std::string getTempDir() override;
-    std::string createTempFile(std::string_view prefix = "tmp.", std::string_view suffix = "") override;
+    std::string createTempFile(std::string_view prefix = "tmp.",
+                               std::string_view suffix = "") override;
 
-protected:
+  protected:
     std::string getDefaultLabel() const override;
 
     std::vector<uint8_t> readFileUnchecked(std::string_view path, int64_t off = 0,
@@ -84,14 +103,14 @@ protected:
     void moveFileThrowsUnchecked(std::string_view src, std::string_view dest) override;
     void renameFileThrowsUnchecked(std::string_view oldPath, std::string_view newPath) override;
 
-private:
+  private:
     std::string normalizePath(std::string_view path) const;
     void buildIndex();
     void refreshContextGroups();
-    bool resolveNode(std::string_view path, Node* out) const;
-    const std::unordered_map<std::string, Node>& getDirectoryEntries(uint32_t inode) const;
+    bool resolveNode(std::string_view path, Inode* out) const;
+    const RtNode* getDirectoryEntries(uint32_t inode) const;
     bool hasGroup(uint32_t gid) const;
-    bool checkMode(const Node& node, int needMask) const;
+    bool checkMode(const Inode& node, int needMask) const;
 };
 
 #endif // EXT4VOLUME_H

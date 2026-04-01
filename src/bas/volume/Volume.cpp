@@ -198,12 +198,12 @@ std::string Volume::normalize(std::string_view path) const {
 
 std::string Volume::toRealPath(std::string_view path) const { return normalizeArg(path); }
 
-std::vector<std::unique_ptr<DirNode>> Volume::readDir(std::string_view path, bool recursive) {
+std::unique_ptr<DirNode> Volume::readDir(std::string_view path, bool recursive) {
     if (path.empty())
         throw std::invalid_argument("Volume::readDir: path is required");
-    std::vector<std::unique_ptr<DirNode>> list;
-    readDir_inplace(list, path, recursive);
-    return list;
+    std::unique_ptr<DirNode> root = std::make_unique<DirNode>();
+    readDir_inplace(*root, path, recursive);
+    return root;
 }
 
 // wrapper for createDirectoryThrows

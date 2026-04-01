@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <ctime>
+#include <functional>
 #include <unordered_map>
 
 #if defined(__linux__)
@@ -30,6 +31,10 @@ struct DirNode : public DirEntry {
 
     DirNode* parent{nullptr};
     std::unordered_map<std::string, std::unique_ptr<DirNode>> children;
+    bool children_valid{false};
+
+    std::vector<uint8_t> cache;
+    bool cache_valid{false};
 
   public:
     DirNode() = default;
@@ -47,6 +52,7 @@ struct DirNode : public DirEntry {
     void assign(const struct statx& sx);
 #endif
     void assign(const struct stat& sb);
+    void assign(const DirNode& node);
 
     ~DirNode() {
         if (target_owned) {
@@ -58,151 +64,79 @@ struct DirNode : public DirEntry {
     }
 
   public:
-    inline FileType targetType() const { return target ? target->type : FileType::Unknown; }
+    void clear();
+    void invalidateCache();
+    void invalidateChildren();
 
-    inline DirNode* root() { return parent ? parent->root() : this; }
-    inline size_t childCount() const { return children.size(); }
+    void setFileClear();
+    void setDirectoryClear();
+    void setTarget(DirNode* target, bool owned = false);
 
-    inline bool isDirectoryTarget() const {
-        if (isSymbolicLink())
-            return target ? target->isDirectory() : false;
-        else
-            return isDirectory();
-    }
-    inline bool isFileTarget() const {
-        if (isSymbolicLink())
-            return target ? target->isRegularFile() : false;
-        else
-            return isRegularFile();
-    }
+    void setSymbolicLink(DirNode* target, bool owned = false);
+    void setSymbolicLinkClear(DirNode* target, bool owned = false);
 
-    inline std::string path() const {
-        std::string path;
-        buildPath(path);
-        return path;
-    }
+    FileType targetType() const;
+    bool isDirectoryTarget() const;
+    bool isFileTarget() const;
 
-    inline DirNode* findChild(std::string_view name) { return findChild(std::string(name)); }
-    inline DirNode* findChild(const std::string& name) {
-        auto it = children.find(name);
-        return it != children.end() ? it->second.get() : nullptr;
-    }
+    int64_t modifiedNano() const;
+    int64_t accessNano() const;
+    int64_t creationNano() const;
 
-    inline DirNode* addChild(std::string_view name, FileType type = FileType::Unknown,
-                             int64_t size = 0, int64_t epochNano = 0) {
-        return addChild(std::string(name), type, size, epochNano);
-    }
-    inline DirNode* addChild(const std::string& name, FileType type = FileType::Unknown,
-                             int64_t size = 0, int64_t epochNano = 0) {
-        auto child = std::make_unique<DirNode>(name, type, size, epochNano);
-        child->parent = this;
-        children[name] = std::move(child);
-        return children.at(name).get();
-    }
+    int64_t modifiedSeconds() const;
+    int64_t accessSeconds() const;
+    int64_t creationSeconds() const;
 
-    inline DirNode* resolve(std::string_view path, bool create = false,
-                            FileType intermediateType = FileType::Unknown) {
-        size_t slash = path.find('/');
-        if (slash == std::string_view::npos) {
-            return findChild(path);
-        }
+    std::chrono::system_clock::time_point modifiedTime() const;
+    std::chrono::system_clock::time_point accessTime() const;
+    std::chrono::system_clock::time_point creationTime() const;
 
-        std::string_view tail = path.substr(slash + 1);
-        bool last = tail.empty();
+    auto modifiedZonedTime() const;
+    auto accessZonedTime() const;
+    auto creationZonedTime() const;
 
-        std::string_view head = path.substr(0, slash);
-        DirNode* child = findChild(head);
-        if (!child) {
-            if (create) {
-                child = addChild(head, last ? FileType::Unknown : intermediateType);
-            } else {
-                return nullptr;
-            }
-        }
-        if (last)
-            return child;
-        return child->resolve(tail, create, intermediateType);
-    }
+    auto modifiedLocalTime() const;
+    auto accessLocalTime() const;
+    auto creationLocalTime() const;
 
-    inline int64_t modifiedNano() const { return epochNano; }
-    inline int64_t accessNano() const { return accessEpochNano; }
-    inline int64_t creationNano() const { return creationEpochNano; }
+    void modifiedTime(std::chrono::system_clock::duration duration);
+    void modifiedTime(std::chrono::system_clock::time_point time);
 
-    inline int64_t modifiedSeconds() const { return epochNano / 1'000'000'000LL; }
-    inline int64_t accessSeconds() const { return accessEpochNano / 1'000'000'000LL; }
-    inline int64_t creationSeconds() const { return creationEpochNano / 1'000'000'000LL; }
+    void accessTime(std::chrono::system_clock::duration duration);
+    void accessTime(std::chrono::system_clock::time_point time);
 
-    inline std::chrono::system_clock::time_point modifiedTime() const {
-        return std::chrono::system_clock::time_point(std::chrono::nanoseconds(epochNano));
-    }
-    inline std::chrono::system_clock::time_point accessTime() const {
-        return std::chrono::system_clock::time_point(std::chrono::nanoseconds(accessEpochNano));
-    }
-    inline std::chrono::system_clock::time_point creationTime() const {
-        return std::chrono::system_clock::time_point(std::chrono::nanoseconds(creationEpochNano));
-    }
+    void creationTime(std::chrono::system_clock::duration duration);
+    void creationTime(std::chrono::system_clock::time_point time);
 
-    inline auto modifiedZonedTime() const {
-        return date::zoned_time{date::current_zone(), modifiedTime()};
-    }
-    inline auto accessZonedTime() const {
-        return date::zoned_time{date::current_zone(), accessTime()};
-    }
-    inline auto creationZonedTime() const {
-        return date::zoned_time{date::current_zone(), creationTime()};
-    }
+    void modifiedZonedTime(date::zoned_time<std::chrono::system_clock::duration> zoned);
+    void accessZonedTime(date::zoned_time<std::chrono::system_clock::duration> zoned);
+    void creationZonedTime(date::zoned_time<std::chrono::system_clock::duration> zoned);
 
-    inline auto modifiedLocalTime() const { return modifiedZonedTime().get_local_time(); }
-    inline auto accessLocalTime() const { return accessZonedTime().get_local_time(); }
-    inline auto creationLocalTime() const { return creationZonedTime().get_local_time(); }
+    void modifiedLocalTime(date::local_time<std::chrono::system_clock::duration> local);
+    void accessLocalTime(date::local_time<std::chrono::system_clock::duration> local);
+    void creationLocalTime(date::local_time<std::chrono::system_clock::duration> local);
 
-    inline void modifiedTime(std::chrono::system_clock::duration duration) {
-        epochNano = std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();
-    }
-    inline void modifiedTime(std::chrono::system_clock::time_point time) {
-        modifiedTime(time.time_since_epoch());
-    }
+    std::string path() const;
+    DirNode* root();
+    size_t childCount() const;
 
-    inline void accessTime(std::chrono::system_clock::duration duration) {
-        accessEpochNano = std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();
-    }
-    inline void accessTime(std::chrono::system_clock::time_point time) {
-        accessTime(time.time_since_epoch());
-    }
+    DirNode* findChild(std::string_view name);
+    DirNode* findChild(const std::string& name);
 
-    inline void creationTime(std::chrono::system_clock::duration duration) {
-        creationEpochNano = std::chrono::duration_cast<std::chrono::nanoseconds>(duration).count();
-    }
-    inline void creationTime(std::chrono::system_clock::time_point time) {
-        creationTime(time.time_since_epoch());
-    }
+    int walkRec(std::function<bool(DirNode*)> callback);
+    int walk(std::function<bool(DirNode*)> callback, bool recursive = false);
 
-    inline void modifiedZonedTime(date::zoned_time<std::chrono::system_clock::duration> zoned) {
-        modifiedTime(zoned.get_sys_time());
-    }
-    inline void accessZonedTime(date::zoned_time<std::chrono::system_clock::duration> zoned) {
-        accessTime(zoned.get_sys_time());
-    }
-    inline void creationZonedTime(date::zoned_time<std::chrono::system_clock::duration> zoned) {
-        creationTime(zoned.get_sys_time());
-    }
+    DirNode* putChild(std::string_view name, FileType type = FileType::Unknown, int64_t size = 0,
+                      int64_t epochNano = 0);
+    DirNode* putChild(const std::string& name, FileType type = FileType::Unknown, int64_t size = 0,
+                      int64_t epochNano = 0);
+    DirNode* putChild(std::unique_ptr<DirNode> child);
 
-    inline void modifiedLocalTime(date::local_time<std::chrono::system_clock::duration> local) {
-        modifiedZonedTime(date::zoned_time{date::current_zone(), local});
-    }
-    inline void accessLocalTime(date::local_time<std::chrono::system_clock::duration> local) {
-        accessZonedTime(date::zoned_time{date::current_zone(), local});
-    }
-    inline void creationLocalTime(date::local_time<std::chrono::system_clock::duration> local) {
-        creationZonedTime(date::zoned_time{date::current_zone(), local});
-    }
+    DirNode* resolve(std::string_view path, bool create = false,
+                     FileType intermediateType = FileType::Unknown);
 
   private:
-    void buildPath(std::string& path) const {
-        if (parent)
-            parent->buildPath(path);
-        path += "/" + name;
-    }
+    void buildPath(std::string& path) const;
 };
 
 #endif // VSTATS_H

@@ -100,11 +100,11 @@ struct VolumeFile {
     bool renameTo(std::string_view destPath, bool overwrite = true) const;
 
     // readDir and stat can throw IOException or AccessException
-    void readDir(std::vector<std::unique_ptr<DirNode>>& list, bool recursive = false) const;
-    std::vector<std::unique_ptr<DirNode>> readDir(bool recursive = false) const {
-        std::vector<std::unique_ptr<DirNode>> list;
-        readDir(list, recursive);
-        return list;
+    void readDir(DirNode& context, bool recursive = false) const;
+    std::unique_ptr<DirNode> readDir(bool recursive = false) const {
+        auto context = std::make_unique<DirNode>();
+        readDir(*context, recursive);
+        return context;
     }
     bool stat(DirNode* status) const;
 

@@ -234,8 +234,7 @@ bool OverlayVolume::stat(std::string_view path, DirNode* status) const {
     return w->stat(path, status);
 }
 
-void OverlayVolume::readDir_inplace(std::vector<std::unique_ptr<DirNode>>& out,
-                                    std::string_view path, bool recursive) {
+void OverlayVolume::readDir_inplace(DirNode& context, std::string_view path, bool recursive) {
     bool anyDir = false;
     for (const auto& layer : m_layers) {
         if (layer->isDirectory(path)) {
@@ -247,22 +246,19 @@ void OverlayVolume::readDir_inplace(std::vector<std::unique_ptr<DirNode>>& out,
         throw IOException("readDir", path, "Path is not a directory");
     }
 
-    std::map<std::string, std::unique_ptr<DirNode>> union_map;
     for (auto& layer : m_layers) {
-        if (!layer->isDirectory(path)) {
+        if (!layer->exists(path)) {
             continue;
         }
-        std::vector<std::unique_ptr<DirNode>> layer_list;
-        layer->readDir_inplace(layer_list, path, recursive);
-        for (auto& e : layer_list) {
-            mergeDirEntry(union_map, std::move(e));
+        DirNode node;
+        if (!layer->stat(path, &node)) {
+            throw IOException("readDir", path, "Error stat");
         }
-    }
-
-    out.clear();
-    out.reserve(union_map.size());
-    for (auto& kv : union_map) {
-        out.push_back(std::move(kv.second));
+        if (node.isDirectory()) {
+            layer->readDir_inplace(context, path, recursive);
+        } else {
+            context.assign(node);
+        }
     }
 }
 

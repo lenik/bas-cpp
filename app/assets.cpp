@@ -9,9 +9,9 @@ void dumpLayers() {
     auto layers = overlay->layers();
     for (const auto& layer : layers) {
         // Layer <id>: <source> [ <root file count> ]
-        int rootFileCount = layer->readDir("/").size();
+        auto node = layer->readDir("/");
         std::cout << "Layer " << layer->getId() << ": " << layer->getSource() //
-                  << " [ " << rootFileCount << " ]"                           //
+                  << " [ " << node->childCount() << " ]"                      //
                   << std::endl;
     }
 }
@@ -41,11 +41,11 @@ int main(int argc, char** argv) {
 
             Volume* w = overlay->layerExists(path);
             std::cout << "Layer exists: " << (w ? w->getSource() : "no") << std::endl;
-            
+
             std::string normalized = overlay->normalize(path);
             std::cout << "Normalized: " << normalized << std::endl;
             if (w) {
-                bool isDir =  w->isDirectory(normalized);
+                bool isDir = w->isDirectory(normalized);
                 std::cout << "Is directory: " << (isDir ? "yes" : "no") << std::endl;
             }
         }

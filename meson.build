@@ -35,6 +35,9 @@ boost_locale_dep = boost_sub.get_variable('boost_locale_dep')
 
 date_dep = subproject('date_tz').get_variable('date_dep')
 
+# ext2fs (e2fsprogs userspace library) for ext2/3/4 image access
+ext2fs_dep = dependency('ext2fs', required: true)
+
 # GLib for scriptable UI stack (GList)
 glib_dep = dependency('glib-2.0', required: true)
 
@@ -51,22 +54,10 @@ openssl_dep = dependency('openssl', required: true)
 # zlib is used for decompression, but we'll parse ZIP manually
 zlib_dep = dependency('zlib', required: true)
 
-# ext2fs (e2fsprogs userspace library) for ext2/3/4 image access
-ext2fs_header_ok = cpp.has_header('ext2fs/ext2fs.h')
-ext2fs_lib_dep = cpp.find_library('ext2fs', required: false)
-com_err_lib_dep = cpp.find_library('com_err', required: false)
-ext2fs_enabled = ext2fs_header_ok and ext2fs_lib_dep.found() and com_err_lib_dep.found()
-ext2fs_deps = []
-ext2fs_cpp_args = ['-DBAS_HAS_EXT2FS=0']
-if ext2fs_enabled
-    ext2fs_deps += [ext2fs_lib_dep, com_err_lib_dep]
-    ext2fs_cpp_args = ['-DBAS_HAS_EXT2FS=1']
-endif
-
 # Precompiled header for wxWidgets
 cpp_pch = 'src/bulk.h'
 
-cpp_args = cpp_nowarn + ext2fs_cpp_args + ['-DLOGGER_NAME=cpp', '-DASSETS_NAME=bas_cpp']
+cpp_args = cpp_nowarn + ['-DLOGGER_NAME=cpp', '-DASSETS_NAME=bas_cpp']
 
 cpp_sources = files(
     './src/bas/fmt/FileUtility.cpp',
@@ -204,24 +195,26 @@ exe_deps = [
     boost_json_dep,
     boost_locale_dep,
     date_dep,
+    ext2fs_dep,
     glib_dep,
     icu_uc_dep,
     libcurl_dep,
     openssl_dep,
     zlib_dep,
-] + ext2fs_deps + stdcxxfs_deps
+] + stdcxxfs_deps
 
 exe_static_deps = [
     bas_c_static_dep,
     boost_json_dep,
     boost_locale_dep,
     date_dep,
+    ext2fs_dep,
     glib_dep,
     icu_uc_dep,
     libcurl_dep,
     openssl_dep,
     zlib_dep,
-] + ext2fs_deps + stdcxxfs_deps
+] + stdcxxfs_deps
 
 exe_inc = [
     include_directories('src'),
@@ -420,7 +413,6 @@ foreach test_rel_path : all_test_files
         include_directories: exe_inc,
         dependencies: exe_deps,
         cpp_args: cpp_nowarn
-        + ext2fs_cpp_args
         + ['-DLOGGER_NAME=test', '-DASSETS_NAME=bas_cpp'],
         #cpp_pch: cpp_pch,
         install: false,
@@ -458,7 +450,6 @@ foreach app_cpp : app_cpp_list
         include_directories: exe_inc,
         dependencies: exe_deps,
         cpp_args: cpp_nowarn
-        + ext2fs_cpp_args
         + ['-DLOGGER_NAME=' + app_logger, '-DASSETS_NAME=bas_cpp'],
         #cpp_pch: cpp_pch,
         install: true,

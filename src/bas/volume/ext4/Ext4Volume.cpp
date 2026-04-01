@@ -6,6 +6,9 @@
 #include "../../io/IOException.hpp"
 #include "../../io/StringReader.hpp"
 
+#include <ext2fs/ext2_fs.h>
+#include <ext2fs/ext2fs.h>
+
 #include <algorithm>
 #include <chrono>
 #include <functional>
@@ -14,11 +17,6 @@
 #include <vector>
 
 #include <sys/stat.h>
-
-#if defined(BAS_HAS_EXT2FS) && BAS_HAS_EXT2FS
-#include <ext2fs/ext2_fs.h>
-#include <ext2fs/ext2fs.h>
-#endif
 
 namespace {
 constexpr uint32_t kRootInode = 2;
@@ -53,28 +51,24 @@ void Ext4Volume::refreshContextGroups() {
     }
 }
 
-std::string Ext4Volume::getDefaultLabel() const {
-    return "EXT Image";
-}
+std::string Ext4Volume::getDefaultLabel() const { return "EXT Image"; }
 
-std::string Ext4Volume::getLocalFile(std::string_view /*path*/) const {
-    return "";
-}
+std::string Ext4Volume::getLocalFile(std::string_view /*path*/) const { return ""; }
 
 std::string Ext4Volume::getSource() const { return "ext4 " + m_imagePath; }
 
 bool Ext4Volume::exists(std::string_view path) const {
-    Node node;
+    Inode node;
     return resolveNode(path, &node);
 }
 
 bool Ext4Volume::isFile(std::string_view path) const {
-    Node node;
+    Inode node;
     return resolveNode(path, &node) && !node.isDirectory;
 }
 
 bool Ext4Volume::isDirectory(std::string_view path) const {
-    Node node;
+    Inode node;
     return resolveNode(path, &node) && node.isDirectory;
 }
 
@@ -82,7 +76,7 @@ bool Ext4Volume::stat(std::string_view path, DirNode* status) const {
     if (!status) {
         throw std::invalid_argument("Ext4Volume::stat: status is null");
     }
-    Node node;
+    Inode node;
     const std::string normalized = normalizeArg(path);
     if (!resolveNode(normalized, &node)) {
         return false;
@@ -90,7 +84,7 @@ bool Ext4Volume::stat(std::string_view path, DirNode* status) const {
     status->name = normalized;
     status->type = node.isDirectory ? FileType::Directory : FileType::Regular;
     status->size = node.size;
-    status->inode = node.inode;
+    status->ino = node.ino;
     status->mode = node.mode;
     status->uid = node.uid;
     status->gid = node.gid;
@@ -100,10 +94,9 @@ bool Ext4Volume::stat(std::string_view path, DirNode* status) const {
     return true;
 }
 
-void Ext4Volume::readDir_inplace(std::vector<std::unique_ptr<DirNode>>& list, std::string_view path,
-                                 bool recursive) {
+void Ext4Volume::readDir_inplace(DirNode& context, std::string_view path, bool recursive) {
     const std::string parent = normalizeArg(path);
-    Node parentNode;
+    Inode parentNode;
     if (!resolveNode(parent, &parentNode) || !parentNode.isDirectory) {
         throw IOException("readDir", std::string(path), "Path is not a directory");
     }
@@ -111,52 +104,53 @@ void Ext4Volume::readDir_inplace(std::vector<std::unique_ptr<DirNode>>& list, st
         throw IOException("readDir", std::string(path), "Permission denied");
     }
 
-    const auto& children = getDirectoryEntries(parentNode.inode);
+    const auto& rtnode = getDirectoryEntries(parentNode.ino);
     if (!recursive) {
-        for (const auto& [name, node] : children) {
+        for (const auto& [name, child] : rtnode->children) {
             auto st = std::make_unique<DirNode>();
             st->name = name;
-            st->type = node.isDirectory ? FileType::Directory : FileType::Regular;
-            st->size = node.size;
-            st->inode = node.inode;
-            st->mode = node.mode;
-            st->uid = node.uid;
-            st->gid = node.gid;
-            st->epochSeconds(node.mtime);
-            st->accessTime(std::chrono::system_clock::from_time_t(node.atime));
-            st->creationTime(std::chrono::system_clock::from_time_t(node.ctime));
-            list.push_back(std::move(st));
+            st->type = child->isDirectory ? FileType::Directory : FileType::Regular;
+            st->size = child->size;
+            st->ino = child->ino;
+            st->mode = child->mode;
+            st->uid = child->uid;
+            st->gid = child->gid;
+            st->epochSeconds(child->mtime);
+            st->accessTime(std::chrono::system_clock::from_time_t(child->atime));
+            st->creationTime(std::chrono::system_clock::from_time_t(child->ctime));
+            context.putChild(std::move(st));
         }
         return;
     }
 
     std::unordered_set<uint32_t> visitedDirs;
-    std::function<void(const std::string&, const Node&)> walk = [&](const std::string& basePath,
-                                                                    const Node& dirNode) {
-        if (!visitedDirs.insert(dirNode.inode).second) {
+    std::function<void(const std::string&, const Inode&)> walk = [&](const std::string& basePath,
+                                                                     const Inode& inode) {
+        if (!visitedDirs.insert(inode.ino).second) {
             return;
         }
-        const auto& ents = getDirectoryEntries(dirNode.inode);
-        for (const auto& [name, child] : ents) {
+        const auto& rtnode = getDirectoryEntries(inode.ino);
+        for (const auto& [name, child] : rtnode->children) {
             std::string absPath = (basePath == "/") ? ("/" + name) : (basePath + "/" + name);
-            std::string relPath = (parent == "/") ? absPath.substr(1) : absPath.substr(parent.size() + 1);
+            std::string relPath =
+                (parent == "/") ? absPath.substr(1) : absPath.substr(parent.size() + 1);
 
             auto st = std::make_unique<DirNode>();
             st->name = relPath;
-            st->type = child.isDirectory ? FileType::Directory : FileType::Regular;
-            st->size = child.size;
-            st->inode = child.inode;
-            st->mode = child.mode;
-            st->uid = child.uid;
-            st->gid = child.gid;
-            st->epochSeconds(child.mtime);
-            st->accessTime(std::chrono::system_clock::from_time_t(child.atime));
-            st->creationTime(std::chrono::system_clock::from_time_t(child.ctime));
-            list.push_back(std::move(st));
+            st->type = child->isDirectory ? FileType::Directory : FileType::Regular;
+            st->size = child->size;
+            st->ino = child->ino;
+            st->mode = child->mode;
+            st->uid = child->uid;
+            st->gid = child->gid;
+            st->epochSeconds(child->mtime);
+            st->accessTime(std::chrono::system_clock::from_time_t(child->atime));
+            st->creationTime(std::chrono::system_clock::from_time_t(child->ctime));
+            context.putChild(std::move(st));
 
-            m_nodes[absPath] = child;
-            if (child.isDirectory) {
-                walk(absPath, child);
+            m_inodes[absPath] = *child;
+            if (child->isDirectory) {
+                walk(absPath, *child);
             }
         }
     };
@@ -165,14 +159,14 @@ void Ext4Volume::readDir_inplace(std::vector<std::unique_ptr<DirNode>>& list, st
 
 std::unique_ptr<InputStream> Ext4Volume::newInputStream(std::string_view path) {
     const std::string normalized = normalizeArg(path);
-    Node node;
+    Inode node;
     if (!resolveNode(normalized, &node) || node.isDirectory) {
         throw IOException("newInputStream", std::string(path), "File not found or is a directory");
     }
     if (!checkMode(node, 4)) {
         throw IOException("newInputStream", std::string(path), "Permission denied");
     }
-    return std::make_unique<Ext4FileInputStream>(m_imagePath, node.inode);
+    return std::make_unique<Ext4FileInputStream>(m_imagePath, node.ino);
 }
 
 std::unique_ptr<RandomInputStream> Ext4Volume::newRandomInputStream(std::string_view path) {
@@ -180,12 +174,14 @@ std::unique_ptr<RandomInputStream> Ext4Volume::newRandomInputStream(std::string_
     return std::unique_ptr<RandomInputStream>(dynamic_cast<RandomInputStream*>(in.release()));
 }
 
-std::unique_ptr<Reader> Ext4Volume::newReader(std::string_view path, std::string_view /*encoding*/) {
+std::unique_ptr<Reader> Ext4Volume::newReader(std::string_view path,
+                                              std::string_view /*encoding*/) {
     auto bytes = readFile(path);
     return std::make_unique<StringReader>(std::string(bytes.begin(), bytes.end()));
 }
 
-std::unique_ptr<RandomReader> Ext4Volume::newRandomReader(std::string_view path, std::string_view encoding) {
+std::unique_ptr<RandomReader> Ext4Volume::newRandomReader(std::string_view path,
+                                                          std::string_view encoding) {
     return Volume::newRandomReader(path, encoding);
 }
 
@@ -195,7 +191,8 @@ std::unique_ptr<OutputStream> Ext4Volume::newOutputStream(std::string_view path,
 
 std::unique_ptr<Writer> Ext4Volume::newWriter(std::string_view path, bool /*append*/,
                                               std::string_view /*encoding*/) {
-    throw IOException("newWriter", std::string(path), "Ext4Volume write operations are not implemented yet");
+    throw IOException("newWriter", std::string(path),
+                      "Ext4Volume write operations are not implemented yet");
 }
 
 std::string Ext4Volume::getTempDir() {
@@ -206,10 +203,9 @@ std::string Ext4Volume::createTempFile(std::string_view /*prefix*/, std::string_
     throw IOException("createTempFile", "", "Ext4Volume does not support temp file operations");
 }
 
-std::vector<uint8_t> Ext4Volume::readFileUnchecked(std::string_view path, int64_t off,
-                                                   size_t len) {
+std::vector<uint8_t> Ext4Volume::readFileUnchecked(std::string_view path, int64_t off, size_t len) {
     const std::string normalized = normalizeArg(path);
-    Node node;
+    Inode node;
     if (!resolveNode(normalized, &node) || node.isDirectory) {
         throw IOException("readFile", std::string(path), "File not found or is a directory");
     }
@@ -218,9 +214,11 @@ std::vector<uint8_t> Ext4Volume::readFileUnchecked(std::string_view path, int64_
     }
 
     auto in = newInputStream(path);
-    if (!in) return {};
+    if (!in)
+        return {};
     auto data = in->readBytesUntilEOF();
-    if (data.size() > node.size) data.resize(static_cast<size_t>(node.size));
+    if (data.size() > node.size)
+        data.resize(static_cast<size_t>(node.size));
 
     int64_t start64 = (off >= 0) ? off : (static_cast<int64_t>(data.size()) + off + 1);
     if (start64 < 0) {
@@ -240,39 +238,45 @@ std::vector<uint8_t> Ext4Volume::readFileUnchecked(std::string_view path, int64_
 }
 
 void Ext4Volume::writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& /*data*/) {
-    throw IOException("writeFile", std::string(path), "Ext4Volume write operations are not implemented yet");
+    throw IOException("writeFile", std::string(path),
+                      "Ext4Volume write operations are not implemented yet");
 }
 
 void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
-    throw IOException("createDirectory", std::string(path), "Ext4Volume write operations are not implemented yet");
+    throw IOException("createDirectory", std::string(path),
+                      "Ext4Volume write operations are not implemented yet");
 }
 
 void Ext4Volume::removeDirectoryThrowsUnchecked(std::string_view path) {
-    throw IOException("removeDirectory", std::string(path), "Ext4Volume write operations are not implemented yet");
+    throw IOException("removeDirectory", std::string(path),
+                      "Ext4Volume write operations are not implemented yet");
 }
 
 void Ext4Volume::removeFileThrowsUnchecked(std::string_view path) {
-    throw IOException("removeFile", std::string(path), "Ext4Volume write operations are not implemented yet");
+    throw IOException("removeFile", std::string(path),
+                      "Ext4Volume write operations are not implemented yet");
 }
 
 void Ext4Volume::copyFileThrowsUnchecked(std::string_view src, std::string_view /*dest*/) {
-    throw IOException("copyFile", std::string(src), "Ext4Volume write operations are not implemented yet");
+    throw IOException("copyFile", std::string(src),
+                      "Ext4Volume write operations are not implemented yet");
 }
 
 void Ext4Volume::moveFileThrowsUnchecked(std::string_view src, std::string_view /*dest*/) {
-    throw IOException("moveFile", std::string(src), "Ext4Volume write operations are not implemented yet");
+    throw IOException("moveFile", std::string(src),
+                      "Ext4Volume write operations are not implemented yet");
 }
 
 void Ext4Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::string_view /*newPath*/) {
-    throw IOException("renameFile", std::string(oldPath), "Ext4Volume write operations are not implemented yet");
+    throw IOException("renameFile", std::string(oldPath),
+                      "Ext4Volume write operations are not implemented yet");
 }
 
 void Ext4Volume::buildIndex() {
     // Rebuild lightweight caches only. Full tree scan is intentionally avoided.
-    m_nodes.clear();
-    m_dirIndexCache.clear();
+    m_inodes.clear();
+    m_rtnodes.clear();
 
-#if defined(BAS_HAS_EXT2FS) && BAS_HAS_EXT2FS
     ext2_filsys fs = nullptr;
     errcode_t rc = ext2fs_open(m_imagePath.c_str(), EXT2_FLAG_64BITS, 0, 0, unix_io_manager, &fs);
     if (rc) {
@@ -280,111 +284,120 @@ void Ext4Volume::buildIndex() {
     }
     struct ext2_inode rootIno{};
     if (ext2fs_read_inode(fs, kRootInode, &rootIno) == 0) {
-        m_nodes["/"] = Node{true, 0, kRootInode, static_cast<uint16_t>(rootIno.i_mode), rootIno.i_uid,
-            rootIno.i_gid, static_cast<time_t>(rootIno.i_atime),
-            static_cast<time_t>(rootIno.i_mtime), static_cast<time_t>(rootIno.i_ctime)};
+        m_inodes["/"] = Inode{true,
+                              0,
+                              kRootInode,
+                              static_cast<uint16_t>(rootIno.i_mode),
+                              rootIno.i_uid,
+                              rootIno.i_gid,
+                              static_cast<time_t>(rootIno.i_atime),
+                              static_cast<time_t>(rootIno.i_mtime),
+                              static_cast<time_t>(rootIno.i_ctime)};
     } else {
-        m_nodes["/"] = Node{true, 0, kRootInode, static_cast<uint16_t>(S_IFDIR | 0755), 0, 0, 0, 0, 0};
+        m_inodes["/"] =
+            Inode{true, 0, kRootInode, static_cast<uint16_t>(S_IFDIR | 0755), 0, 0, 0, 0, 0};
     }
     ext2fs_close(fs);
-#else
-    throw IOException("Ext4Volume", m_imagePath,
-                      "Ext4Volume support requires libext2fs development headers/libraries");
-#endif
 }
 
-bool Ext4Volume::resolveNode(std::string_view path, Node* out) const {
+bool Ext4Volume::resolveNode(std::string_view path, Inode* out) const {
     const std::string normalized = normalizeArg(path);
-    auto cached = m_nodes.find(normalized);
-    if (cached != m_nodes.end()) {
-        if (out) *out = cached->second;
+    auto cached = m_inodes.find(normalized);
+    if (cached != m_inodes.end()) {
+        if (out)
+            *out = cached->second;
         return true;
     }
     if (normalized == "/") {
-        if (out) *out = m_nodes.at("/");
+        if (out)
+            *out = m_inodes.at("/");
         return true;
     }
 
-    Node cur = m_nodes.at("/");
+    Inode cur = m_inodes.at("/");
     std::string curPath = "/";
 
     size_t start = 1;
     while (start <= normalized.size()) {
         size_t slash = normalized.find('/', start);
-        std::string part = normalized.substr(start, slash == std::string::npos ? std::string::npos : slash - start);
-        if (part.empty()) break;
+        std::string part = normalized.substr(start, slash == std::string::npos ? std::string::npos
+                                                                               : slash - start);
+        if (part.empty())
+            break;
 
         if (!checkMode(cur, 1)) { // execute/search on current directory
             return false;
         }
-        const auto& ents = getDirectoryEntries(cur.inode);
-        auto it = ents.find(part);
-        if (it == ents.end()) {
+        const auto& rtnode = getDirectoryEntries(cur.ino);
+        auto it = rtnode->children.find(part);
+        if (it == rtnode->children.end()) {
             return false;
         }
-        cur = it->second;
+        cur = *it->second;
         curPath = (curPath == "/") ? ("/" + part) : (curPath + "/" + part);
-        m_nodes[curPath] = cur;
+        m_inodes[curPath] = cur;
 
-        if (slash == std::string::npos) break;
+        if (slash == std::string::npos)
+            break;
         start = slash + 1;
     }
 
     if (curPath != normalized) {
         return false;
     }
-    if (out) *out = cur;
+    if (out)
+        *out = cur;
     return true;
 }
 
-const std::unordered_map<std::string, Ext4Volume::Node>& Ext4Volume::getDirectoryEntries(uint32_t inode) const {
-    auto itCache = m_dirIndexCache.find(inode);
-    if (itCache != m_dirIndexCache.end()) {
-        return itCache->second;
+const Ext4Volume::RtNode* Ext4Volume::getDirectoryEntries(uint32_t inode) const {
+    auto itCache = m_rtnodes.find(inode);
+    if (itCache != m_rtnodes.end()) {
+        return itCache->second.get();
     }
 
-    std::unordered_map<std::string, Node> entries;
+    auto rtnode = std::make_unique<RtNode>();
 
-#if defined(BAS_HAS_EXT2FS) && BAS_HAS_EXT2FS
     ext2_filsys fs = nullptr;
     errcode_t rc = ext2fs_open(m_imagePath.c_str(), EXT2_FLAG_64BITS, 0, 0, unix_io_manager, &fs);
     if (rc) {
         throw IOException("Ext4Volume", m_imagePath, "ext2fs_open failed");
     }
 
-    struct DirCtx {
+    struct Scope {
         ext2_filsys fs;
-        std::unordered_map<std::string, Node>* entries;
-    } ctx{fs, &entries};
+        RtNode* rtnode;
+    } scope{fs, rtnode.get()};
 
     ext2fs_dir_iterate2(
         fs, static_cast<ext2_ino_t>(inode), 0, nullptr,
         [](ext2_ino_t, int, struct ext2_dir_entry* dirent, int, int, char*, void* priv) -> int {
-            auto* c = static_cast<DirCtx*>(priv);
-            if (!dirent || dirent->inode == 0) return 0;
+            Scope* scope = static_cast<Scope*>(priv);
+            if (!dirent || dirent->inode == 0)
+                return 0;
             std::string name(dirent->name, dirent->name + dirent->name_len);
-            if (name == "." || name == "..") return 0;
+            if (name == "." || name == "..")
+                return 0;
 
-            struct ext2_inode inodeBuf {};
-            if (ext2fs_read_inode(c->fs, dirent->inode, &inodeBuf) != 0) return 0;
+            struct ext2_inode inodeBuf{};
+            if (ext2fs_read_inode(scope->fs, dirent->inode, &inodeBuf) != 0)
+                return 0;
             const bool isDir = LINUX_S_ISDIR(inodeBuf.i_mode);
             const uint64_t size = EXT2_I_SIZE(&inodeBuf);
-            (*c->entries)[name] =
-                Node{isDir, size, dirent->inode, inodeBuf.i_mode, inodeBuf.i_uid, inodeBuf.i_gid,
-                     static_cast<time_t>(inodeBuf.i_atime), static_cast<time_t>(inodeBuf.i_mtime),
-                     static_cast<time_t>(inodeBuf.i_ctime)};
+            RtNode* ctx = scope->rtnode;
+            auto child = std::make_unique<RtNode>(
+                isDir, size, dirent->inode, inodeBuf.i_mode, inodeBuf.i_uid, inodeBuf.i_gid,
+                static_cast<time_t>(inodeBuf.i_atime), static_cast<time_t>(inodeBuf.i_mtime),
+                static_cast<time_t>(inodeBuf.i_ctime));
+            ctx->children[name] = std::move(child);
             return 0;
         },
-        &ctx);
+        &scope);
 
     ext2fs_close(fs);
-#else
-    throw IOException("Ext4Volume", m_imagePath,
-                      "Ext4Volume support requires libext2fs development headers/libraries");
-#endif
 
-    auto inserted = m_dirIndexCache.emplace(inode, std::move(entries));
-    return inserted.first->second;
+    auto inserted = m_rtnodes.emplace(inode, std::move(rtnode));
+    return inserted.first->second.get();
 }
 
 bool Ext4Volume::hasGroup(uint32_t gid) const {
@@ -396,7 +409,7 @@ bool Ext4Volume::hasGroup(uint32_t gid) const {
     return false;
 }
 
-bool Ext4Volume::checkMode(const Node& node, int needMask) const {
+bool Ext4Volume::checkMode(const Inode& node, int needMask) const {
     // root bypass
     if (m_contextUid == 0) {
         return true;

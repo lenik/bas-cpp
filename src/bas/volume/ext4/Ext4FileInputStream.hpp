@@ -7,17 +7,11 @@
 #include <ios>
 #include <string>
 
-#if defined(BAS_HAS_EXT2FS) && BAS_HAS_EXT2FS
 #include <ext2fs/ext2fs.h>
-#endif
 
 class Ext4FileInputStream : public RandomInputStream {
 public:
-#if defined(BAS_HAS_EXT2FS) && BAS_HAS_EXT2FS
     Ext4FileInputStream(std::string imagePath, uint32_t inode);
-#else
-    Ext4FileInputStream(std::string imagePath, uint32_t inode);
-#endif
     ~Ext4FileInputStream() override;
 
     int read() override;
@@ -32,10 +26,8 @@ private:
     uint32_t m_inode = 0;
     int64_t m_pos = 0;
 
-#if defined(BAS_HAS_EXT2FS) && BAS_HAS_EXT2FS
     ext2_filsys m_fs = nullptr;
     ext2_file_t m_file = nullptr;
-#endif
 };
 
 #endif // EXT4FILEINPUTSTREAM_H

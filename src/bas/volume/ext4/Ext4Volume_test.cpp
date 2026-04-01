@@ -37,7 +37,6 @@ int main() {
     assert(run_cmd("mkfs.ext4 -F \"" + image.string() + "\" >/dev/null 2>&1") == 0);
     assert(run_cmd("e2cp \"" + host.string() + "\" \"" + image.string() + "\":/hello.txt") == 0);
 
-#if defined(BAS_HAS_EXT2FS) && BAS_HAS_EXT2FS
     Ext4Volume vol(image.string());
     assert(vol.getClass() == "ext");
     assert(vol.exists("/hello.txt"));
@@ -45,15 +44,6 @@ int main() {
     const auto data = vol.readFile("/hello.txt");
     const std::string s(data.begin(), data.end());
     assert(s == "hello-ext4");
-#else
-    bool threw = false;
-    try {
-        Ext4Volume vol(image.string());
-    } catch (const IOException&) {
-        threw = true;
-    }
-    assert(threw);
-#endif
 
     fs::remove_all(tmpBase);
     std::cout << "All Ext4Volume tests passed.\n";

@@ -281,8 +281,7 @@ static void item_entry(DirNode* st, const ZipEntry& entry, const std::string& na
         st->mode |= S_IFREG;
 }
 
-void MemoryZip::readDir_inplace(std::vector<std::unique_ptr<DirNode>>& list, std::string_view path,
-                                bool recursive) {
+void MemoryZip::readDir_inplace(DirNode& context, std::string_view path, bool recursive) {
     std::string dir_path = to_dir_path(path);
     std::string prefix = (dir_path == "/") ? "" : dir_path;
 
@@ -300,14 +299,22 @@ void MemoryZip::readDir_inplace(std::vector<std::unique_ptr<DirNode>>& list, std
         if (path_info.back() == '/')
             path_info = path_info.substr(0, path_info.length() - 1);
 
-        bool top_level = path_info.find('/') == std::string::npos;
-        if (!top_level && !recursive)
-            continue;
+        size_t last_slash = path_info.find_last_of('/');
+        DirNode* parent = &context;
+        std::string base = path_info;
 
-        auto st = std::make_unique<DirNode>();
-        item_entry(st.get(), pair.second, path_info);
+        if (last_slash != std::string::npos) {
+            if (!recursive)
+                continue;
+            std::string dir = path_info.substr(0, last_slash);
+            parent = context.resolve(dir, true, FileType::Directory);
+            base = path_info.substr(last_slash + 1);
+        }
 
-        list.push_back(std::move(st));
+        auto node = std::make_unique<DirNode>();
+        item_entry(node.get(), pair.second, base);
+
+        parent->putChild(std::move(node));
     } // for m_entries
 }
 

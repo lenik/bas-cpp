@@ -20,7 +20,7 @@ enum class FileType : uint8_t {
 
 struct DirEntry {
 
-    int64_t inode{0};
+    int64_t ino{0};
     std::string name;
     FileType type{FileType::Unknown};
     int64_t size{0};
@@ -44,6 +44,21 @@ struct DirEntry {
     inline bool isFIFO() const { return type == FileType::FIFO; }
     inline bool isSocket() const { return type == FileType::Socket; }
 
+    inline void clear() {
+        type = FileType::Unknown;
+        name.clear();
+        size = 0;
+        ino = 0;
+        epochNano = 0;
+    }
+    
+    inline void setFile() {
+        type = FileType::Regular;
+    }
+    inline void setDirectory() {
+        type = FileType::Directory;
+    }
+    
     inline int64_t epochSeconds() const { return epochNano / 1'000'000'000LL; }
     inline void epochSeconds(int64_t seconds) { epochNano = seconds * 1'000'000'000LL; }
 

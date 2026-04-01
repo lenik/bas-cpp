@@ -251,19 +251,19 @@ void Volume::ls(std::string_view path, std::optional<ListOptions> options) {
     bool accessTime = false;
     bool createTime = false;
 
-    std::vector<std::unique_ptr<DirNode>> list = readDir(path, opts.recursive);
+    auto node = readDir(path, opts.recursive);
 
     int max_size_width = 0;
     int max_user_width = 0;
     int max_group_width = 0;
     int max_time_width = 0;
     int max_name_width = 0;
-    for (const auto& st : list) {
-        int size_width = format_size(st->size, opts.human).size();
-        int user_width = format_uid(st->uid).size();
-        int group_width = format_gid(st->gid).size();
-        int time_width = format_time(st->modifiedNano()).size();
-        int name_width = st->name.size();
+    for (const auto& [name, child] : node->children) {
+        int size_width = format_size(child->size, opts.human).size();
+        int user_width = format_uid(child->uid).size();
+        int group_width = format_gid(child->gid).size();
+        int time_width = format_time(child->modifiedNano()).size();
+        int name_width = child->name.size();
 
         if (name_width > max_name_width)
             max_name_width = name_width;
@@ -282,11 +282,11 @@ void Volume::ls(std::string_view path, std::optional<ListOptions> options) {
     int names_per_line = columns / (max_name_width + 1);
 
     int count_in_line = 0;
-    for (const auto& st : list) {
-        if (st->name.front() == '.') {
+    for (const auto& [name, child] : node->children) {
+        if (child->name.front() == '.') {
             if (!opts.includeDotFiles)
                 continue;
-            if (st->name == "." || st->name == "..")
+            if (child->name == "." || child->name == "..")
                 if (!opts.includeDotDot)
                     continue;
         }
@@ -309,26 +309,26 @@ void Volume::ls(std::string_view path, std::optional<ListOptions> options) {
 
         if (opts.formatSuffix || opts.color) {
             color_name = opts.color_regular;
-            if (st->isDirectory()) {
+            if (child->isDirectory()) {
                 suffix = "/";
                 color_name = opts.color_dir;
-            } else if (st->isSymbolicLink()) {
+            } else if (child->isSymbolicLink()) {
                 suffix = "->";
                 color_name = opts.color_link;
-            } else if (st->isFIFO()) {
+            } else if (child->isFIFO()) {
                 suffix = "|";
                 color_name = opts.color_fifo;
-            } else if (st->isSocket()) {
+            } else if (child->isSocket()) {
                 suffix = "=";
                 color_name = opts.color_socket;
-            } else if (st->isCharacterDevice()) {
+            } else if (child->isCharacterDevice()) {
                 suffix = "c";
                 color_name = opts.color_character;
-            } else if (st->isBlockDevice()) {
+            } else if (child->isBlockDevice()) {
                 suffix = "b";
                 color_name = opts.color_block;
-            } else if (st->isRegularFile()) {
-                if (st->mode & (S_IXUSR | S_IXGRP | S_IXOTH)) {
+            } else if (child->isRegularFile()) {
+                if (child->mode & (S_IXUSR | S_IXGRP | S_IXOTH)) {
                     suffix = "*";
                     color_name = opts.color_regular;
                 }
@@ -343,26 +343,26 @@ void Volume::ls(std::string_view path, std::optional<ListOptions> options) {
         if (!childPath.empty())
             if (childPath.back() != '/')
                 childPath += "/";
-        childPath += st->name;
+        childPath += child->name;
 
         if (opts.longFormat) {
-            std::string mode = format_mode(st->mode);
+            std::string mode = format_mode(child->mode);
             std::cout << color_mode << std::setw(10) << mode << color_reset;
 
-            std::string size = format_size(st->size, opts.human);
+            std::string size = format_size(child->size, opts.human);
             std::cout << " " << color_size << std::setw(max_size_width + 1) << size << color_reset;
 
-            std::string user = format_uid(st->uid);
+            std::string user = format_uid(child->uid);
             std::cout << " " << color_user << std::setw(max_user_width + 1) << user << color_reset;
 
-            std::string group = format_gid(st->gid);
+            std::string group = format_gid(child->gid);
             std::cout << color_group << std::setw(max_group_width + 1) << group << color_reset;
 
-            std::string modifiedTime = format_time(st->modifiedNano());
+            std::string modifiedTime = format_time(child->modifiedNano());
             if (accessTime)
-                (void)format_time(st->accessNano());
+                (void)format_time(child->accessNano());
             if (createTime)
-                (void)format_time(st->creationNano());
+                (void)format_time(child->creationNano());
             std::cout << " " << color_time << std::setw(max_time_width + 1) << modifiedTime
                       << color_reset;
 
@@ -407,9 +407,9 @@ void Volume::ls(std::string_view path, std::optional<ListOptions> options) {
 
 void Volume::tree(std::string_view path, const std::string& prefix,
                   std::optional<ListOptions> options) {
-    std::vector<std::unique_ptr<DirNode>> list;
+    std::unique_ptr<DirNode> node;
     try {
-        list = this->readDir(path);
+        node = this->readDir(path);
     } catch (const std::exception& e) {
         std::cerr << "Error reading directory " << path << ": " << e.what() << std::endl;
         return;
@@ -420,17 +420,17 @@ void Volume::tree(std::string_view path, const std::string& prefix,
     std::string color_name = opts.color ? opts.color_regular : "";
     std::string color_suffix = opts.color ? opts.color_suffix : "";
 
-    for (const auto& st : list) {
-        if (!st)
+    for (const auto& [name, child] : node->children) {
+        if (!child)
             continue;
-        bool isDir = st->isDirectory();
+        bool isDir = child->isDirectory();
         std::string line = prefix;
-        line += st->name;
+        line += child->name;
         if (isDir)
             line += "/";
-        if (st->isRegularFile() && st->size) {
+        if (child->isRegularFile() && child->size) {
             char buf[32];
-            snprintf(buf, sizeof(buf), " (%zu)", static_cast<size_t>(st->size));
+            snprintf(buf, sizeof(buf), " (%zu)", static_cast<size_t>(child->size));
             line += buf;
         }
         std::puts(line.c_str());
@@ -439,7 +439,7 @@ void Volume::tree(std::string_view path, const std::string& prefix,
             if (!childPath.empty())
                 if (childPath.back() != '/')
                     childPath += "/";
-            childPath += st->name;
+            childPath += child->name;
             tree(childPath, prefix + "  ");
         }
     }

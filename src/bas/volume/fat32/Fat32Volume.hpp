@@ -10,8 +10,8 @@
 #include <vector>
 
 class Fat32Volume : public Volume {
-private:
-    struct Node {
+  private:
+    struct Dirent {
         bool isDirectory = false;
         uint32_t firstCluster = 0;
         uint32_t size = 0;
@@ -34,9 +34,9 @@ private:
     uint64_t m_dataOffset = 0;
     uint32_t m_clusterSize = 0;
 
-    std::unordered_map<std::string, Node> m_nodes;
+    std::unordered_map<std::string, Dirent> m_dirents;
 
-public:
+  public:
     explicit Fat32Volume(std::string_view imagePath);
 
     std::string getClass() const override { return "fat32"; }
@@ -50,12 +50,13 @@ public:
     bool isFile(std::string_view path) const override;
     bool isDirectory(std::string_view path) const override;
     bool stat(std::string_view path, DirNode* status) const override;
-    void readDir_inplace(std::vector<std::unique_ptr<DirNode>>& list, std::string_view path,
-                         bool recursive = false) override;
+    void readDir_inplace(DirNode& context, std::string_view path, bool recursive = false) override;
 
     std::unique_ptr<InputStream> newInputStream(std::string_view path) override;
-    std::unique_ptr<OutputStream> newOutputStream(std::string_view path, bool append = false) override;
-    std::unique_ptr<Reader> newReader(std::string_view path, std::string_view encoding = "UTF-8") override;
+    std::unique_ptr<OutputStream> newOutputStream(std::string_view path,
+                                                  bool append = false) override;
+    std::unique_ptr<Reader> newReader(std::string_view path,
+                                      std::string_view encoding = "UTF-8") override;
     std::unique_ptr<Writer> newWriter(std::string_view path, bool append = false,
                                       std::string_view encoding = "UTF-8") override;
 
@@ -64,9 +65,10 @@ public:
                                                   std::string_view encoding = "UTF-8") override;
 
     std::string getTempDir() override;
-    std::string createTempFile(std::string_view prefix = "tmp.", std::string_view suffix = "") override;
+    std::string createTempFile(std::string_view prefix = "tmp.",
+                               std::string_view suffix = "") override;
 
-protected:
+  protected:
     std::string getDefaultLabel() const override;
 
     std::vector<uint8_t> readFileUnchecked(std::string_view path, int64_t off = 0,
@@ -80,7 +82,7 @@ protected:
     void moveFileThrowsUnchecked(std::string_view src, std::string_view dest) override;
     void renameFileThrowsUnchecked(std::string_view oldPath, std::string_view newPath) override;
 
-private:
+  private:
     void parseBootSector();
     void buildIndex();
     void parseDirectoryCluster(std::string_view dirPath, uint32_t firstCluster);
