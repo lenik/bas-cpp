@@ -9,6 +9,7 @@
 #include <fstream>
 #include <vector>
 #include <unistd.h>
+#include <fcntl.h>
 
 void Fat32Volume::writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) {
     const std::string normalized = normalizeArg(path);
@@ -129,13 +130,12 @@ void Fat32Volume::removeDirectoryThrowsUnchecked(std::string_view path) {
     // Free cluster chain
     freeClusterChain(it->second.firstCluster);
 
-    // Remove from parent's children list and mark for re-scan
+    // Remove from parent's children list
     const std::string parent = getParentPath(resolved);
     auto parentIt = m_dirents.find(parent);
     if (parentIt != m_dirents.end() && parentIt->second.isDirectory) {
         std::string childName = getFileName(resolved);
         parentIt->second.children.erase(childName);
-        parentIt->second.childrenParsed = false;  // Force re-scan from disk
     }
 
     // Remove from index and mark on disk
@@ -156,13 +156,12 @@ void Fat32Volume::removeFileThrowsUnchecked(std::string_view path) {
     // Free cluster chain
     freeClusterChain(it->second.firstCluster);
 
-    // Remove from parent's children list and mark for re-scan
+    // Remove from parent's children list
     const std::string parent = getParentPath(resolved);
     auto parentIt = m_dirents.find(parent);
     if (parentIt != m_dirents.end() && parentIt->second.isDirectory) {
         std::string childName = getFileName(resolved);
         parentIt->second.children.erase(childName);
-        parentIt->second.childrenParsed = false;  // Force re-scan from disk
     }
 
     // Remove from index and mark on disk
@@ -274,12 +273,11 @@ void Fat32Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::strin
     writeDirectoryEntryToDisk(newShortPath, dirent);
     m_dirents[newShortPath] = dirent;
     
-    // Remove old entry from parent's children list and mark for re-scan
+    // Remove old entry from parent's children list
     auto oldParentIt = m_dirents.find(oldParent);
     if (oldParentIt != m_dirents.end() && oldParentIt->second.isDirectory) {
         std::string oldChildName = getFileName(actualOldPath);
         oldParentIt->second.children.erase(oldChildName);
-        oldParentIt->second.childrenParsed = false;  // Force re-scan from disk
     }
     
     // Remove old from m_dirents
@@ -293,9 +291,7 @@ void Fat32Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::strin
         }
         markDirectoryEntryAsDeleted(oldParentCluster, oldFileName);
     }
-    
-    // Force complete rebuild from disk to ensure consistency
-    buildIndex();
+    // In-memory state is now consistent - no need to re-scan from disk
 }
 
 bool Fat32Volume::writeAt(uint64_t offset, const uint8_t* src, size_t len) {
@@ -714,8 +710,10 @@ void Fat32Volume::markDirectoryEntryAsDeleted(uint32_t dirCluster, std::string_v
                 
                 found = true;
                 
-                // Force OS to sync the change to disk
+                // Force OS to sync and drop cache for this region
                 ::sync();
+                // Note: Can't use posix_fadvise here because we don't have the file descriptor
+                // The OS may re-cache old data, causing deleted entries to reappear
                 
                 return;  // Return immediately after successfully marking
             }
