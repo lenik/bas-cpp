@@ -8,6 +8,7 @@
 #include <cstring>
 #include <fstream>
 #include <vector>
+#include <unistd.h>
 
 void Fat32Volume::writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) {
     const std::string normalized = normalizeArg(path);
@@ -251,30 +252,21 @@ void Fat32Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::strin
     newFileName = createShortName(newFileName);
     const std::string newShortPath = (newParent == "/") ? ("/" + newFileName) : (newParent + "/" + newFileName);
     
-    // Write new entry to disk FIRST
+    // Write new entry to disk
     writeDirectoryEntryToDisk(newShortPath, dirent);
     m_dirents[newShortPath] = dirent;
     
-    // Mark old entry as deleted on disk - use the exact filename from actualOldPath
+    // Remove old from memory
+    m_dirents.erase(actualOldPath);
+    
+    // Mark old entry as deleted on disk
     auto oldParentIt = m_dirents.find(oldParent);
     if (oldParentIt != m_dirents.end() && oldParentIt->second.isDirectory) {
         uint32_t oldParentCluster = oldParentIt->second.firstCluster;
         if (oldParent == "/" && oldParentCluster == 0) {
             oldParentCluster = m_rootCluster;
         }
-        // oldFileName is already in the correct format (from actualOldPath which was found in m_dirents)
         markDirectoryEntryAsDeleted(oldParentCluster, oldFileName);
-    }
-    
-    // Remove old from memory
-    m_dirents.erase(actualOldPath);
-    
-    // Invalidate and rebuild index from disk
-    invalidateIndex();
-    
-    // Verify old is gone and new exists
-    if (resolvePath(oldPath) != "") {
-        throw IOException("renameFile", std::string(oldPath), "Failed to delete old entry");
     }
 }
 
@@ -637,6 +629,7 @@ void Fat32Volume::markDirectoryEntryAsDeleted(uint32_t dirCluster, std::string_v
         fatName[8 + i] = static_cast<uint8_t>(std::toupper(static_cast<unsigned char>(ext[i])));
     }
     
+    bool found = false;
     for (uint32_t cluster : chain) {
         uint64_t offset = clusterToOffset(cluster);
         std::vector<uint8_t> block(m_clusterSize);
@@ -649,6 +642,10 @@ void Fat32Volume::markDirectoryEntryAsDeleted(uint32_t dirCluster, std::string_v
         for (uint32_t pos = 0; pos + 32 <= m_clusterSize; pos += 32) {
             if (block[pos] == 0x00) {
                 // End of directory entries
+                if (!found) {
+                    throw IOException("markDirectoryEntryAsDeleted", m_imagePath, 
+                                     "Entry not found: " + std::string(name));
+                }
                 return;
             }
             
@@ -674,12 +671,31 @@ void Fat32Volume::markDirectoryEntryAsDeleted(uint32_t dirCluster, std::string_v
             if (matches) {
                 // Mark as deleted
                 block[pos] = 0xE5;
-                if (!writeAt(offset + pos, block.data() + pos, 32)) {
+                bool writeOk = writeAt(offset + pos, block.data() + pos, 32);
+                if (!writeOk) {
                     throw IOException("markDirectoryEntryAsDeleted", m_imagePath, "Failed to write deletion marker");
                 }
-                return;
+                
+                // Verify the write by reading back
+                std::vector<uint8_t> verifyBlock(32);
+                if (readAt(offset + pos, verifyBlock.data(), 32) && verifyBlock[0] != 0xE5) {
+                    throw IOException("markDirectoryEntryAsDeleted", m_imagePath, 
+                                     "Write verification failed - marker not persisted");
+                }
+                
+                found = true;
+                
+                // Force OS to sync the change to disk
+                ::sync();
+                
+                return;  // Return immediately after successfully marking
             }
         }
+    }
+    
+    if (!found) {
+        throw IOException("markDirectoryEntryAsDeleted", m_imagePath, 
+                         "Entry not found in directory: " + std::string(name));
     }
 }
 
