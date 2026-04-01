@@ -224,7 +224,14 @@ void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
     }
     if (rc) {
         ext2fs_close(fs);
-        throw IOException("createDirectory", std::string(path), "Failed to create directory entry");
+        throw IOException("createDirectory", std::string(path), "Failed to create directory entry: " + std::string(error_message(rc)));
+    }
+    
+    // Flush to ensure directory entry is written
+    rc = ext2fs_flush(fs);
+    if (rc) {
+        ext2fs_close(fs);
+        throw IOException("createDirectory", std::string(path), "Failed to flush filesystem");
     }
 
     ext2fs_close(fs);
@@ -242,7 +249,7 @@ void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
     dirInode.atime = dirInode.mtime = dirInode.ctime = time(nullptr);
     m_nodes[ino] = dirInode;
     
-    // Clear parent directory cache
+    // Clear parent directory cache to force re-scan
     const std::string parentPath = normalized.substr(0, normalized.find_last_of('/'));
     if (!parentPath.empty()) {
         auto pit = m_files.find(parentPath);
@@ -252,6 +259,9 @@ void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
     } else {
         m_rtnodes.erase(2);
     }
+    
+    // Also clear our own runtime node cache entry so it gets re-scanned
+    m_rtnodes.erase(ino);
 }
 
 void Ext4Volume::removeDirectoryThrowsUnchecked(std::string_view path) {
