@@ -1,4 +1,5 @@
 #include "Fat32Volume.hpp"
+#include "../../io/BlockDevice.hpp"
 
 #include "../../io/IOException.hpp"
 
@@ -38,8 +39,18 @@ int main() {
     assert(run_cmd("dd if=/dev/zero of=\"" + image.string() + "\" bs=1M count=16 status=none") == 0);
     assert(run_cmd("mkfs.fat -F 32 \"" + image.string() + "\" >/dev/null 2>&1") == 0);
 
-    std::cout << "Mounting FAT32 image...\n";
-    Fat32Volume vol(image.string());
+    std::cout << "Loading FAT32 image into memory...\n";
+    // Read file into memory
+    std::ifstream inFile(image.string(), std::ios::binary | std::ios::ate);
+    size_t imageSize = inFile.tellg();
+    inFile.seekg(0, std::ios::beg);
+    std::vector<uint8_t> imageBuffer(imageSize);
+    inFile.read(reinterpret_cast<char*>(imageBuffer.data()), imageSize);
+    inFile.close();
+
+    std::cout << "Mounting FAT32 from memory device...\n";
+    auto device = createMemDevice(imageBuffer.data(), imageSize);
+    Fat32Volume vol(device);
     assert(vol.getClass() == "fat32");
 
     // Test write operations
@@ -171,6 +182,12 @@ int main() {
         return 1;
     }
 
+    // Write memory back to file for inspection if needed
+    std::cout << "Writing memory image back to disk...\n";
+    std::ofstream outFile(image.string(), std::ios::binary);
+    outFile.write(reinterpret_cast<const char*>(imageBuffer.data()), imageSize);
+    outFile.close();
+    
     fs::remove_all(tmpBase);
     return 0;
 }

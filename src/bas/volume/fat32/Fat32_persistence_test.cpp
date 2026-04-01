@@ -1,8 +1,10 @@
 #include "Fat32Volume.hpp"
+#include "../../io/BlockDevice.hpp"
 
 #include <cassert>
 #include <cstdlib>
 #include <filesystem>
+#include <fstream>
 #include <iostream>
 #include <string>
 
@@ -35,12 +37,22 @@ int main() {
     assert(run_cmd("dd if=/dev/zero of=\"" + image.string() + "\" bs=1M count=16 status=none") == 0);
     assert(run_cmd("mkfs.fat -F 32 \"" + image.string() + "\" >/dev/null 2>&1") == 0);
 
-    std::cout << "=== FAT32 Persistence Test ===\n\n";
+    // Load image into memory
+    std::cout << "Loading FAT32 image into memory...\n";
+    std::ifstream inFile(image.string(), std::ios::binary | std::ios::ate);
+    size_t imageSize = inFile.tellg();
+    inFile.seekg(0, std::ios::beg);
+    std::vector<uint8_t> imageBuffer(imageSize);
+    inFile.read(reinterpret_cast<char*>(imageBuffer.data()), imageSize);
+    inFile.close();
+
+    std::cout << "=== FAT32 Persistence Test (Memory-Backed) ===\n\n";
 
     // Phase 1: Write data
     std::cout << "Phase 1: Writing data to FAT32 image...\n";
     {
-        Fat32Volume vol(image.string());
+        auto device = createMemDevice(imageBuffer.data(), imageSize);
+        Fat32Volume vol(device);
         
         // Write several files
         vol.writeFileUTF8("/file1.txt", "Hello from FAT32!\n");
@@ -54,10 +66,11 @@ int main() {
         std::cout << "  ✓ Wrote /subdir/nested.txt\n";
     }
 
-    // Phase 2: Remount and verify
+    // Phase 2: Remount and verify (create new MemDevice from same buffer)
     std::cout << "\nPhase 2: Remounting and verifying data...\n";
     {
-        Fat32Volume vol(image.string());
+        auto device = createMemDevice(imageBuffer.data(), imageSize);
+        Fat32Volume vol(device);
         
         // Verify files exist
         assert(vol.exists("/file1.txt"));
@@ -97,7 +110,8 @@ int main() {
     // Phase 3: Modify data
     std::cout << "\nPhase 3: Modifying data...\n";
     {
-        Fat32Volume vol(image.string());
+        auto device = createMemDevice(imageBuffer.data(), imageSize);
+        Fat32Volume vol(device);
         
         // Update a file
         vol.writeFileUTF8("/file1.txt", "Updated content!\n");
@@ -119,7 +133,8 @@ int main() {
     // Phase 4: Verify modifications
     std::cout << "\nPhase 4: Verifying modifications...\n";
     {
-        Fat32Volume vol(image.string());
+        auto device = createMemDevice(imageBuffer.data(), imageSize);
+        Fat32Volume vol(device);
         
         // Verify update
         auto content1 = vol.readFileUTF8("/file1.txt");
@@ -149,11 +164,17 @@ int main() {
         }
     }
 
+    // Write memory back to file for inspection
+    std::cout << "\nWriting memory image back to disk...\n";
+    std::ofstream outFile(image.string(), std::ios::binary);
+    outFile.write(reinterpret_cast<const char*>(imageBuffer.data()), imageSize);
+    outFile.close();
+    
     fs::remove_all(tmpBase);
     
     std::cout << "\n===========================================\n";
     std::cout << "All persistence tests PASSED!\n";
-    std::cout << "Data survives remounting - disk writes work!\n";
+    std::cout << "Data survives remounting - memory writes work!\n";
     std::cout << "===========================================\n";
     
     return 0;
