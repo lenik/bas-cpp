@@ -13,32 +13,26 @@
 #include <ctime>
 #include <fstream>
 #include <stdexcept>
+#include <sys/stat.h>
 #include <unordered_set>
 
-#include <sys/stat.h>
-
-namespace {
-
-uint16_t le16(const uint8_t* p) {
+static uint16_t le16(const uint8_t* p) {
     return static_cast<uint16_t>(p[0]) | (static_cast<uint16_t>(p[1]) << 8);
 }
-
-uint32_t le32(const uint8_t* p) {
+static uint32_t le32(const uint8_t* p) {
     return static_cast<uint32_t>(p[0]) | (static_cast<uint32_t>(p[1]) << 8) |
            (static_cast<uint32_t>(p[2]) << 16) | (static_cast<uint32_t>(p[3]) << 24);
 }
-
-std::string trimRight(const std::string& s) {
+static std::string trimRight(const std::string& s) {
     size_t end = s.size();
     while (end > 0 && s[end - 1] == ' ')
         --end;
     return s.substr(0, end);
 }
-
-bool isDotEntry(std::string_view name) { return name == "." || name == ".."; }
+static bool isDotEntry(std::string_view name) { return name == "." || name == ".."; }
 
 /** FAT directory 32-byte entry uses MS-DOS date/time encoding (same as ZIP). */
-time_t fatDosDateTime(uint16_t dosTime, uint16_t dosDate) {
+static time_t fatDosDateTime(uint16_t dosTime, uint16_t dosDate) {
     if (dosTime == 0 && dosDate == 0)
         return 0;
     int sec = (dosTime & 0x1F) * 2;
@@ -60,7 +54,29 @@ time_t fatDosDateTime(uint16_t dosTime, uint16_t dosDate) {
     return mktime(&tm);
 }
 
-} // namespace
+static std::string baseName(std::string_view path) {
+    if (path.empty() || path == "/") {
+        return "/";
+    }
+    size_t pos = path.find_last_of('/');
+    if (pos == std::string_view::npos || pos + 1 >= path.size()) {
+        return std::string(path);
+    }
+    return std::string(path.substr(pos + 1));
+}
+
+void Fat32Volume::Dirent::copyTo(DirNode& node) const {
+    if (isDirectory) {
+        node.setDirectoryClear();
+    } else {
+        node.setRegularClear();
+    }
+    node.size = size;
+    node.epochSeconds(mtime);
+    node.accessTime(std::chrono::system_clock::from_time_t(atime));
+    node.creationTime(std::chrono::system_clock::from_time_t(creationTime));
+    node.mode = static_cast<int>((isDirectory ? S_IFDIR : S_IFREG) | 0444);
+}
 
 Fat32Volume::Fat32Volume(std::string_view imagePath) : m_imagePath(imagePath) {
     if (m_imagePath.empty()) {
@@ -88,16 +104,22 @@ std::string Fat32Volume::getLocalFile(std::string_view /*path*/) const { return 
 std::string Fat32Volume::getSource() const { return "fat32 " + m_imagePath; }
 
 bool Fat32Volume::exists(std::string_view path) const {
-    return m_dirents.find(normalizeArg(path)) != m_dirents.end();
+    const std::string normalized = normalizeArg(path);
+    ensurePathIndexed(normalized);
+    return m_dirents.find(normalized) != m_dirents.end();
 }
 
 bool Fat32Volume::isFile(std::string_view path) const {
-    auto it = m_dirents.find(normalizeArg(path));
+    const std::string normalized = normalizeArg(path);
+    ensurePathIndexed(normalized);
+    auto it = m_dirents.find(normalized);
     return it != m_dirents.end() && !it->second.isDirectory;
 }
 
 bool Fat32Volume::isDirectory(std::string_view path) const {
-    auto it = m_dirents.find(normalizeArg(path));
+    const std::string normalized = normalizeArg(path);
+    ensurePathIndexed(normalized);
+    auto it = m_dirents.find(normalized);
     return it != m_dirents.end() && it->second.isDirectory;
 }
 
@@ -105,11 +127,13 @@ bool Fat32Volume::stat(std::string_view path, DirNode* status) const {
     if (!status) {
         throw std::invalid_argument("Fat32Volume::stat: status is null");
     }
-    auto it = m_dirents.find(normalizeArg(path));
+    const std::string normalized = normalizeArg(path);
+    ensurePathIndexed(normalized);
+    auto it = m_dirents.find(normalized);
     if (it == m_dirents.end()) {
         return false;
     }
-    status->name = normalizeArg(path);
+    status->name = baseName(normalized);
     status->type = it->second.isDirectory ? FileType::Directory : FileType::Regular;
     status->size = it->second.size;
     status->epochSeconds(it->second.mtime);
@@ -119,54 +143,32 @@ bool Fat32Volume::stat(std::string_view path, DirNode* status) const {
     return true;
 }
 
-void Fat32Volume::readDir_inplace(DirNode& context, std::string_view path, bool recursive) {
-    const std::string parent = normalizeArg(path);
-    auto pit = m_dirents.find(parent);
-    if (pit == m_dirents.end() || !pit->second.isDirectory) {
-        throw IOException("readDir", std::string(path), "Path is not a directory");
+void Fat32Volume::readDir_inplace(DirNode& context, std::string_view _path, bool recursive) {
+    const std::string path = normalizeArg(_path);
+    if (!ensurePathIndexed(path)) {
+        throw IOException("readDir", std::string(_path), "Path not found");
+    }
+    auto pit = m_dirents.find(path);
+    auto& parent = pit->second;
+    if (pit == m_dirents.end() || !parent.isDirectory || !ensureDirectoryParsed(path)) {
+        throw IOException("readDir", std::string(_path), "Path is not a directory");
     }
 
-    const std::string prefix = (parent == "/") ? "/" : parent + "/";
-
-    for (const auto& [fullPath, dirent] : m_dirents) {
-        if (fullPath == parent || fullPath.rfind(prefix, 0) != 0) {
-            continue;
-        }
-
-        const std::string rel = fullPath.substr(prefix.size());
-        if (rel.empty()) {
-            continue;
-        }
-
-        if (!recursive && rel.find('/') != std::string::npos) {
-            continue;
-        }
-
+    for (const auto& [name, cachedChild] : parent.children) {
         auto node = std::make_unique<DirNode>();
-        node->name = recursive ? rel : rel.substr(0, rel.find('/'));
-        node->type = dirent.isDirectory ? FileType::Directory : FileType::Regular;
-        node->size = dirent.size;
-        node->epochSeconds(dirent.mtime);
-        node->accessTime(std::chrono::system_clock::from_time_t(dirent.atime));
-        node->creationTime(std::chrono::system_clock::from_time_t(dirent.creationTime));
-        node->mode = (dirent.isDirectory ? S_IFDIR : S_IFREG) | 0444;
-        context.putChild(std::move(node));
-    }
-
-    if (!recursive) {
-        std::unordered_set<std::string> seen;
-        std::vector<std::unique_ptr<DirNode>> unique;
-        unique.reserve(context.children.size());
-        for (auto& [name, item] : context.children) {
-            if (seen.insert(item->name).second) {
-                unique.push_back(std::move(item));
+        node->name = name;
+        cachedChild->copyTo(*node);
+        DirNode* childNode = context.putChild(std::move(node));
+        if (recursive && cachedChild->isDirectory) {
+            const std::string childPath = (path == "/") ? ("/" + name) : (path + "/" + name);
+            if (!ensureDirectoryParsed(childPath)) {
+                continue;
             }
-        }
-        context.children.clear();
-        for (auto& item : unique) {
-            context.children[item->name] = std::move(item);
+            childNode->children_valid = true;
+            readDir_inplace(*childNode, childPath, recursive);
         }
     }
+    context.children_valid = true;
 }
 
 std::unique_ptr<InputStream> Fat32Volume::newInputStream(std::string_view path) {
@@ -217,6 +219,7 @@ std::unique_ptr<Writer> Fat32Volume::newWriter(std::string_view path, bool /*app
 std::vector<uint8_t> Fat32Volume::readFileUnchecked(std::string_view path, int64_t off,
                                                     size_t len) {
     const std::string normalized = normalizeArg(path);
+    ensurePathIndexed(normalized);
     auto it = m_dirents.find(normalized);
     if (it == m_dirents.end() || it->second.isDirectory) {
         throw IOException("readFile", std::string(path), "File not found or is a directory");
@@ -339,7 +342,6 @@ void Fat32Volume::parseBootSector() {
 void Fat32Volume::buildIndex() {
     m_dirents.clear();
     m_dirents["/"] = Dirent{true, m_rootCluster, 0, 0, 0, 0};
-    parseDirectoryCluster("/", m_rootCluster);
 }
 
 uint64_t Fat32Volume::clusterToOffset(uint32_t cluster) const {
@@ -412,8 +414,18 @@ std::string Fat32Volume::decodeLfnChunk(const uint8_t* entry) const {
     return out;
 }
 
-void Fat32Volume::parseDirectoryCluster(std::string_view dirPath, uint32_t firstCluster) {
+void Fat32Volume::parseDirectoryCluster(std::string_view dirPath, uint32_t firstCluster) const {
+    auto itParent = m_dirents.find(std::string(dirPath));
+    if (itParent == m_dirents.end()) {
+        return;
+    }
+    Dirent& parent = itParent->second;
+    if (parent.childrenParsed) {
+        return;
+    }
+    parent.children.clear();
     if (firstCluster < 2) {
+        parent.childrenParsed = true;
         return;
     }
 
@@ -477,15 +489,76 @@ void Fat32Volume::parseDirectoryCluster(std::string_view dirPath, uint32_t first
             const time_t crt = fatDosDateTime(crTime, crDate);
             const time_t atim = fatDosDateTime(0, accDate);
 
-            std::string parent(dirPath);
-            const std::string path = (parent == "/") ? ("/" + name) : (parent + "/" + name);
+            std::string parentPath(dirPath);
+            const std::string path = (parentPath == "/") ? ("/" + name) : (parentPath + "/" + name);
 
-            m_dirents[path] = Dirent{isDir, startCluster, isDir ? 0u : size, atim, mtime, crt};
-            if (isDir && startCluster >= 2) {
-                parseDirectoryCluster(path, startCluster);
+            auto [itChild, inserted] = m_dirents.try_emplace(path);
+            Dirent& child = itChild->second;
+            child.isDirectory = isDir;
+            child.firstCluster = startCluster;
+            child.size = isDir ? 0u : size;
+            child.atime = atim;
+            child.mtime = mtime;
+            child.creationTime = crt;
+            if (inserted) {
+                child.childrenParsed = false;
+                child.children.clear();
             }
+
+            parent.children[name] = &child;
         }
     }
+    parent.childrenParsed = true;
+}
+
+bool Fat32Volume::ensureDirectoryParsed(std::string_view dirPath) const {
+    const std::string normalized = normalizeArg(dirPath);
+    auto it = m_dirents.find(normalized);
+    if (it == m_dirents.end() || !it->second.isDirectory) {
+        return false;
+    }
+    if (it->second.childrenParsed) {
+        return true;
+    }
+    parseDirectoryCluster(normalized, it->second.firstCluster);
+    return true;
+}
+
+bool Fat32Volume::ensurePathIndexed(std::string_view path) const {
+    std::string normalized = normalizeArg(path);
+    if (normalized.empty()) {
+        normalized = "/";
+    }
+    if (normalized == "/") {
+        return true;
+    }
+
+    std::string current = "/";
+    size_t pos = 1;
+    while (pos <= normalized.size()) {
+        const size_t slash = normalized.find('/', pos);
+        const std::string part = (slash == std::string::npos) ? normalized.substr(pos)
+                                                              : normalized.substr(pos, slash - pos);
+        if (part.empty()) {
+            break;
+        }
+
+        if (!ensureDirectoryParsed(current)) {
+            return false;
+        }
+
+        const std::string next = (current == "/") ? ("/" + part) : (current + "/" + part);
+        if (m_dirents.find(next) == m_dirents.end()) {
+            return false;
+        }
+        current = next;
+
+        if (slash == std::string::npos) {
+            break;
+        }
+        pos = slash + 1;
+    }
+    return m_dirents.find(normalized) != m_dirents.end();
 }
 
 bool Fat32Volume::readAt(uint64_t offset, uint8_t* dst, size_t len) const {

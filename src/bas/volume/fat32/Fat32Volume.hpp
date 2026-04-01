@@ -18,6 +18,10 @@ class Fat32Volume : public Volume {
         time_t atime = 0;
         time_t mtime = 0;
         time_t creationTime = 0;
+        bool childrenParsed = false;
+        std::unordered_map<std::string, Dirent*> children;
+
+        void copyTo(DirNode& node) const;
     };
 
     std::string m_imagePath;
@@ -34,7 +38,7 @@ class Fat32Volume : public Volume {
     uint64_t m_dataOffset = 0;
     uint32_t m_clusterSize = 0;
 
-    std::unordered_map<std::string, Dirent> m_dirents;
+    mutable std::unordered_map<std::string, Dirent> m_dirents;
 
   public:
     explicit Fat32Volume(std::string_view imagePath);
@@ -85,7 +89,9 @@ class Fat32Volume : public Volume {
   private:
     void parseBootSector();
     void buildIndex();
-    void parseDirectoryCluster(std::string_view dirPath, uint32_t firstCluster);
+    void parseDirectoryCluster(std::string_view dirPath, uint32_t firstCluster) const;
+    bool ensureDirectoryParsed(std::string_view dirPath) const;
+    bool ensurePathIndexed(std::string_view path) const;
 
     std::vector<uint32_t> readClusterChain(uint32_t firstCluster) const;
     uint32_t getFatEntry(uint32_t cluster) const;

@@ -250,14 +250,16 @@ void OverlayVolume::readDir_inplace(DirNode& context, std::string_view path, boo
         if (!layer->exists(path)) {
             continue;
         }
-        DirNode node;
-        if (!layer->stat(path, &node)) {
-            throw IOException("readDir", path, "Error stat");
-        }
-        if (node.isDirectory()) {
+        if (layer->isDirectory(path)) {
             layer->readDir_inplace(context, path, recursive);
         } else {
-            context.assign(node);
+            DirNode stat;
+            if (layer->stat(path, &stat)) {
+                context.assign(stat);
+                context.invalidateChildren();
+            } else {
+                context.setUnknownClear();
+            }
         }
     }
 }

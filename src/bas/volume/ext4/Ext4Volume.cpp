@@ -104,21 +104,30 @@ void Ext4Volume::readDir_inplace(DirNode& context, std::string_view path, bool r
         throw IOException("readDir", std::string(path), "Permission denied");
     }
 
+    context.clear();
+    context.name = parent;
+    context.setDirectoryClear();
+    context.children_valid = true;
+
+    auto appendChild = [&](std::string_view nodeName, const Inode& child) {
+        auto st = std::make_unique<DirNode>();
+        st->name = std::string(nodeName);
+        st->type = child.isDirectory ? FileType::Directory : FileType::Regular;
+        st->size = child.size;
+        st->ino = child.ino;
+        st->mode = child.mode;
+        st->uid = child.uid;
+        st->gid = child.gid;
+        st->epochSeconds(child.mtime);
+        st->accessTime(std::chrono::system_clock::from_time_t(child.atime));
+        st->creationTime(std::chrono::system_clock::from_time_t(child.ctime));
+        context.putChild(std::move(st));
+    };
+
     const auto& rtnode = getDirectoryEntries(parentNode.ino);
     if (!recursive) {
         for (const auto& [name, child] : rtnode->children) {
-            auto st = std::make_unique<DirNode>();
-            st->name = name;
-            st->type = child->isDirectory ? FileType::Directory : FileType::Regular;
-            st->size = child->size;
-            st->ino = child->ino;
-            st->mode = child->mode;
-            st->uid = child->uid;
-            st->gid = child->gid;
-            st->epochSeconds(child->mtime);
-            st->accessTime(std::chrono::system_clock::from_time_t(child->atime));
-            st->creationTime(std::chrono::system_clock::from_time_t(child->ctime));
-            context.putChild(std::move(st));
+            appendChild(name, *child);
         }
         return;
     }
@@ -135,18 +144,7 @@ void Ext4Volume::readDir_inplace(DirNode& context, std::string_view path, bool r
             std::string relPath =
                 (parent == "/") ? absPath.substr(1) : absPath.substr(parent.size() + 1);
 
-            auto st = std::make_unique<DirNode>();
-            st->name = relPath;
-            st->type = child->isDirectory ? FileType::Directory : FileType::Regular;
-            st->size = child->size;
-            st->ino = child->ino;
-            st->mode = child->mode;
-            st->uid = child->uid;
-            st->gid = child->gid;
-            st->epochSeconds(child->mtime);
-            st->accessTime(std::chrono::system_clock::from_time_t(child->atime));
-            st->creationTime(std::chrono::system_clock::from_time_t(child->ctime));
-            context.putChild(std::move(st));
+            appendChild(relPath, *child);
 
             m_inodes[absPath] = *child;
             if (child->isDirectory) {
@@ -375,7 +373,11 @@ const Ext4Volume::RtNode* Ext4Volume::getDirectoryEntries(uint32_t inode) const 
             Scope* scope = static_cast<Scope*>(priv);
             if (!dirent || dirent->inode == 0)
                 return 0;
-            std::string name(dirent->name, dirent->name + dirent->name_len);
+            const int nameLen = ext2fs_dirent_name_len(dirent);
+            if (nameLen <= 0) {
+                return 0;
+            }
+            std::string name(dirent->name, dirent->name + nameLen);
             if (name == "." || name == "..")
                 return 0;
 

@@ -52,7 +52,10 @@ struct DirEntry {
         epochNano = 0;
     }
     
-    inline void setFile() {
+    inline void setUnknown() {
+        type = FileType::Unknown;
+    }
+    inline void setRegular() {
         type = FileType::Regular;
     }
     inline void setDirectory() {

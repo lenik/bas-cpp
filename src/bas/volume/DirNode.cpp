@@ -111,14 +111,20 @@ void DirNode::invalidateChildren() {
     children_valid = false;
 }
 
-void DirNode::setFileClear() {
-    type = FileType::Regular;
+void DirNode::setUnknownClear() {
+    setUnknown();
+    invalidateChildren();
+    invalidateCache();
+}
+
+void DirNode::setRegularClear() {
+    setRegular();
     invalidateChildren();
     invalidateCache();
 }
 
 void DirNode::setDirectoryClear() {
-    type = FileType::Directory;
+    setDirectory();
     invalidateChildren();
     invalidateCache();
 }
@@ -275,8 +281,9 @@ DirNode* DirNode::putChild(const std::string& name, FileType type, int64_t size,
 
 DirNode* DirNode::putChild(std::unique_ptr<DirNode> child) {
     child->parent = this;
-    children[child->name] = std::move(child);
-    return children.at(child->name).get();
+    const std::string key = child->name;
+    children[key] = std::move(child);
+    return children.at(key).get();
 }
 
 DirNode* DirNode::resolve(std::string_view path, bool create, FileType intermediateType) {

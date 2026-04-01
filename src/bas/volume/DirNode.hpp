@@ -68,7 +68,8 @@ struct DirNode : public DirEntry {
     void invalidateCache();
     void invalidateChildren();
 
-    void setFileClear();
+    void setUnknownClear();
+    void setRegularClear();
     void setDirectoryClear();
     void setTarget(DirNode* target, bool owned = false);
 
