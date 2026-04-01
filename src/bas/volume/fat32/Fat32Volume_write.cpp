@@ -148,11 +148,6 @@ void Fat32Volume::removeFileThrowsUnchecked(std::string_view path) {
 
     // Remove from index
     deleteFileEntry(resolved);
-    
-    // Verify removal
-    if (m_dirents.find(resolved) != m_dirents.end()) {
-        throw IOException("removeFile", std::string(path), "Failed to remove entry from index");
-    }
 }
 
 void Fat32Volume::copyFileThrowsUnchecked(std::string_view src, std::string_view dest) {
@@ -246,16 +241,16 @@ void Fat32Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::strin
     Dirent dirent = oldIt->second;
     m_dirents[newNormalized] = dirent;
     
+    // Debug: check if new entry is in memory
+    if (m_dirents.find(newNormalized) == m_dirents.end()) {
+        throw IOException("renameFile", std::string(newPath), "Failed to create new entry in memory");
+    }
+    
     // Write new entry to disk
     writeDirectoryEntryToDisk(newNormalized, dirent);
 
     // Remove old entry from memory
     m_dirents.erase(actualOldPath);
-    
-    // Verify removal from memory
-    if (m_dirents.find(actualOldPath) != m_dirents.end()) {
-        throw IOException("renameFile", std::string(oldPath), "Failed to remove old entry from memory");
-    }
     
     // Mark old entry as deleted on disk
     const std::string oldParent = getParentPath(actualOldPath);
@@ -284,7 +279,11 @@ bool Fat32Volume::writeAt(uint64_t offset, const uint8_t* src, size_t len) {
     }
     out.write(reinterpret_cast<const char*>(src), static_cast<std::streamsize>(len));
     out.flush();
-    return out.good();
+    if (!out.good()) {
+        return false;
+    }
+    out.close();
+    return true;
 }
 
 uint32_t Fat32Volume::findFreeCluster() const {
