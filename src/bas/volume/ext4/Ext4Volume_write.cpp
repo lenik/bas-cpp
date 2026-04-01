@@ -117,7 +117,7 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
 
     ext2fs_close(fs);
     
-    // Rebuild cache from disk to pick up new file
+    // Rebuild cache from disk to pick up new file with correct data
     buildIndex();
 }
 
