@@ -107,20 +107,20 @@ void Fat32Volume::createDirectoryThrowsUnchecked(std::string_view path) {
 }
 
 void Fat32Volume::removeDirectoryThrowsUnchecked(std::string_view path) {
-    const std::string normalized = normalizeArg(path);
-    if (normalized == "/" || normalized.empty()) {
-        throw IOException("removeDirectory", std::string(path), "Cannot remove root directory");
+    std::string resolved = resolvePath(path);
+    if (resolved.empty() || resolved == "/") {
+        throw IOException("removeDirectory", std::string(path), "Cannot remove root directory or directory does not exist");
     }
 
-    auto it = m_dirents.find(normalized);
+    auto it = m_dirents.find(resolved);
     if (it == m_dirents.end() || !it->second.isDirectory) {
         throw IOException("removeDirectory", std::string(path), "Directory does not exist");
     }
 
     // Check if directory is empty (no children)
-    const std::string prefix = normalized + "/";
+    const std::string prefix = resolved + "/";
     for (const auto& [fullPath, dirent] : m_dirents) {
-        if (fullPath != normalized && fullPath.rfind(prefix, 0) == 0) {
+        if (fullPath != resolved && fullPath.rfind(prefix, 0) == 0) {
             throw IOException("removeDirectory", std::string(path), "Directory is not empty");
         }
     }
@@ -129,13 +129,16 @@ void Fat32Volume::removeDirectoryThrowsUnchecked(std::string_view path) {
     freeClusterChain(it->second.firstCluster);
 
     // Remove from index
-    deleteDirectoryEntry(normalized);
+    deleteDirectoryEntry(resolved);
 }
 
 void Fat32Volume::removeFileThrowsUnchecked(std::string_view path) {
-    const std::string normalized = normalizeArg(path);
+    std::string resolved = resolvePath(path);
+    if (resolved.empty()) {
+        throw IOException("removeFile", std::string(path), "File does not exist");
+    }
 
-    auto it = m_dirents.find(normalized);
+    auto it = m_dirents.find(resolved);
     if (it == m_dirents.end() || it->second.isDirectory) {
         throw IOException("removeFile", std::string(path), "File does not exist or is a directory");
     }
@@ -144,22 +147,29 @@ void Fat32Volume::removeFileThrowsUnchecked(std::string_view path) {
     freeClusterChain(it->second.firstCluster);
 
     // Remove from index
-    deleteFileEntry(normalized);
+    deleteFileEntry(resolved);
+    
+    // Verify removal
+    if (m_dirents.find(resolved) != m_dirents.end()) {
+        throw IOException("removeFile", std::string(path), "Failed to remove entry from index");
+    }
 }
 
 void Fat32Volume::copyFileThrowsUnchecked(std::string_view src, std::string_view dest) {
-    const std::string srcNormalized = normalizeArg(src);
-    const std::string destNormalized = normalizeArg(dest);
-
-    auto srcIt = m_dirents.find(srcNormalized);
+    std::string resolvedSrc = resolvePath(src);
+    if (resolvedSrc.empty()) {
+        throw IOException("copyFile", std::string(src), "Source file does not exist");
+    }
+    
+    auto srcIt = m_dirents.find(resolvedSrc);
     if (srcIt == m_dirents.end() || srcIt->second.isDirectory) {
         throw IOException("copyFile", std::string(src),
                           "Source file does not exist or is a directory");
     }
 
     // Check if destination already exists
-    auto destIt = m_dirents.find(destNormalized);
-    if (destIt != m_dirents.end()) {
+    std::string resolvedDest = resolvePath(dest);
+    if (!resolvedDest.empty()) {
         throw IOException("copyFile", std::string(dest), "Destination already exists");
     }
 
@@ -167,22 +177,24 @@ void Fat32Volume::copyFileThrowsUnchecked(std::string_view src, std::string_view
     std::vector<uint8_t> data = readFile(src);
 
     // Write to destination
-    writeFileUnchecked(destNormalized, data);
+    writeFileUnchecked(dest, data);
 }
 
 void Fat32Volume::moveFileThrowsUnchecked(std::string_view src, std::string_view dest) {
-    const std::string srcNormalized = normalizeArg(src);
-    const std::string destNormalized = normalizeArg(dest);
-
-    auto srcIt = m_dirents.find(srcNormalized);
+    std::string resolvedSrc = resolvePath(src);
+    if (resolvedSrc.empty()) {
+        throw IOException("moveFile", std::string(src), "Source file does not exist");
+    }
+    
+    auto srcIt = m_dirents.find(resolvedSrc);
     if (srcIt == m_dirents.end() || srcIt->second.isDirectory) {
         throw IOException("moveFile", std::string(src),
                           "Source file does not exist or is a directory");
     }
 
     // Check if destination already exists
-    auto destIt = m_dirents.find(destNormalized);
-    if (destIt != m_dirents.end()) {
+    std::string resolvedDest = resolvePath(dest);
+    if (!resolvedDest.empty()) {
         throw IOException("moveFile", std::string(dest), "Destination already exists");
     }
 
@@ -190,23 +202,35 @@ void Fat32Volume::moveFileThrowsUnchecked(std::string_view src, std::string_view
     std::vector<uint8_t> data = readFile(src);
 
     // Write to destination
-    writeFileUnchecked(destNormalized, data);
+    writeFileUnchecked(dest, data);
 
     // Remove source
-    removeFileThrowsUnchecked(srcNormalized);
+    removeFileThrowsUnchecked(src);
 }
 
 void Fat32Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::string_view newPath) {
     const std::string oldNormalized = normalizeArg(oldPath);
     const std::string newNormalized = normalizeArg(newPath);
 
-    auto oldIt = m_dirents.find(oldNormalized);
+    // Find old entry using flexible lookup
+    std::string actualOldPath = oldNormalized;
+    auto oldIt = m_dirents.find(actualOldPath);
+    if (oldIt == m_dirents.end()) {
+        // Try short name version
+        actualOldPath = toShortNamePath(oldNormalized);
+        oldIt = m_dirents.find(actualOldPath);
+    }
     if (oldIt == m_dirents.end()) {
         throw IOException("renameFile", std::string(oldPath), "Source does not exist");
     }
 
-    // Check if new path already exists
-    auto newIt = m_dirents.find(newNormalized);
+    // Check if new path already exists (try both long and short)
+    std::string actualNewPath = newNormalized;
+    auto newIt = m_dirents.find(actualNewPath);
+    if (newIt == m_dirents.end()) {
+        actualNewPath = toShortNamePath(newNormalized);
+        newIt = m_dirents.find(actualNewPath);
+    }
     if (newIt != m_dirents.end()) {
         throw IOException("renameFile", std::string(newPath), "Destination already exists");
     }
@@ -221,9 +245,29 @@ void Fat32Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::strin
     // Create new entry with same data
     Dirent dirent = oldIt->second;
     m_dirents[newNormalized] = dirent;
+    
+    // Write new entry to disk
+    writeDirectoryEntryToDisk(newNormalized, dirent);
 
-    // Remove old entry
-    m_dirents.erase(oldNormalized);
+    // Remove old entry from memory
+    m_dirents.erase(actualOldPath);
+    
+    // Verify removal from memory
+    if (m_dirents.find(actualOldPath) != m_dirents.end()) {
+        throw IOException("renameFile", std::string(oldPath), "Failed to remove old entry from memory");
+    }
+    
+    // Mark old entry as deleted on disk
+    const std::string oldParent = getParentPath(actualOldPath);
+    const std::string oldFileName = getFileName(actualOldPath);
+    auto oldParentIt = m_dirents.find(oldParent);
+    if (oldParentIt != m_dirents.end() && oldParentIt->second.isDirectory) {
+        uint32_t oldParentCluster = oldParentIt->second.firstCluster;
+        if (oldParent == "/" && oldParentCluster == 0) {
+            oldParentCluster = m_rootCluster;
+        }
+        markDirectoryEntryAsDeleted(oldParentCluster, oldFileName);
+    }
 }
 
 bool Fat32Volume::writeAt(uint64_t offset, const uint8_t* src, size_t len) {
@@ -298,7 +342,7 @@ void Fat32Volume::setFatEntry(uint32_t cluster, uint32_t value) {
 void Fat32Volume::createFileEntry(std::string_view path, uint32_t firstCluster, uint32_t size) {
     const std::string normalized = normalizeArg(path);
     const std::string parent = getParentPath(normalized);
-    const std::string fileName = getFileName(normalized);
+    std::string fileName = getFileName(normalized);
 
     if (fileName.empty()) {
         throw IOException("createFileEntry", std::string(path), "Invalid file name");
@@ -310,12 +354,16 @@ void Fat32Volume::createFileEntry(std::string_view path, uint32_t firstCluster, 
         throw IOException("createFileEntry", std::string(path), "Parent directory not found");
     }
 
-    // Update in-memory index
+    // Convert to short name for consistency with disk storage
+    fileName = createShortName(fileName);
+    const std::string shortPath = (parent == "/") ? ("/" + fileName) : (parent + "/" + fileName);
+
+    // Update in-memory index with short name
     time_t now = getCurrentTime();
-    m_dirents[normalized] = Dirent{false, firstCluster, size, now, now, now};
+    m_dirents[shortPath] = Dirent{false, firstCluster, size, now, now, now};
 
     // Write directory entry to disk
-    writeDirectoryEntryToDisk(normalized, m_dirents[normalized]);
+    writeDirectoryEntryToDisk(shortPath, m_dirents[shortPath]);
 }
 
 void Fat32Volume::updateFileEntry(std::string_view path, uint32_t firstCluster, uint32_t size) {
@@ -325,32 +373,42 @@ void Fat32Volume::updateFileEntry(std::string_view path, uint32_t firstCluster, 
 void Fat32Volume::deleteFileEntry(std::string_view path) {
     const std::string normalized = normalizeArg(path);
     auto it = m_dirents.find(normalized);
-    if (it != m_dirents.end() && !it->second.isDirectory) {
-        freeClusterChain(it->second.firstCluster);
-        
-        // Mark directory entry as deleted on disk
-        const std::string parent = getParentPath(normalized);
-        const std::string fileName = getFileName(normalized);
-        auto pit = m_dirents.find(parent);
-        if (pit != m_dirents.end() && pit->second.isDirectory) {
-            uint32_t parentCluster = pit->second.firstCluster;
-            if (parent == "/" && parentCluster == 0) {
-                parentCluster = m_rootCluster;
-            }
-            markDirectoryEntryAsDeleted(parentCluster, fileName);
-        }
-        
-        m_dirents.erase(normalized);
+    if (it == m_dirents.end()) {
+        return; // Entry not found, nothing to do
     }
+    if (it->second.isDirectory) {
+        return; // Can't delete directory with deleteFileEntry
+    }
+    
+    // Mark directory entry as deleted on disk
+    const std::string parent = getParentPath(normalized);
+    const std::string fileName = getFileName(normalized);
+    auto pit = m_dirents.find(parent);
+    if (pit != m_dirents.end() && pit->second.isDirectory) {
+        uint32_t parentCluster = pit->second.firstCluster;
+        if (parent == "/" && parentCluster == 0) {
+            parentCluster = m_rootCluster;
+        }
+        markDirectoryEntryAsDeleted(parentCluster, fileName);
+    }
+    
+    m_dirents.erase(it);
 }
 
 void Fat32Volume::createDirectoryEntry(std::string_view path, uint32_t firstCluster) {
     const std::string normalized = normalizeArg(path);
+    const std::string parent = getParentPath(normalized);
+    std::string dirName = getFileName(normalized);
+    
+    // Convert to short name for consistency with disk storage
+    dirName = createShortName(dirName);
+    const std::string shortPath = (parent == "/") ? ("/" + dirName) : (parent + "/" + dirName);
+    
     time_t now = getCurrentTime();
-    m_dirents[normalized] = Dirent{true, firstCluster, 0, now, now, now};
+    m_dirents[shortPath] = Dirent{true, firstCluster, 0, now, now, now};
 
     // Write directory entry to disk
-    writeDirectoryEntryToDisk(normalized, m_dirents[normalized]);
+    writeDirectoryEntryToDisk(shortPath, m_dirents[shortPath]);
 }
 
 void Fat32Volume::deleteDirectoryEntry(std::string_view path) {
@@ -486,18 +544,26 @@ void Fat32Volume::markDirectoryEntryAsDeleted(uint32_t dirCluster, std::string_v
     // Convert to short name for matching
     std::string shortName = createShortName(std::string(name));
     
-    // Build 11-byte FAT name
+    // Build 11-byte FAT name (uppercase, as stored on disk)
     uint8_t fatName[11];
-    for (int i = 0; i < 8; ++i)
-        fatName[i] = (i < static_cast<int>(shortName.size()) && shortName[i] != '.') ? shortName[i] : ' ';
-    for (int i = 8; i < 11; ++i) {
-        size_t extIdx = i - 8;
-        size_t dotPos = shortName.find('.');
-        if (dotPos != std::string::npos && dotPos + extIdx < shortName.size()) {
-            fatName[i] = shortName[dotPos + extIdx + 1];
-        } else {
-            fatName[i] = ' ';
-        }
+    memset(fatName, ' ', 11);
+    
+    std::string base = shortName;
+    std::string ext = "";
+    size_t dotPos = shortName.find('.');
+    if (dotPos != std::string::npos && dotPos < shortName.size() - 1) {
+        ext = shortName.substr(dotPos + 1);
+        base = shortName.substr(0, dotPos);
+    }
+    
+    // Copy base (up to 8 chars, uppercase)
+    for (size_t i = 0; i < 8 && i < base.size(); ++i) {
+        fatName[i] = static_cast<uint8_t>(std::toupper(static_cast<unsigned char>(base[i])));
+    }
+    
+    // Copy extension (up to 3 chars, uppercase)
+    for (size_t i = 0; i < 3 && i < ext.size(); ++i) {
+        fatName[8 + i] = static_cast<uint8_t>(std::toupper(static_cast<unsigned char>(ext[i])));
     }
     
     for (uint32_t cluster : chain) {
@@ -525,7 +591,7 @@ void Fat32Volume::markDirectoryEntryAsDeleted(uint32_t dirCluster, std::string_v
                 continue;
             }
             
-            // Compare name
+            // Compare name (11 bytes, uppercase on disk)
             bool matches = true;
             for (int i = 0; i < 11; ++i) {
                 if (block[pos + i] != fatName[i]) {
@@ -537,7 +603,9 @@ void Fat32Volume::markDirectoryEntryAsDeleted(uint32_t dirCluster, std::string_v
             if (matches) {
                 // Mark as deleted
                 block[pos] = 0xE5;
-                writeAt(offset + pos, block.data() + pos, 32);
+                if (!writeAt(offset + pos, block.data() + pos, 32)) {
+                    throw IOException("markDirectoryEntryAsDeleted", m_imagePath, "Failed to write deletion marker");
+                }
                 return;
             }
         }
@@ -549,7 +617,7 @@ uint8_t Fat32Volume::calculateLFNChecksumForShortName(const std::string& longNam
     return calculateLFNChecksum(shortName);
 }
 
-std::string Fat32Volume::createShortName(const std::string& longName) {
+std::string Fat32Volume::createShortName(const std::string& longName) const {
     // Extract base name and extension
     std::string base = longName;
     std::string ext = "";
@@ -570,17 +638,13 @@ std::string Fat32Volume::createShortName(const std::string& longName) {
         ext = ext.substr(0, 3);
     }
     
-    // Convert to uppercase
+    // Convert to lowercase to match decodeShortName output
     for (char& c : base)
-        c = static_cast<char>(toupper(static_cast<unsigned char>(c)));
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
     for (char& c : ext)
-        c = static_cast<char>(toupper(static_cast<unsigned char>(c)));
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
     
-    // Pad base name to 8 chars
-    while (base.size() < 8)
-        base += ' ';
-    
-    // Build full 8.3 name
+    // Build full 8.3 name (no padding for in-memory use)
     std::string result = base;
     if (!ext.empty()) {
         result += ".";

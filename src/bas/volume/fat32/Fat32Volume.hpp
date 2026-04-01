@@ -10,7 +10,12 @@
 #include <vector>
 
 class Fat32Volume : public Volume {
-  private:
+  public:
+
+    struct Dirent;
+    using DirentObj = std::shared_ptr<Dirent>;
+    using DirentRef = std::weak_ptr<Dirent>;
+
     struct Dirent {
         bool isDirectory = false;
         uint32_t firstCluster = 0;
@@ -24,6 +29,7 @@ class Fat32Volume : public Volume {
         void copyTo(DirNode& node) const;
     };
 
+private:
     std::string m_imagePath;
     uint64_t m_imageSize = 0;
 
@@ -133,7 +139,12 @@ class Fat32Volume : public Volume {
     std::vector<std::string> splitLFNChunks(const std::string& longName);
     uint8_t calculateLFNChecksum(const std::string& shortName);
     uint8_t calculateLFNChecksumForShortName(const std::string& longName);
-    std::string createShortName(const std::string& longName);
+    std::string createShortName(const std::string& longName) const;
+    
+    // Path lookup helpers
+    std::string findPathInDirectory(const std::string& parentPath, const std::string& name) const;
+    std::string toShortNamePath(const std::string& path) const;
+    std::string resolvePath(std::string_view path) const;
 };
 
 #endif // FAT32VOLUME_H

@@ -58,22 +58,75 @@ std::string Fat32Volume::getLocalFile(std::string_view /*path*/) const { return 
 std::string Fat32Volume::getSource() const { return "fat32 " + m_imagePath; }
 
 bool Fat32Volume::exists(std::string_view path) const {
-    const std::string normalized = normalizeArg(path);
-    ensurePathIndexed(normalized);
-    return m_dirents.find(normalized) != m_dirents.end();
+    return ensurePathIndexed(path);
 }
 
 bool Fat32Volume::isFile(std::string_view path) const {
-    const std::string normalized = normalizeArg(path);
-    ensurePathIndexed(normalized);
-    auto it = m_dirents.find(normalized);
+    if (!ensurePathIndexed(path)) {
+        return false;
+    }
+    // Get the actual path that was found
+    std::string normalized = normalizeArg(path);
+    std::string current = "/";
+    size_t pos = 1;
+    while (pos <= normalized.size()) {
+        const size_t slash = normalized.find('/', pos);
+        std::string part = (slash == std::string::npos) ? normalized.substr(pos)
+                                                        : normalized.substr(pos, slash - pos);
+        if (part.empty()) break;
+        
+        std::string found = findPathInDirectory(current, part);
+        if (!found.empty()) {
+            current = found;
+        } else {
+            std::string shortPart = createShortName(part);
+            found = findPathInDirectory(current, shortPart);
+            if (!found.empty()) {
+                current = found;
+            } else {
+                current = (current == "/") ? ("/" + shortPart) : (current + "/" + shortPart);
+            }
+        }
+        
+        if (slash == std::string::npos) break;
+        pos = slash + 1;
+    }
+    
+    auto it = m_dirents.find(current);
     return it != m_dirents.end() && !it->second.isDirectory;
 }
 
 bool Fat32Volume::isDirectory(std::string_view path) const {
-    const std::string normalized = normalizeArg(path);
-    ensurePathIndexed(normalized);
-    auto it = m_dirents.find(normalized);
+    if (!ensurePathIndexed(path)) {
+        return false;
+    }
+    std::string normalized = normalizeArg(path);
+    std::string current = "/";
+    size_t pos = 1;
+    while (pos <= normalized.size()) {
+        const size_t slash = normalized.find('/', pos);
+        std::string part = (slash == std::string::npos) ? normalized.substr(pos)
+                                                        : normalized.substr(pos, slash - pos);
+        if (part.empty()) break;
+        
+        std::string found = findPathInDirectory(current, part);
+        if (!found.empty()) {
+            current = found;
+        } else {
+            std::string shortPart = createShortName(part);
+            found = findPathInDirectory(current, shortPart);
+            if (!found.empty()) {
+                current = found;
+            } else {
+                current = (current == "/") ? ("/" + shortPart) : (current + "/" + shortPart);
+            }
+        }
+        
+        if (slash == std::string::npos) break;
+        pos = slash + 1;
+    }
+    
+    auto it = m_dirents.find(current);
     return it != m_dirents.end() && it->second.isDirectory;
 }
 
@@ -126,8 +179,11 @@ void Fat32Volume::readDir_inplace(DirNode& context, std::string_view _path, bool
 }
 
 std::unique_ptr<InputStream> Fat32Volume::newInputStream(std::string_view path) {
-    const std::string normalized = normalizeArg(path);
-    auto it = m_dirents.find(normalized);
+    std::string resolved = resolvePath(path);
+    if (resolved.empty()) {
+        throw IOException("newInputStream", std::string(path), "File not found");
+    }
+    auto it = m_dirents.find(resolved);
     if (it == m_dirents.end() || it->second.isDirectory) {
         throw IOException("newInputStream", std::string(path), "File not found or is a directory");
     }
@@ -138,7 +194,7 @@ std::unique_ptr<InputStream> Fat32Volume::newInputStream(std::string_view path) 
     auto stream = std::make_unique<Fat32FileInputStream>(
         m_imagePath, std::move(chain), m_dataOffset, m_clusterSize, it->second.size);
     if (!stream->isOpen()) {
-        throw IOException("newInputStream", normalized, "Failed to open image");
+        throw IOException("newInputStream", std::string(path), "Failed to open image");
     }
     return stream;
 }
@@ -174,9 +230,11 @@ std::unique_ptr<Writer> Fat32Volume::newWriter(std::string_view path, bool appen
 
 std::vector<uint8_t> Fat32Volume::readFileUnchecked(std::string_view path, int64_t off,
                                                     size_t len) {
-    const std::string normalized = normalizeArg(path);
-    ensurePathIndexed(normalized);
-    auto it = m_dirents.find(normalized);
+    std::string resolved = resolvePath(path);
+    if (resolved.empty()) {
+        throw IOException("readFile", std::string(path), "File not found");
+    }
+    auto it = m_dirents.find(resolved);
     if (it == m_dirents.end() || it->second.isDirectory) {
         throw IOException("readFile", std::string(path), "File not found or is a directory");
     }
@@ -457,8 +515,8 @@ bool Fat32Volume::ensurePathIndexed(std::string_view path) const {
     size_t pos = 1;
     while (pos <= normalized.size()) {
         const size_t slash = normalized.find('/', pos);
-        const std::string part = (slash == std::string::npos) ? normalized.substr(pos)
-                                                              : normalized.substr(pos, slash - pos);
+        std::string part = (slash == std::string::npos) ? normalized.substr(pos)
+                                                        : normalized.substr(pos, slash - pos);
         if (part.empty()) {
             break;
         }
@@ -467,9 +525,27 @@ bool Fat32Volume::ensurePathIndexed(std::string_view path) const {
             return false;
         }
 
-        const std::string next = (current == "/") ? ("/" + part) : (current + "/" + part);
+        // Try to find the component - first exact match, then case-insensitive, then short name
+        std::string next = (current == "/") ? ("/" + part) : (current + "/" + part);
         if (m_dirents.find(next) == m_dirents.end()) {
-            return false;
+            // Try case-insensitive match
+            std::string found = findPathInDirectory(current, part);
+            if (!found.empty()) {
+                next = found;
+            } else {
+                // Try short name version
+                std::string shortPart = createShortName(part);
+                next = (current == "/") ? ("/" + shortPart) : (current + "/" + shortPart);
+                if (m_dirents.find(next) == m_dirents.end()) {
+                    // Try case-insensitive on short name
+                    found = findPathInDirectory(current, shortPart);
+                    if (!found.empty()) {
+                        next = found;
+                    } else {
+                        return false;
+                    }
+                }
+            }
         }
         current = next;
 
@@ -478,7 +554,7 @@ bool Fat32Volume::ensurePathIndexed(std::string_view path) const {
         }
         pos = slash + 1;
     }
-    return m_dirents.find(normalized) != m_dirents.end();
+    return m_dirents.find(current) != m_dirents.end();
 }
 
 bool Fat32Volume::readAt(uint64_t offset, uint8_t* dst, size_t len) const {
@@ -555,4 +631,146 @@ uint8_t Fat32Volume::calculateLFNChecksum(const std::string& shortName) {
         sum = ((sum & 1) << 7) + (sum >> 1) + static_cast<uint8_t>(c);
     }
     return sum;
+}
+
+// ============================================================================
+// Path Lookup Helpers
+// ============================================================================
+
+std::string Fat32Volume::toShortNamePath(const std::string& path) const {
+    std::string normalized = normalizeArg(path);
+    if (normalized == "/" || normalized.empty()) {
+        return "/";
+    }
+    
+    std::string result;
+    size_t pos = 0;
+    while (pos < normalized.size()) {
+        size_t nextSlash = normalized.find('/', pos);
+        std::string component;
+        if (nextSlash == std::string::npos) {
+            component = normalized.substr(pos);
+            pos = normalized.size();
+        } else {
+            component = normalized.substr(pos, nextSlash - pos + 1);
+            pos = nextSlash + 1;
+        }
+        
+        if (!component.empty() && component != "/") {
+            // Remove trailing slash for processing
+            std::string name = component;
+            if (name.back() == '/') {
+                name.pop_back();
+            }
+            // Convert to short name
+            std::string shortName = createShortName(name);
+            result += "/" + shortName;
+        } else if (component == "/") {
+            result = "/";
+        }
+    }
+    
+    return result.empty() ? "/" : result;
+}
+
+/**
+ * Resolve a path to a full path.
+ * @param path The path to resolve.
+ * @return The full path.
+ */
+std::string Fat32Volume::resolvePath(std::string_view path) const {
+    std::string normalized = normalizeArg(path);
+    if (normalized.empty() || normalized == "/") {
+        return "/";
+    }
+    
+    std::string current = "/";
+    size_t pos = 1;
+    while (pos <= normalized.size()) {
+        const size_t slash = normalized.find('/', pos);
+        std::string part = (slash == std::string::npos) ? normalized.substr(pos)
+                                                        : normalized.substr(pos, slash - pos);
+        if (part.empty()) break;
+        
+        // Try to find the component
+        std::string found = findPathInDirectory(current, part);
+        if (!found.empty()) {
+            current = found;
+        } else {
+            // Try short name version
+            std::string shortPart = createShortName(part);
+            found = findPathInDirectory(current, shortPart);
+            if (!found.empty()) {
+                current = found;
+            } else {
+                // Path not found
+                return "";
+            }
+        }
+        
+        if (slash == std::string::npos) break;
+        pos = slash + 1;
+    }
+    
+    // Verify the final path exists
+    if (m_dirents.find(current) == m_dirents.end()) {
+        return "";
+    }
+    return current;
+}
+
+std::string Fat32Volume::findPathInDirectory(const std::string& parentPath, const std::string& name) const {
+    // First try exact match
+    std::string fullPath = (parentPath == "/") ? ("/" + name) : (parentPath + "/" + name);
+    if (m_dirents.find(fullPath) != m_dirents.end()) {
+        return fullPath;
+    }
+    
+    // Try case-insensitive match in parent directory
+    auto it = m_dirents.find(parentPath);
+    if (it == m_dirents.end() || !it->second.isDirectory) {
+        return "";
+    }
+    
+    const auto& parent = it->second;
+    for (const auto& [childName, childPtr] : parent.children) {
+        // Case-insensitive comparison
+        if (childName.size() == name.size()) {
+            bool matches = true;
+            for (size_t i = 0; i < childName.size(); ++i) {
+                if (std::tolower(childName[i]) != std::tolower(name[i])) {
+                    matches = false;
+                    break;
+                }
+            }
+            if (matches) {
+                return (parentPath == "/") ? ("/" + childName) : (parentPath + "/" + childName);
+            }
+        }
+    }
+    
+    // Try matching against short name version
+    std::string shortName = createShortName(name);
+    fullPath = (parentPath == "/") ? ("/" + shortName) : (parentPath + "/" + shortName);
+    if (m_dirents.find(fullPath) != m_dirents.end()) {
+        return fullPath;
+    }
+    
+    // Try case-insensitive on short name
+    for (const auto& [childName, childPtr] : parent.children) {
+        if (childName.size() == shortName.size()) {
+            bool matches = true;
+            for (size_t i = 0; i < childName.size(); ++i) {
+                if (std::tolower(childName[i]) != std::tolower(shortName[i])) {
+                    matches = false;
+                    break;
+                }
+            }
+            if (matches) {
+                return (parentPath == "/") ? ("/" + childName) : (parentPath + "/" + childName);
+            }
+        }
+    }
+    
+    return "";
 }
