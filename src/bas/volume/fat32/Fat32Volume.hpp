@@ -2,12 +2,14 @@
 #define FAT32VOLUME_H
 
 #include "../Volume.hpp"
+#include "../MountOptions.hpp"
 
 #include <cstdint>
 #include <ctime>
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <memory>
 
 class Fat32Volume : public Volume {
   public:
@@ -31,7 +33,15 @@ class Fat32Volume : public Volume {
 
 private:
     std::string m_imagePath;
+    
+    // Memory-backed support
+    const uint8_t* m_memoryRegion = nullptr;
+    size_t m_memorySize = 0;
     uint64_t m_imageSize = 0;
+    bool m_ownMemory = false;  // If true, we own the memory and will free it
+    std::unique_ptr<uint8_t[]> m_managedMemory;  // Owned memory buffer
+    
+    MountOptions m_mountOptions;
 
     uint16_t m_bytesPerSector = 0;
     uint8_t m_sectorsPerCluster = 0;
@@ -47,10 +57,17 @@ private:
     mutable std::unordered_map<std::string, Dirent> m_dirents;
 
   public:
+    // File-backed volume
     explicit Fat32Volume(std::string_view imagePath);
+    
+    // Memory-backed volume
+    explicit Fat32Volume(const uint8_t* memoryRegion, size_t size);
+    
+    // Volume with mount options
+    explicit Fat32Volume(const MountOptions& options);
 
     std::string getClass() const override { return "fat32"; }
-    std::string getId() const override { return m_imagePath; }
+    std::string getId() const override { return m_mountOptions.isMemoryBacked() ? "memory" : m_imagePath; }
     VolumeType getType() const override { return VolumeType::ARCHIVE; }
     std::string getSource() const override;
     bool isLocal() const override { return false; }

@@ -4,6 +4,7 @@
 #include "IUserDb.hpp"
 
 #include "../Volume.hpp"
+#include "../MountOptions.hpp"
 
 #include <cstdint>
 #include <ctime>
@@ -51,6 +52,12 @@ class Ext4Volume : public Volume {
 
 private:
     std::string m_imagePath;
+    
+    // Memory-backed support
+    const uint8_t* m_memoryRegion = nullptr;
+    size_t m_memorySize = 0;
+    MountOptions m_mountOptions;
+    
     mutable std::unordered_map<std::string, ino_t> m_files; // normalized-path -> ino
     mutable std::unordered_map<ino_t, Inode> m_nodes;
     mutable std::unordered_map<ino_t, RtNodeObj> m_rtnodes;
@@ -62,7 +69,15 @@ private:
     std::vector<int> m_contextGroupIds;
 
   public:
+    // File-backed volume
     explicit Ext4Volume(std::string_view imagePath);
+    
+    // Memory-backed volume
+    explicit Ext4Volume(const uint8_t* memoryRegion, size_t size);
+    
+    // Volume with mount options
+    explicit Ext4Volume(const MountOptions& options);
+    
     ~Ext4Volume() override;
 
     void setUserDb(IUserDb* userDb);

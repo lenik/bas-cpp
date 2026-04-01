@@ -23,10 +23,44 @@ namespace {
 constexpr uint32_t kRootInode = 2;
 }
 
-Ext4Volume::Ext4Volume(std::string_view imagePath) : m_imagePath(imagePath) {
+Ext4Volume::Ext4Volume(std::string_view imagePath) 
+    : m_imagePath(imagePath)
+    , m_mountOptions(MountOptions::file(std::string(imagePath)))
+{
     if (m_imagePath.empty()) {
         throw std::invalid_argument("Ext4Volume: image path is required");
     }
+    buildIndex();
+}
+
+Ext4Volume::Ext4Volume(const uint8_t* memoryRegion, size_t size)
+    : m_memoryRegion(memoryRegion)
+    , m_memorySize(size)
+    , m_mountOptions(MountOptions::memory(memoryRegion, size))
+{
+    if (!memoryRegion || size == 0) {
+        throw std::invalid_argument("Ext4Volume: invalid memory region");
+    }
+    buildIndex();
+}
+
+Ext4Volume::Ext4Volume(const MountOptions& options)
+    : m_mountOptions(options)
+{
+    if (options.isMemoryBacked()) {
+        // Memory-backed
+        if (!options.memoryRegion || options.memorySize == 0) {
+            throw std::invalid_argument("Ext4Volume: invalid memory region in options");
+        }
+        m_memoryRegion = options.memoryRegion;
+        m_memorySize = options.memorySize;
+    } else if (options.isFileBacked()) {
+        // File-backed
+        m_imagePath = options.imagePath;
+    } else {
+        throw std::invalid_argument("Ext4Volume: must specify either file or memory region");
+    }
+    
     buildIndex();
 }
 
@@ -230,6 +264,15 @@ void Ext4Volume::buildIndex() {
     m_nodes.clear();
     m_rtnodes.clear();
     m_mem.clear();
+
+    // For memory-backed volumes, ext2fs would need a custom I/O manager
+    // For now, we only support file-backed ext4 volumes in buildIndex
+    // Memory-backed ext4 requires implementing a custom io_manager
+    if (m_memoryRegion != nullptr) {
+        // TODO: Implement custom io_manager for memory-backed ext4
+        // For now, throw an error
+        throw IOException("Ext4Volume", "memory", "Memory-backed ext4 requires custom I/O manager (not yet implemented)");
+    }
 
     ext2_filsys fs = nullptr;
     errcode_t rc = ext2fs_open(m_imagePath.c_str(), EXT2_FLAG_64BITS, 0, 0, unix_io_manager, &fs);

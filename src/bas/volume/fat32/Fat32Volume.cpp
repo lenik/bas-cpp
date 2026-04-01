@@ -32,7 +32,10 @@ void Fat32Volume::Dirent::copyTo(DirNode& node) const {
     node.mode = static_cast<int>((isDirectory ? S_IFDIR : S_IFREG) | 0444);
 }
 
-Fat32Volume::Fat32Volume(std::string_view imagePath) : m_imagePath(imagePath) {
+Fat32Volume::Fat32Volume(std::string_view imagePath) 
+    : m_imagePath(imagePath)
+    , m_mountOptions(MountOptions::file(std::string(imagePath)))
+{
     if (m_imagePath.empty()) {
         throw std::invalid_argument("Fat32Volume: image path is required");
     }
@@ -47,6 +50,51 @@ Fat32Volume::Fat32Volume(std::string_view imagePath) : m_imagePath(imagePath) {
     }
     m_imageSize = static_cast<uint64_t>(size);
 
+    parseBootSector();
+    buildIndex();
+}
+
+Fat32Volume::Fat32Volume(const uint8_t* memoryRegion, size_t size)
+    : m_memoryRegion(memoryRegion)
+    , m_memorySize(size)
+    , m_imageSize(size)
+    , m_mountOptions(MountOptions::memory(memoryRegion, size))
+{
+    if (!memoryRegion || size == 0) {
+        throw std::invalid_argument("Fat32Volume: invalid memory region");
+    }
+    
+    parseBootSector();
+    buildIndex();
+}
+
+Fat32Volume::Fat32Volume(const MountOptions& options)
+    : m_mountOptions(options)
+{
+    if (options.isMemoryBacked()) {
+        // Memory-backed
+        if (!options.memoryRegion || options.memorySize == 0) {
+            throw std::invalid_argument("Fat32Volume: invalid memory region in options");
+        }
+        m_memoryRegion = options.memoryRegion;
+        m_memorySize = options.memorySize;
+        m_imageSize = options.memorySize;
+    } else if (options.isFileBacked()) {
+        // File-backed
+        m_imagePath = options.imagePath;
+        std::ifstream in(m_imagePath, std::ios::binary | std::ios::ate);
+        if (!in.is_open()) {
+            throw IOException("Fat32Volume", m_imagePath, "Failed to open image file");
+        }
+        const std::streamoff size = in.tellg();
+        if (size <= 0) {
+            throw IOException("Fat32Volume", m_imagePath, "Image file is empty");
+        }
+        m_imageSize = static_cast<uint64_t>(size);
+    } else {
+        throw std::invalid_argument("Fat32Volume: must specify either file or memory region");
+    }
+    
     parseBootSector();
     buildIndex();
 }
@@ -561,6 +609,14 @@ bool Fat32Volume::readAt(uint64_t offset, uint8_t* dst, size_t len) const {
     if (!dst || len == 0 || offset + len > m_imageSize) {
         return false;
     }
+    
+    // Memory-backed: copy from memory region
+    if (m_memoryRegion != nullptr) {
+        memcpy(dst, m_memoryRegion + offset, len);
+        return true;
+    }
+    
+    // File-backed: read from file
     std::ifstream in(m_imagePath, std::ios::binary);
     if (!in.is_open()) {
         return false;
