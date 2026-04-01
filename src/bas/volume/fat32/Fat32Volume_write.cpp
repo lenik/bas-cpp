@@ -233,31 +233,33 @@ void Fat32Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::strin
         throw IOException("renameFile", std::string(newPath), "Destination already exists");
     }
 
-    // Check if parent directory exists for new path
+    // Get parent directory for new path
     const std::string newParent = getParentPath(newNormalized);
     auto parentIt = m_dirents.find(newParent);
     if (parentIt == m_dirents.end() || !parentIt->second.isDirectory) {
         throw IOException("renameFile", std::string(newPath), "Parent directory does not exist");
     }
 
-    // Create new entry with same data
+    // Create new entry with same data (use short name for consistency)
     Dirent dirent = oldIt->second;
-    m_dirents[newNormalized] = dirent;
     
-    // Debug: check if new entry is in memory
-    if (m_dirents.find(newNormalized) == m_dirents.end()) {
-        throw IOException("renameFile", std::string(newPath), "Failed to create new entry in memory");
-    }
+    // Convert new path to short name for disk consistency
+    std::string newFileName = getFileName(newNormalized);
+    newFileName = createShortName(newFileName);
+    const std::string newShortPath = (newParent == "/") ? ("/" + newFileName) : (newParent + "/" + newFileName);
+    
+    m_dirents[newShortPath] = dirent;
     
     // Write new entry to disk
-    writeDirectoryEntryToDisk(newNormalized, dirent);
+    writeDirectoryEntryToDisk(newShortPath, dirent);
 
-    // Remove old entry from memory
-    m_dirents.erase(actualOldPath);
-    
-    // Mark old entry as deleted on disk
+    // Get old entry info before erasing
     const std::string oldParent = getParentPath(actualOldPath);
-    const std::string oldFileName = getFileName(actualOldPath);
+    std::string oldFileName = getFileName(actualOldPath);
+    // Convert to short name to match what's on disk
+    oldFileName = createShortName(oldFileName);
+    
+    // Mark old entry as deleted on disk FIRST (before erasing from memory)
     auto oldParentIt = m_dirents.find(oldParent);
     if (oldParentIt != m_dirents.end() && oldParentIt->second.isDirectory) {
         uint32_t oldParentCluster = oldParentIt->second.firstCluster;
@@ -266,6 +268,9 @@ void Fat32Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::strin
         }
         markDirectoryEntryAsDeleted(oldParentCluster, oldFileName);
     }
+    
+    // Remove old entry from memory
+    m_dirents.erase(actualOldPath);
     
     // Invalidate index to force re-read from disk with updated state
     invalidateIndex();
