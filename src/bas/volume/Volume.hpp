@@ -11,9 +11,11 @@
 
 #include <cstdint>
 #include <deque>
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
+#include <unconst>
 #include <vector>
 
 enum class VolumeType {
@@ -66,14 +68,6 @@ struct ListOptions {
  * Simplified generic volume interface for file system abstraction
  */
 class Volume {
-  private:
-    mutable std::string m_uuid;
-    mutable std::string m_serial;
-    mutable std::string m_label;
-    mutable bool m_uuid_cached = false;
-    mutable bool m_serial_cached = false;
-    mutable bool m_label_cached = false;
-
   protected:
     friend class AccessControlledVolume;
     virtual std::string getDefaultLabel() const = 0;
@@ -86,31 +80,30 @@ class Volume {
 
     // Volume info
     virtual std::string getClass() const = 0; // "local", "seczure", etc.
-    virtual std::string getId() const = 0;
-    inline std::string getClassId() const { return getClass() + ":" + getId(); }
+    virtual std::string getUrl() const = 0;
+    virtual std::string getDeviceUrl() const = 0;
 
     virtual VolumeType getType() const = 0;
     virtual std::string getTypeString() const;
 
-    /** Human-readable backing source, e.g. "dev /dev/sda1", "dir /path", "img /file.ext2", "mem
-     * #addr". */
-    virtual std::string getSource() const;
-
     virtual bool isEncrypted() const { return false; }
     virtual bool isLocal() const { return false; }
-    virtual std::string getLocalFile(std::string_view path) const = 0;
+    virtual std::optional<std::string> getLocalFile(std::string_view path) const { return std::nullopt; }
 
     // default implementation: by file .rc/UUID
-    virtual std::string getUUID();
+    virtual std::string getUUID() const;
 
     // default implementation: by file .rc/SERIAL
-    virtual std::string getSerial();
+    virtual std::string getSerial() const;
 
     // default implementation: by file .rc/LABEL
-    virtual std::string getLabel();
+    virtual std::string getLabel() const;
     virtual void setLabel(std::string_view label);
 
+    std::unique_ptr<const VolumeFile> getRootFile() const;
     std::unique_ptr<VolumeFile> getRootFile();
+    
+    std::unique_ptr<const VolumeFile> resolve(std::string_view path) const;
     std::unique_ptr<VolumeFile> resolve(std::string_view path);
 
     // check if path is valid, returns normalized form.
@@ -266,13 +259,33 @@ class Volume {
     virtual void renameFileThrowsUnchecked(std::string_view src, std::string_view dest) = 0;
 
   private:
-    std::string readRCFile(std::string_view name);
+    std::string readRCFile(std::string_view name) const;
     bool writeRCFile(std::string_view name, std::string_view data);
+
+  private:
+    __unconst std::string c_uuid;
+    __unconst std::string c_serial;
+    __unconst std::string c_label;
+    __unconst bool c_uuid_valid = false;
+    __unconst bool c_serial_valid = false;
+    __unconst bool c_label_valid = false;
 
     int m_priority = 0;
     std::string m_uuidFile = "UUID";
     std::string m_serialFile = "SERIAL";
     std::string m_labelFile = "LABEL";
+    
+    // FSLang integration
+    struct ExecutionResult {
+        bool success = false;
+        std::string error;
+        int failedLine = 0;
+    };
+    
+    ExecutionResult run(const std::string& fslangSource, 
+                       std::optional<std::function<void()>> commitCallback = std::nullopt);
+    
+    std::string deepHash() const;
 };
 
 #endif // IVOLUME_H

@@ -5,20 +5,18 @@
 #include "Fat32FileInputStream.hpp"
 #include "Fat32FileOutputStream.hpp"
 
+#include "../BlockDevice.hpp"
 #include "../../io/IOException.hpp"
 #include "../../io/PrintStream.hpp"
 #include "../../io/StringReader.hpp"
-#include "../../io/BlockDevice.hpp"
 
 #include <algorithm>
 #include <cctype>
 #include <chrono>
 #include <cstring>
 #include <ctime>
-#include <fstream>
 #include <stdexcept>
 #include <sys/stat.h>
-#include <unordered_set>
 
 void Fat32Volume::Dirent::copyTo(DirNode& node) const {
     if (isDirectory) {
@@ -33,68 +31,14 @@ void Fat32Volume::Dirent::copyTo(DirNode& node) const {
     node.mode = static_cast<int>((isDirectory ? S_IFDIR : S_IFREG) | 0444);
 }
 
-Fat32Volume::Fat32Volume(std::string_view imagePath) 
-    : m_imagePath(imagePath)
-    , m_mountOptions(MountOptions::file(std::string(imagePath)))
-{
-    if (m_imagePath.empty()) {
-        throw std::invalid_argument("Fat32Volume: image path is required");
-    }
-    
-    m_device = createFileDevice(m_imagePath);
-    parseBootSector();
-    buildIndex();
-}
-
-Fat32Volume::Fat32Volume(const uint8_t* memoryRegion, size_t size)
-    : m_mountOptions(MountOptions::memory(memoryRegion, size))
-{
-    if (!memoryRegion || size == 0) {
-        throw std::invalid_argument("Fat32Volume: invalid memory region");
-    }
-    
-    m_device = createMemDevice(memoryRegion, size);
-    parseBootSector();
-    buildIndex();
-}
-
-Fat32Volume::Fat32Volume(const MountOptions& options)
-    : m_mountOptions(options)
-{
-    if (options.isMemoryBacked()) {
-        // Memory-backed
-        if (!options.memoryRegion || options.memorySize == 0) {
-            throw std::invalid_argument("Fat32Volume: invalid memory region in options");
-        }
-        m_device = createMemDevice(options.memoryRegion, options.memorySize);
-    } else if (options.isFileBacked()) {
-        // File-backed
-        m_imagePath = options.imagePath;
-        m_device = createFileDevice(m_imagePath);
-    } else {
-        throw std::invalid_argument("Fat32Volume: must specify either file or memory region");
-    }
-    
-    parseBootSector();
-    buildIndex();
-}
-
-Fat32Volume::Fat32Volume(std::shared_ptr<BlockDevice> device)
+Fat32Volume::Fat32Volume(std::shared_ptr<BlockDevice> device, const Fat32Options& options)
     : m_device(device)
+    , m_options(options)
 {
-    if (!m_device || !m_device->isOpen()) {
-        throw std::invalid_argument("Fat32Volume: invalid block device");
-    }
-    
     parseBootSector();
     buildIndex();
 }
-
 std::string Fat32Volume::getDefaultLabel() const { return "FAT32 Image"; }
-
-std::string Fat32Volume::getLocalFile(std::string_view /*path*/) const { return ""; }
-
-std::string Fat32Volume::getSource() const { return "fat32 " + m_imagePath; }
 
 bool Fat32Volume::exists(std::string_view path) const {
     return ensurePathIndexed(path);

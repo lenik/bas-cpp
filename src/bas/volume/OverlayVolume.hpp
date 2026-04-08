@@ -41,12 +41,13 @@ class OverlayVolume : public Volume {
     void removeLayer(Volume* vol);
 
     std::string getClass() const override;
-    std::string getId() const override;
+    std::string getUrl() const override;
+    std::string getDeviceUrl() const override;
     VolumeType getType() const override;
-    std::string getSource() const override;
 
     void setClass(std::string_view c) { m_class = std::string(c); }
-    void setId(std::string_view id) { m_id = std::string(id); }
+    void setUrl(std::string_view url) { m_url = std::string(url); }
+    void setDeviceUrl(std::string_view url) { m_deviceUrl = std::string(url); }
     void setVolumeType(VolumeType t) { m_volumeType = t; }
 
     std::string getUUID() override;
@@ -57,7 +58,7 @@ class OverlayVolume : public Volume {
     void setSerial(std::string_view s);
     void setLabel(std::string_view label) override;
 
-    std::string getLocalFile(std::string_view path) const override;
+    std::optional<std::string> getLocalFile(std::string_view path) const override;
 
     bool exists(std::string_view path) const override;
     bool isFile(std::string_view path) const override;
@@ -92,8 +93,9 @@ class OverlayVolume : public Volume {
   private:
     std::vector<Volume*> m_layers;
     std::string m_class = "overlay";
-    std::string m_id;
-    VolumeType m_volumeType = VolumeType::OTHER;
+    std::string m_url = "overlay:";
+    std::string m_deviceUrl = "none";
+    std::optional<VolumeType> m_volumeType = std::nullopt;
 
     bool user_attrs = true;
     std::string m_uuid;

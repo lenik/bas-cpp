@@ -3,7 +3,6 @@
 #include "VolumeExceptions.hpp"
 #include "VolumeFile.hpp"
 
-#include "../io/IOException.hpp"
 #include "../io/InputStream.hpp"
 #include "../io/PrintStream.hpp"
 #include "../io/ReversedReader.hpp"
@@ -45,8 +44,8 @@ std::string volumeTypeToString(VolumeType t) {
     }
 }
 
-std::string Volume::readRCFile(std::string_view name) {
-    std::unique_ptr<VolumeFile> rcDir = resolve("/.rc");
+std::string Volume::readRCFile(std::string_view name) const {
+    std::unique_ptr<const VolumeFile> rcDir = resolve("/.rc");
     try {
         if (!rcDir->exists()) {
             return getDefaultLabel();
@@ -78,48 +77,46 @@ bool Volume::writeRCFile(std::string_view name, std::string_view data) {
 
 std::string Volume::getTypeString() const { return volumeTypeToString(getType()); }
 
-std::string Volume::getSource() const { return getClass() + " " + getId(); }
-
-std::string Volume::getUUID() {
-    if (m_uuid_cached)
-        return m_uuid;
-    m_uuid = readRCFile(m_uuidFile);
-    m_uuid_cached = true;
-    return m_uuid;
+std::string Volume::getUUID() const {
+    if (c_uuid_valid)
+        return c_uuid;
+    c_uuid = readRCFile(m_uuidFile);
+    c_uuid_valid = true;
+    return c_uuid;
 }
 
 void Volume::setUUIDForced(std::string_view u) {
     writeRCFile(m_uuidFile, u);
-    m_uuid = std::string(u);
-    m_uuid_cached = true;
+    c_uuid = std::string(u);
+    c_uuid_valid = true;
 }
 
-std::string Volume::getSerial() {
-    if (m_serial_cached)
-        return m_serial;
-    m_serial = readRCFile(m_serialFile);
-    m_serial_cached = true;
-    return m_serial;
+std::string Volume::getSerial() const {
+    if (c_serial_valid)
+        return c_serial;
+    c_serial = readRCFile(m_serialFile);
+    c_serial_valid = true;
+    return c_serial;
 }
 
 void Volume::setSerialForced(std::string_view s) {
     writeRCFile(m_serialFile, s);
-    m_serial = std::string(s);
-    m_serial_cached = true;
+    c_serial = std::string(s);
+    c_serial_valid = true;
 }
 
-std::string Volume::getLabel() {
-    if (m_label_cached)
-        return m_label;
-    m_label = readRCFile(m_labelFile);
-    m_label_cached = true;
-    return m_label;
+std::string Volume::getLabel() const {
+    if (c_label_valid)
+        return c_label;
+    c_label = readRCFile(m_labelFile);
+    c_label_valid = true;
+    return c_label;
 }
 
 void Volume::setLabel(std::string_view label) {
     if (writeRCFile(m_labelFile, label)) {
-        m_label = label;
-        m_label_cached = true;
+        c_label = label;
+        c_label_valid = true;
     } else {
         logerror_fmt("Failed to write to LABEL file");
     }
@@ -129,10 +126,10 @@ std::unique_ptr<VolumeFile> Volume::getRootFile() {
     return std::make_unique<VolumeFile>(this, std::string("/"));
 }
 
-std::unique_ptr<VolumeFile> Volume::resolve(std::string_view path) {
-    return std::make_unique<VolumeFile>(this, std::string(path));
+std::unique_ptr<const VolumeFile> Volume::resolve(std::string_view path) const {
+    return std::make_unique<const VolumeFile>(this, std::string(path));
 }
-
+          
 std::string Volume::normalizeArg(std::string_view path, std::optional<std::string> fallback) const {
     if (path.empty()) {
         if (fallback) {

@@ -1,0 +1,82 @@
+# ext4 Basic Functionality Test
+# Tests core filesystem operations on ext4
+
+# === Directory Operations ===
+print "Testing ext4 directory operations..."
+
+mkdir "/ext4_test"
+mkdir "/ext4_test/subdir1"
+mkdir "/ext4_test/subdir2"
+mkdir "/ext4_test/subdir1/nested"
+
+cd "/ext4_test"
+mkdir "relative_dir"
+cd "/"
+
+# === File Creation ===
+print "Testing ext4 file creation..."
+
+# UTF-8 content
+put "/ext4_test/hello.txt" "Hello from ext4!"
+put "/ext4_test/subdir1/data.txt" "Nested ext4 content"
+put "/ext4_test/subdir1/nested/deep.txt" "Deep nested ext4 content"
+
+# Hex content (binary)
+put "/ext4_test/binary.bin" h"CAFEBABE"
+put "/ext4_test/empty.bin" h""
+put "/ext4_test/pattern.bin" h"00112233445566778899AABBCCDDEEFF"
+
+# === File Verification ===
+print "Testing ext4 file verification..."
+
+check "/ext4_test/hello.txt" "Hello from ext4!"
+check "/ext4_test/subdir1/data.txt" "Nested ext4 content"
+check "/ext4_test/subdir1/nested/deep.txt" "Deep nested ext4 content"
+check "/ext4_test/binary.bin" h"CAFEBABE"
+check "/ext4_test/pattern.bin" h"00112233445566778899AABBCCDDEEFF"
+
+# === Copy Operations ===
+print "Testing ext4 copy operations..."
+
+copy "/ext4_test/hello.txt" "/ext4_test/hello_copy.txt"
+copy "/ext4_test/hello.txt" "/ext4_test/subdir2/hello_in_subdir.txt"
+check "/ext4_test/hello_copy.txt" "Hello from ext4!"
+check "/ext4_test/subdir2/hello_in_subdir.txt" "Hello from ext4!"
+
+# === Move Operations ===
+print "Testing ext4 move operations..."
+
+put "/ext4_test/to_move.txt" "Will be moved in ext4"
+move "/ext4_test/to_move.txt" "/ext4_test/subdir1/moved.txt"
+check "/ext4_test/subdir1/moved.txt" "Will be moved in ext4"
+
+# === Rename Operations ===
+print "Testing ext4 rename operations..."
+
+put "/ext4_test/rename_me.txt" "ext4 content stays same"
+rename "/ext4_test/rename_me.txt" "renamed.txt"
+check "/ext4_test/renamed.txt" "ext4 content stays same"
+
+# === Delete Operations ===
+print "Testing ext4 delete operations..."
+
+delete "/ext4_test/hello_copy.txt"
+delete "/ext4_test/subdir2"
+
+# === Directory Listing ===
+print "Testing ext4 directory listing..."
+ls "/ext4_test"
+ls "/ext4_test/subdir1"
+
+# === Hash Computation ===
+print "Computing ext4 filesystem hash..."
+hash "ext4_hash"
+print "ext4 hash: ${ext4_hash}"
+
+# === Final Verification ===
+print "Running ext4 final verification..."
+check "/ext4_test/hello.txt" "Hello from ext4!"
+check "/ext4_test/renamed.txt" "ext4 content stays same"
+check "/ext4_test/subdir1/moved.txt" "Will be moved in ext4"
+
+print "✓ All ext4 basic tests passed!"

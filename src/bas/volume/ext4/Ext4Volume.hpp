@@ -3,8 +3,9 @@
 
 #include "IUserDb.hpp"
 
-#include "../Volume.hpp"
+#include "../BlockDevice.hpp"
 #include "../MountOptions.hpp"
+#include "../Volume.hpp"
 
 #include <cstdint>
 #include <ctime>
@@ -14,6 +15,15 @@
 #include <vector>
 
 typedef std::vector<uint8_t> ByteArray;
+
+/**
+ * ext4 filesystem mount options.
+ */
+ struct Ext4Options : public MountOptions {
+    
+    /** Use journaling (if supported) */
+    bool journal = true;
+};
 
 class Ext4Volume : public Volume {
   public:
@@ -51,12 +61,8 @@ class Ext4Volume : public Volume {
     };
 
 private:
-    std::string m_imagePath;
-    
-    // Memory-backed support
-    const uint8_t* m_memoryRegion = nullptr;
-    size_t m_memorySize = 0;
-    MountOptions m_mountOptions;
+    std::shared_ptr<BlockDevice> m_device;
+    Ext4Options m_options;
     
     mutable std::unordered_map<std::string, ino_t> m_files; // normalized-path -> ino
     mutable std::unordered_map<ino_t, Inode> m_nodes;
@@ -69,14 +75,8 @@ private:
     std::vector<int> m_contextGroupIds;
 
   public:
-    // File-backed volume
-    explicit Ext4Volume(std::string_view imagePath);
-    
-    // Memory-backed volume
-    explicit Ext4Volume(const uint8_t* memoryRegion, size_t size);
-    
     // Volume with mount options
-    explicit Ext4Volume(const MountOptions& options);
+    explicit Ext4Volume(std::shared_ptr<BlockDevice> device, const Ext4Options& options);
     
     ~Ext4Volume() override;
 
@@ -86,11 +86,10 @@ private:
     int getContextGid() const { return m_contextGid; }
 
     std::string getClass() const override { return "ext"; }
-    std::string getId() const override { return m_imagePath; }
+    std::string getUrl() const override { return "ext4:" + m_device->uri(); }
+    std::string getDeviceUrl() const override { return m_device->uri(); }
     VolumeType getType() const override { return VolumeType::ARCHIVE; }
-    std::string getSource() const override;
     bool isLocal() const override { return false; }
-    std::string getLocalFile(std::string_view path) const override;
 
     bool exists(std::string_view path) const override;
     bool isFile(std::string_view path) const override;

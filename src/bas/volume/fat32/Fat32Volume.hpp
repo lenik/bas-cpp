@@ -1,20 +1,31 @@
 #ifndef FAT32VOLUME_H
 #define FAT32VOLUME_H
 
-#include "../Volume.hpp"
+#include "../BlockDevice.hpp"
 #include "../MountOptions.hpp"
-#include "../../io/BlockDevice.hpp"
+#include "../Volume.hpp"
 
 #include <cstdint>
 #include <ctime>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
-#include <memory>
+
+/**
+ * FAT32 filesystem mount options.
+ */
+struct Fat32Options : public MountOptions {
+
+    /** Use short names (8.3 format) */
+    bool useShortNames = true;
+
+    /** Create LFN entries (not fully supported) */
+    bool createLFN = false;
+};
 
 class Fat32Volume : public Volume {
   public:
-
     struct Dirent;
     using DirentObj = std::shared_ptr<Dirent>;
     using DirentRef = std::weak_ptr<Dirent>;
@@ -32,11 +43,9 @@ class Fat32Volume : public Volume {
         void copyTo(DirNode& node) const;
     };
 
-private:
-    std::string m_imagePath;
-    std::shared_ptr<BlockDevice> m_device;  // Block device abstraction
-    
-    MountOptions m_mountOptions;
+  private:
+    std::shared_ptr<BlockDevice> m_device; // Block device abstraction
+    Fat32Options m_options;
 
     uint16_t m_bytesPerSector = 0;
     uint8_t m_sectorsPerCluster = 0;
@@ -52,24 +61,17 @@ private:
     mutable std::unordered_map<std::string, Dirent> m_dirents;
 
   public:
-    // File-backed volume
-    explicit Fat32Volume(std::string_view imagePath);
-    
-    // Memory-backed volume
-    explicit Fat32Volume(const uint8_t* memoryRegion, size_t size);
-    
-    // Volume with mount options
-    explicit Fat32Volume(const MountOptions& options);
-    
-    // Volume with block device
-    explicit Fat32Volume(std::shared_ptr<BlockDevice> device);
+    /**
+     * Create FAT32 volume from block device (legacy).
+     * @param device Block device
+     */
+    explicit Fat32Volume(std::shared_ptr<BlockDevice> device, const Fat32Options& options);
 
     std::string getClass() const override { return "fat32"; }
-    std::string getId() const override { return m_device ? m_device->name() : m_imagePath; }
+    std::string getUrl() const override { return "fat32:" + m_device->uri(); }
+    std::string getDeviceUrl() const override { return m_device->uri(); }
     VolumeType getType() const override { return VolumeType::ARCHIVE; }
-    std::string getSource() const override;
     bool isLocal() const override { return false; }
-    std::string getLocalFile(std::string_view path) const override;
 
     bool exists(std::string_view path) const override;
     bool isFile(std::string_view path) const override;
@@ -130,18 +132,18 @@ private:
     void freeClusterChain(uint32_t firstCluster);
     void writeClusterChain(uint32_t firstCluster, const std::vector<uint8_t>& data);
     uint32_t findFreeCluster() const;
-    
+
     void createFileEntry(std::string_view path, uint32_t firstCluster, uint32_t size);
     void updateFileEntry(std::string_view path, uint32_t firstCluster, uint32_t size);
     void deleteFileEntry(std::string_view path);
     void createDirectoryEntry(std::string_view path, uint32_t firstCluster);
     void deleteDirectoryEntry(std::string_view path);
-    
+
     std::string getParentPath(std::string_view path) const;
     std::string getFileName(std::string_view path) const;
-    
+
     void invalidateIndex();
-    
+
     // Directory entry writing to disk
     void writeDirectoryEntryToDisk(std::string_view path, const Dirent& dirent);
     void updateDirectoryEntryOnDisk(std::string_view path, const Dirent& dirent);
@@ -149,14 +151,15 @@ private:
     uint32_t findFreeDirEntrySlot(uint32_t dirCluster);
     uint32_t findFreeDirEntrySlots(uint32_t dirCluster, uint32_t count);
     void expandDirectoryIfNeeded(uint32_t dirCluster);
-    
+
     // LFN support
-    void writeLFNEntries(uint32_t dirCluster, uint32_t slotOffset, const std::string& longName, uint8_t checksum);
+    void writeLFNEntries(uint32_t dirCluster, uint32_t slotOffset, const std::string& longName,
+                         uint8_t checksum);
     std::vector<std::string> splitLFNChunks(const std::string& longName);
     uint8_t calculateLFNChecksum(const std::string& shortName);
     uint8_t calculateLFNChecksumForShortName(const std::string& longName);
     std::string createShortName(const std::string& longName) const;
-    
+
     // Path lookup helpers
     std::string findPathInDirectory(const std::string& parentPath, const std::string& name) const;
     std::string toShortNamePath(const std::string& path) const;

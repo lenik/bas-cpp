@@ -17,7 +17,7 @@ enum class LocalLogicalType {
  * Local filesystem volume implementation
  */
 class LocalVolume : public Volume {
-private:
+  private:
     std::string m_rootPath;
     std::string m_label;
     mutable std::string m_cachedUUID;
@@ -30,7 +30,7 @@ private:
     mutable bool m_readOnly = false;
     mutable bool m_mountInfoCached = false;
     mutable MountInfo m_mountInfo;
-    
+
 #if defined(__linux__)
     bool isMountPoint(const std::string& path) const;
     std::string getMountDevice(const std::string& mountPoint) const;
@@ -41,18 +41,18 @@ private:
 
 #endif
 
-public:
+  public:
     explicit LocalVolume(std::string_view rootPath);
     virtual ~LocalVolume() = default;
-    
+
     std::string_view getRootPath() const { return m_rootPath; }
     void setRootPath(std::string_view rootPath);
 
     std::string getClass() const override { return "local"; }
-    std::string getId() const override { return m_rootPath; }
+    std::string getUrl() const override { return "local:" + m_rootPath; }
+    std::string getDeviceUrl() const override { return m_rootPath; }
     VolumeType getType() const override;
-    std::string getSource() const override;
-    
+
     bool isLocal() const override { return true; }
     std::string getLocalFile(std::string_view path) const override { return normalize(path); }
     std::string getUUID() override;
@@ -73,23 +73,29 @@ public:
     bool isFile(std::string_view path) const override;
     bool isDirectory(std::string_view path) const override;
     bool stat(std::string_view path, DirNode* status) const override;
-    
+
     void readDir_inplace(DirNode& context, std::string_view path, bool recursive = false) override;
-    
-    // std::unique_ptr<IReadStream> openForRead(std::string_view path, std::string_view encoding = "UTF-8") override;
-    // std::unique_ptr<IWriteStream> openForWrite(std::string_view path, bool append = false, std::string_view encoding = "UTF-8") override;
+
+    // std::unique_ptr<IReadStream> openForRead(std::string_view path, std::string_view encoding =
+    // "UTF-8") override; std::unique_ptr<IWriteStream> openForWrite(std::string_view path, bool
+    // append = false, std::string_view encoding = "UTF-8") override;
     std::unique_ptr<InputStream> newInputStream(std::string_view path) override;
-    std::unique_ptr<OutputStream> newOutputStream(std::string_view path, bool append = false) override;
-    std::unique_ptr<Reader> newReader(std::string_view path, std::string_view encoding = "UTF-8") override;
-    std::unique_ptr<Writer> newWriter(std::string_view path, bool append = false, std::string_view encoding = "UTF-8") override;
+    std::unique_ptr<OutputStream> newOutputStream(std::string_view path,
+                                                  bool append = false) override;
+    std::unique_ptr<Reader> newReader(std::string_view path,
+                                      std::string_view encoding = "UTF-8") override;
+    std::unique_ptr<Writer> newWriter(std::string_view path, bool append = false,
+                                      std::string_view encoding = "UTF-8") override;
 
     std::unique_ptr<RandomInputStream> newRandomInputStream(std::string_view path) override;
-    std::unique_ptr<RandomReader> newRandomReader(std::string_view path, std::string_view encoding = "UTF-8") override;
+    std::unique_ptr<RandomReader> newRandomReader(std::string_view path,
+                                                  std::string_view encoding = "UTF-8") override;
 
     std::string getTempDir() override;
-    std::string createTempFile(std::string_view prefix = "tmp.", std::string_view suffix = "") override;
+    std::string createTempFile(std::string_view prefix = "tmp.",
+                               std::string_view suffix = "") override;
 
-protected:
+  protected:
     std::string getDefaultLabel() const override;
 
     std::string resolveLocal(std::string_view path) const;
@@ -99,11 +105,10 @@ protected:
     void copyFileThrowsUnchecked(std::string_view src, std::string_view dest) override;
     void moveFileThrowsUnchecked(std::string_view src, std::string_view dest) override;
     void renameFileThrowsUnchecked(std::string_view oldPath, std::string_view newPath) override;
-    
+
     std::vector<uint8_t> readFileUnchecked(std::string_view path, int64_t off = 0,
                                            size_t len = 0) override;
     void writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) override;
-    
 };
 
 #endif // LOCALVOLUME_H

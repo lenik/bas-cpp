@@ -23,44 +23,10 @@ namespace {
 constexpr uint32_t kRootInode = 2;
 }
 
-Ext4Volume::Ext4Volume(std::string_view imagePath) 
-    : m_imagePath(imagePath)
-    , m_mountOptions(MountOptions::file(std::string(imagePath)))
+Ext4Volume::Ext4Volume(std::shared_ptr<BlockDevice> device, const Ext4Options& options)
+    : m_device(device)
+    , m_options(options)
 {
-    if (m_imagePath.empty()) {
-        throw std::invalid_argument("Ext4Volume: image path is required");
-    }
-    buildIndex();
-}
-
-Ext4Volume::Ext4Volume(const uint8_t* memoryRegion, size_t size)
-    : m_memoryRegion(memoryRegion)
-    , m_memorySize(size)
-    , m_mountOptions(MountOptions::memory(memoryRegion, size))
-{
-    if (!memoryRegion || size == 0) {
-        throw std::invalid_argument("Ext4Volume: invalid memory region");
-    }
-    buildIndex();
-}
-
-Ext4Volume::Ext4Volume(const MountOptions& options)
-    : m_mountOptions(options)
-{
-    if (options.isMemoryBacked()) {
-        // Memory-backed
-        if (!options.memoryRegion || options.memorySize == 0) {
-            throw std::invalid_argument("Ext4Volume: invalid memory region in options");
-        }
-        m_memoryRegion = options.memoryRegion;
-        m_memorySize = options.memorySize;
-    } else if (options.isFileBacked()) {
-        // File-backed
-        m_imagePath = options.imagePath;
-    } else {
-        throw std::invalid_argument("Ext4Volume: must specify either file or memory region");
-    }
-    
     buildIndex();
 }
 
@@ -87,10 +53,6 @@ void Ext4Volume::refreshContextGroups() {
 }
 
 std::string Ext4Volume::getDefaultLabel() const { return "EXT Image"; }
-
-std::string Ext4Volume::getLocalFile(std::string_view /*path*/) const { return ""; }
-
-std::string Ext4Volume::getSource() const { return "ext4 " + m_imagePath; }
 
 bool Ext4Volume::exists(std::string_view path) const {
     Inode node;

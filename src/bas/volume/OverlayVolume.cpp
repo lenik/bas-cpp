@@ -1,66 +1,14 @@
 #include "OverlayVolume.hpp"
 
+#include "Volume.hpp"
+
 #include "../io/IOException.hpp"
+#include "../util/encoding.hpp"
+#include "../util/uuid.hpp"
 
 #include <algorithm>
-#include <iomanip>
-#include <iostream>
-#include <map>
-#include <random>
-#include <sstream>
 #include <stdexcept>
 #include <utility>
-
-static void eraseSubtreeKeys(std::map<std::string, std::unique_ptr<DirNode>>& m,
-                             const std::string& prefix) {
-    auto it = m.lower_bound(prefix);
-    while (it != m.end() && it->first.size() >= prefix.size() &&
-           it->first.compare(0, prefix.size(), prefix) == 0) {
-        it = m.erase(it);
-    }
-}
-
-static void mergeDirEntry(std::map<std::string, std::unique_ptr<DirNode>>& m,
-                          std::unique_ptr<DirNode> st) {
-    const std::string& key = st->name;
-    // A non-directory at `key` masks any directory tree below; drop stale descendants.
-    // Two directories at `key` merge: keep existing `key/...` from lower layers unless
-    // overwritten by this layer's entries (merged later in the same pass).
-    if (!st->isDirectory()) {
-        eraseSubtreeKeys(m, key + "/");
-    }
-    m[key] = std::move(st);
-}
-
-template <typename T> std::string toHex(T value) {
-    std::stringstream ss;
-    ss << std::hex << value;
-    return ss.str();
-}
-
-std::string toUUID(uint64_t random_seed) {
-    // 1. Initialize a better random engine with the seed
-    std::mt19937_64 gen(random_seed);
-    std::uniform_int_distribution<uint64_t> dis(0, 0xFFFFFFFFFFFFFFFF);
-
-    // 2. Generate two 64-bit random numbers (128 bits total)
-    uint64_t high = dis(gen);
-    uint64_t low = dis(gen);
-
-    // 3. Set Version 4 (0100) and Variant (10xx) bits
-    // Version 4: set the 4 bits starting at bit 48 of 'high' to 0100
-    high = (high & 0xFFFFFFFFFFFF0FFFULL) | 0x0000000000004000ULL;
-    // Variant: set the 2 bits starting at bit 60 of 'low' to 10
-    low = (low & 0x3FFFFFFFFFFFFFFFULL) | 0x8000000000000000ULL;
-
-    // 4. Format into canonical 8-4-4-4-12 string
-    std::stringstream ss;
-    ss << std::hex << std::setfill('0') << std::setw(8) << (uint32_t)(high >> 32) << "-"
-       << std::setw(4) << (uint16_t)(high >> 16) << "-" << std::setw(4) << (uint16_t)high << "-"
-       << std::setw(4) << (uint16_t)(low >> 48) << "-" << std::setw(12)
-       << (low & 0xFFFFFFFFFFFFULL);
-    return ss.str();
-}
 
 OverlayVolume::OverlayVolume(std::string label, std::vector<Volume*> layers)
     : m_layers(std::move(layers)), m_label(label) {
@@ -74,22 +22,46 @@ OverlayVolume::OverlayVolume(std::string label, std::vector<Volume*> layers)
             std::string uuid = layer->getUUID();
             hash = hash * 31 + std::hash<std::string>()(uuid);
         }
-        m_serial = toHex(hash);
-        m_uuid = toUUID(hash);
+        m_serial = encoding::to_hex(hash);
+        m_uuid = uuid::randomUUID(hash);
     }
 }
 
 std::string OverlayVolume::getClass() const { return m_class; }
-std::string OverlayVolume::getId() const { return m_id; }
-VolumeType OverlayVolume::getType() const { return m_volumeType; }
-std::string OverlayVolume::getSource() const {
-    std::string out = "overlay<";
+
+std::string OverlayVolume::getUrl() const {
+    if (!m_url.empty())
+        return m_url;
+    else
+        return "overlay:" + getDeviceUrl();
+}
+
+std::string OverlayVolume::getDeviceUrl() const {
+    if (!m_deviceUrl.empty())
+        return m_deviceUrl;
+    std::string out = "overlay:";
+    int i = 1;
     for (Volume* v : m_layers) {
-        out += "; ";
-        out += v->getSource();
+        if (i != 1)
+            out += ",";
+        out += std::to_string(i) + "=" + v->getDeviceUrl();
+        i++;
     }
-    out += ">";
     return out;
+}
+
+VolumeType OverlayVolume::getType() const {
+    if (m_volumeType.has_value())
+        return *m_volumeType;
+    if (m_layers.empty())
+        return VolumeType::OTHER;
+    VolumeType type = m_layers.front()->getType();
+    for (const auto& layer : m_layers) {
+        if (layer->getType() != type) {
+            return VolumeType::OTHER;
+        }
+    }
+    return type;
 }
 
 Volume* OverlayVolume::bottomLayer() { return m_layers.front(); }
@@ -177,9 +149,11 @@ void OverlayVolume::setLabel(std::string_view label) {
     }
 }
 
-std::string OverlayVolume::getLocalFile(std::string_view path) const {
+std::optional<std::string> OverlayVolume::getLocalFile(std::string_view path) const {
     Volume* w = layerExists(path);
-    return w ? w->getLocalFile(path) : std::string();
+    if (w == nullptr)
+        return std::nullopt;
+    return w->getLocalFile(path);
 }
 
 Volume* OverlayVolume::layerExists(std::string_view _path) const {

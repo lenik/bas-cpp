@@ -1,4 +1,4 @@
-#include "MemoryZip.hpp"
+#include "ZipVolume.hpp"
 
 #include "../DirNode.hpp"
 
@@ -184,8 +184,8 @@ void scanZipCentralExtraField(const uint8_t* data, uint16_t len, ZipExtraParsed*
 
 } // namespace
 
-MemoryZip::MemoryZip(std::string_view sym, const uint8_t* data, size_t length)
-    : m_sym(sym), m_data(data), m_size(length) {
+ZipVolume::ZipVolume(std::shared_ptr<BlockDevice> device, const ZipOptions& options)
+    : m_device(device), m_options(options) {
     parseZip();
 }
 
@@ -217,27 +217,19 @@ std::string to_dir_path(std::string_view _path) {
     return path;
 }
 
-std::string MemoryZip::getClass() const { return "mz"; }
+std::string ZipVolume::getClass() const { return "mz"; }
 
-std::string MemoryZip::getId() const {
-    // offset:length
-    std::string offsetHex = toHex(reinterpret_cast<uintptr_t>(m_data));
-    std::string lengthHex = toHex(m_size);
-    return offsetHex + ":" + lengthHex;
+std::string ZipVolume::getUrl() const { return "zip:" + m_device->uri(); }
+
+std::string ZipVolume::getDeviceUrl() const {
+    return m_device->uri();
 }
 
-VolumeType MemoryZip::getType() const { return VolumeType::ARCHIVE; }
+VolumeType ZipVolume::getType() const { return VolumeType::ARCHIVE; }
 
-std::string MemoryZip::getSource() const {
-    // mem sym:offset:length
-    return std::string("mz ") + m_sym                         //
-           + ":" + toHex(reinterpret_cast<uintptr_t>(m_data)) //
-           + ":" + toHex(m_size);
-}
+std::string ZipVolume::getDefaultLabel() const { return "Memory Zip"; }
 
-std::string MemoryZip::getDefaultLabel() const { return "Memory Zip"; }
-
-bool MemoryZip::exists(std::string_view path) const {
+bool ZipVolume::exists(std::string_view path) const {
     if (path.empty() || path == "/")
         return true;
     std::string file_path = to_file_path(path);
@@ -249,13 +241,13 @@ bool MemoryZip::exists(std::string_view path) const {
     return false;
 }
 
-bool MemoryZip::isFile(std::string_view path) const {
+bool ZipVolume::isFile(std::string_view path) const {
     std::string file_path = to_file_path(path);
     const ZipEntry* entry = findEntry(file_path);
     return entry != nullptr && !entry->isDirectory;
 }
 
-bool MemoryZip::isDirectory(std::string_view _path) const {
+bool ZipVolume::isDirectory(std::string_view _path) const {
     std::string dir_path = to_dir_path(_path);
     if (dir_path == "/")
         return true;
@@ -283,7 +275,7 @@ static void item_entry(DirNode* st, const ZipEntry& entry, const std::string& na
         st->mode |= S_IFREG;
 }
 
-void MemoryZip::readDir_inplace(DirNode& context, std::string_view path, bool recursive) {
+void ZipVolume::readDir_inplace(DirNode& context, std::string_view path, bool recursive) {
     std::string dir_path = to_dir_path(path);
     std::string prefix = (dir_path == "/") ? "" : dir_path;
 
@@ -320,7 +312,7 @@ void MemoryZip::readDir_inplace(DirNode& context, std::string_view path, bool re
     } // for m_entries
 }
 
-bool MemoryZip::stat(std::string_view path, DirNode* status) const {
+bool ZipVolume::stat(std::string_view path, DirNode* status) const {
     std::string file_path = to_file_path(path);
     const ZipEntry* entry = findEntry(file_path);
 
@@ -343,7 +335,7 @@ bool MemoryZip::stat(std::string_view path, DirNode* status) const {
     return false;
 }
 
-// std::unique_ptr<IReadStream> MemoryZip::openForRead(std::string_view path, std::string_view
+// std::unique_ptr<IReadStream> ZipVolume::openForRead(std::string_view path, std::string_view
 // encoding) {
 //     std::vector<uint8_t> data = readFile(path);
 //     return
@@ -351,35 +343,35 @@ bool MemoryZip::stat(std::string_view path, DirNode* status) const {
 //     encoding);
 // }
 
-// std::unique_ptr<IWriteStream> MemoryZip::openForWrite(std::string_view path, bool append,
+// std::unique_ptr<IWriteStream> ZipVolume::openForWrite(std::string_view path, bool append,
 // std::string_view /*encoding*/) {
 //     (void)path;
 //     (void)append;
-//     throw IOException("openForWrite", std::string(path), "MemoryZip is read-only");
+//     throw IOException("openForWrite", std::string(path), "ZipVolume is read-only");
 // }
 
-std::unique_ptr<InputStream> MemoryZip::newInputStream(std::string_view path) {
+std::unique_ptr<InputStream> ZipVolume::newInputStream(std::string_view path) {
     std::string file_path = to_file_path(path);
     std::vector<uint8_t> data = readFile(file_path);
     return std::make_unique<Uint8ArrayInputStream>(std::move(data));
 }
 
-std::unique_ptr<RandomInputStream> MemoryZip::newRandomInputStream(std::string_view path) {
+std::unique_ptr<RandomInputStream> ZipVolume::newRandomInputStream(std::string_view path) {
     std::string file_path = to_file_path(path);
     std::vector<uint8_t> data = readFile(file_path);
     return std::make_unique<Uint8ArrayInputStream>(std::move(data));
 }
 
-std::unique_ptr<RandomReader> MemoryZip::newRandomReader(std::string_view path,
+std::unique_ptr<RandomReader> ZipVolume::newRandomReader(std::string_view path,
                                                          std::string_view encoding) {
     return Volume::newRandomReader(path, encoding);
 }
 
-std::unique_ptr<OutputStream> MemoryZip::newOutputStream(std::string_view path, bool append) {
-    throw IOException("newOutputStream", std::string(path), "MemoryZip is read-only");
+std::unique_ptr<OutputStream> ZipVolume::newOutputStream(std::string_view path, bool append) {
+    throw IOException("newOutputStream", std::string(path), "ZipVolume is read-only");
 }
 
-std::unique_ptr<Reader> MemoryZip::newReader(std::string_view path, std::string_view encoding) {
+std::unique_ptr<Reader> ZipVolume::newReader(std::string_view path, std::string_view encoding) {
     std::string file_path = to_file_path(path);
     std::vector<uint8_t> data = readFile(file_path);
     // icu decode the data
@@ -390,12 +382,12 @@ std::unique_ptr<Reader> MemoryZip::newReader(std::string_view path, std::string_
     return std::make_unique<StringReader>(text);
 }
 
-std::unique_ptr<Writer> MemoryZip::newWriter(std::string_view path, bool append,
+std::unique_ptr<Writer> ZipVolume::newWriter(std::string_view path, bool append,
                                              std::string_view encoding) {
-    throw IOException("newWriter", std::string(path), "MemoryZip is read-only");
+    throw IOException("newWriter", std::string(path), "ZipVolume is read-only");
 }
 
-std::vector<uint8_t> MemoryZip::readFileUnchecked(std::string_view path, int64_t off, size_t len) {
+std::vector<uint8_t> ZipVolume::readFileUnchecked(std::string_view path, int64_t off, size_t len) {
     std::string file_path = to_file_path(path);
     const ZipEntry* entry = findEntry(file_path);
     if (!entry || entry->isDirectory) {
@@ -420,58 +412,58 @@ std::vector<uint8_t> MemoryZip::readFileUnchecked(std::string_view path, int64_t
     return std::vector<uint8_t>(data.begin() + start, data.begin() + end);
 }
 
-void MemoryZip::writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) {
+void ZipVolume::writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) {
     (void)path; // Suppress unused parameter warning
     (void)data;
-    throw IOException("writeFile", std::string(path), "MemoryZip is read-only");
+    throw IOException("writeFile", std::string(path), "ZipVolume is read-only");
 }
 
-void MemoryZip::createDirectoryThrowsUnchecked(std::string_view path) {
-    throw IOException("createDirectory", std::string(path), "MemoryZip is read-only");
+void ZipVolume::createDirectoryThrowsUnchecked(std::string_view path) {
+    throw IOException("createDirectory", std::string(path), "ZipVolume is read-only");
 }
 
-void MemoryZip::removeDirectoryThrowsUnchecked(std::string_view path) {
-    throw IOException("removeDirectory", std::string(path), "MemoryZip is read-only");
+void ZipVolume::removeDirectoryThrowsUnchecked(std::string_view path) {
+    throw IOException("removeDirectory", std::string(path), "ZipVolume is read-only");
 }
 
-void MemoryZip::removeFileThrowsUnchecked(std::string_view path) {
-    throw IOException("removeFile", std::string(path), "MemoryZip is read-only");
+void ZipVolume::removeFileThrowsUnchecked(std::string_view path) {
+    throw IOException("removeFile", std::string(path), "ZipVolume is read-only");
 }
 
-void MemoryZip::copyFileThrowsUnchecked(std::string_view src, std::string_view dest) {
+void ZipVolume::copyFileThrowsUnchecked(std::string_view src, std::string_view dest) {
     (void)src; // Suppress unused parameter warning
     (void)dest;
-    throw IOException("copyFile", std::string(src), "MemoryZip is read-only");
+    throw IOException("copyFile", std::string(src), "ZipVolume is read-only");
 }
 
-void MemoryZip::moveFileThrowsUnchecked(std::string_view src, std::string_view dest) {
+void ZipVolume::moveFileThrowsUnchecked(std::string_view src, std::string_view dest) {
     (void)src; // Suppress unused parameter warning
     (void)dest;
-    throw IOException("moveFile", std::string(src), "MemoryZip is read-only");
+    throw IOException("moveFile", std::string(src), "ZipVolume is read-only");
 }
 
-void MemoryZip::renameFileThrowsUnchecked(std::string_view oldPath, std::string_view newPath) {
+void ZipVolume::renameFileThrowsUnchecked(std::string_view oldPath, std::string_view newPath) {
     (void)oldPath; // Suppress unused parameter warning
     (void)newPath;
-    throw IOException("rename", std::string(oldPath), "MemoryZip is read-only");
+    throw IOException("rename", std::string(oldPath), "ZipVolume is read-only");
 }
 
-std::string MemoryZip::getLocalFile(std::string_view path) const {
+std::string ZipVolume::getLocalFile(std::string_view path) const {
     (void)path; // Suppress unused parameter warning
-    return "";  // MemoryZip doesn't map to local files
+    return "";  // ZipVolume doesn't map to local files
 }
 
-std::string MemoryZip::getTempDir() {
-    throw IOException("getTempDir", "", "MemoryZip is read-only");
+std::string ZipVolume::getTempDir() {
+    throw IOException("getTempDir", "", "ZipVolume is read-only");
 }
 
-std::string MemoryZip::createTempFile(std::string_view prefix, std::string_view suffix) {
+std::string ZipVolume::createTempFile(std::string_view prefix, std::string_view suffix) {
     (void)prefix; // Suppress unused parameter warning
     (void)suffix;
-    throw IOException("createTempFile", "", "MemoryZip is read-only");
+    throw IOException("createTempFile", "", "ZipVolume is read-only");
 }
 
-void MemoryZip::parseZip() {
+void ZipVolume::parseZip() {
     m_entries.clear();
 
     if (!m_data || m_size < sizeof(ZipEndOfCentralDir)) {
@@ -560,7 +552,7 @@ void MemoryZip::parseZip() {
     }
 }
 
-const ZipEntry* MemoryZip::findEntry(const std::string& path) const {
+const ZipEntry* ZipVolume::findEntry(const std::string& path) const {
     auto it = m_entries.find(path);
     if (it != m_entries.end()) {
         return &it->second;
@@ -568,7 +560,7 @@ const ZipEntry* MemoryZip::findEntry(const std::string& path) const {
     return nullptr;
 }
 
-std::vector<uint8_t> MemoryZip::decompressEntry(const ZipEntry& entry) const {
+std::vector<uint8_t> ZipVolume::decompressEntry(const ZipEntry& entry) const {
     if (entry.localHeaderOffset + sizeof(ZipLocalFileHeader) > m_size) {
         throw IOException("decompressEntry", entry.name, "Invalid ZIP entry offset");
     }

@@ -1,0 +1,21 @@
+# exFAT Read-Only Test
+# Tests read operations on exFAT filesystem
+
+print "=== exFAT Read-Only Test ==="
+
+# Note: exFAT write operations are not yet implemented
+# This test validates read-only functionality
+
+# List root directory
+print "Listing root directory..."
+ls "/"
+
+# Compute hash
+hash "initial_hash"
+print "Initial filesystem hash: ${initial_hash}"
+
+# Verify root exists
+assert "/"
+
+print "✓ exFAT read-only test completed"
+print "Note: Write operations will throw 'not implemented'"

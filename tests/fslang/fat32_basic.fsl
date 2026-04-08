@@ -1,0 +1,82 @@
+# FAT32 Basic Functionality Test
+# Tests core filesystem operations
+
+# === Directory Operations ===
+print "Testing directory operations..."
+
+mkdir "/test"
+mkdir "/test/subdir1"
+mkdir "/test/subdir2"
+mkdir "/test/subdir1/nested"
+
+cd "/test"
+mkdir "relative_dir"
+cd "/"
+
+# === File Creation ===
+print "Testing file creation..."
+
+# UTF-8 content
+put "/test/hello.txt" "Hello, World!"
+put "/test/subdir1/data.txt" "Nested file content"
+put "/test/subdir1/nested/deep.txt" "Deep nested content"
+
+# Hex content (binary)
+put "/test/binary.bin" h"DEADBEEF"
+put "/test/empty.bin" h""
+put "/test/pattern.bin" h"000102030405060708090A0B0C0D0E0F"
+
+# === File Verification ===
+print "Testing file verification..."
+
+check "/test/hello.txt" "Hello, World!"
+check "/test/subdir1/data.txt" "Nested file content"
+check "/test/subdir1/nested/deep.txt" "Deep nested content"
+check "/test/binary.bin" h"DEADBEEF"
+check "/test/pattern.bin" h"000102030405060708090A0B0C0D0E0F"
+
+# === Copy Operations ===
+print "Testing copy operations..."
+
+copy "/test/hello.txt" "/test/hello_copy.txt"
+copy "/test/hello.txt" "/test/subdir2/hello_in_subdir.txt"
+check "/test/hello_copy.txt" "Hello, World!"
+check "/test/subdir2/hello_in_subdir.txt" "Hello, World!"
+
+# === Move Operations ===
+print "Testing move operations..."
+
+put "/test/to_move.txt" "Will be moved"
+move "/test/to_move.txt" "/test/subdir1/moved.txt"
+check "/test/subdir1/moved.txt" "Will be moved"
+
+# === Rename Operations ===
+print "Testing rename operations..."
+
+put "/test/rename_me.txt" "Content stays same"
+rename "/test/rename_me.txt" "renamed.txt"
+check "/test/renamed.txt" "Content stays same"
+
+# === Delete Operations ===
+print "Testing delete operations..."
+
+delete "/test/hello_copy.txt"
+delete "/test/subdir2"
+
+# === Directory Listing ===
+print "Testing directory listing..."
+ls "/test"
+ls "/test/subdir1"
+
+# === Hash Computation ===
+print "Computing filesystem hash..."
+hash "initial_hash"
+print "Initial hash: ${initial_hash}"
+
+# === Final Verification ===
+print "Running final verification..."
+check "/test/hello.txt" "Hello, World!"
+check "/test/renamed.txt" "Content stays same"
+check "/test/subdir1/moved.txt" "Will be moved"
+
+print "✓ All FAT32 basic tests passed!"

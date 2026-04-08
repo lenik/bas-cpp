@@ -50,6 +50,8 @@ libcurl_dep = dependency('libcurl', required: true)
 # OpenSSL (crypto + ssl for HTTPS)
 openssl_dep = dependency('openssl', required: true)
 
+unconst_dep = dependency('unconst', required: true)
+
 # zlib for ZIP support
 # zlib is used for decompression, but we'll parse ZIP manually
 zlib_dep = dependency('zlib', required: true)
@@ -65,7 +67,6 @@ cpp_sources = files(
     './src/bas/fmt/JsonForm.cpp',
     './src/bas/fmt/OctetStreamForm.cpp',
     './src/bas/fmt/TextForm.cpp',
-    './src/bas/io/BlockDevice.cpp',
     './src/bas/io/BufferedReader.cpp',
     './src/bas/io/ByteBuffer.cpp',
     './src/bas/io/Char32Buffer.cpp',
@@ -143,17 +144,27 @@ cpp_sources = files(
     './src/bas/volume/VolumeFile.cpp',
     './src/bas/volume/VolumeManager.cpp',
     './src/bas/volume/Volume_utils.cpp',
+    './src/bas/volume/BlockDevice.cpp',
+    './src/bas/volume/dev/FileDevice.cpp',
+    './src/bas/volume/dev/MemDevice.cpp',
+    './src/bas/volume/dev/MMapDevice.cpp',
+    './src/bas/volume/dev/LoopDevice.cpp',
+    './src/bas/volume/exfat/ExfatFileInputStream.cpp',
+    './src/bas/volume/exfat/ExfatFileOutputStream.cpp',
+    './src/bas/volume/exfat/ExfatVolume.cpp',
+    './src/bas/volume/exfat/ExfatVolume_stubs.cpp',
+    './src/bas/volume/exfat/ExfatVolume_write.cpp',
     './src/bas/volume/ext4/Ext4FileInputStream.cpp',
     './src/bas/volume/ext4/Ext4FileOutputStream.cpp',
     './src/bas/volume/ext4/Ext4Volume.cpp',
     './src/bas/volume/ext4/Ext4Volume_write.cpp',
-    './src/bas/volume/fat32/fat32_utils.cpp',
     './src/bas/volume/fat32/Fat32FileInputStream.cpp',
     './src/bas/volume/fat32/Fat32FileOutputStream.cpp',
     './src/bas/volume/fat32/Fat32Volume.cpp',
     './src/bas/volume/fat32/Fat32Volume_write.cpp',
+    './src/bas/volume/fat32/fat32_utils.cpp',
     './src/bas/volume/mountinfo.cpp',
-    './src/bas/volume/zip/MemoryZip.cpp',
+    './src/bas/volume/zip/ZipVolume.cpp',
     './src/module.cpp',
 )
 
@@ -204,6 +215,7 @@ exe_deps = [
     icu_uc_dep,
     libcurl_dep,
     openssl_dep,
+    unconst_dep,
     zlib_dep,
 ] + stdcxxfs_deps
 
@@ -217,6 +229,7 @@ exe_static_deps = [
     icu_uc_dep,
     libcurl_dep,
     openssl_dep,
+    unconst_dep,
     zlib_dep,
 ] + stdcxxfs_deps
 
@@ -379,6 +392,8 @@ all_test_files = [
     'bas/volume/ext4/Ext4_write_test.cpp',
     'bas/volume/ext4/Ext4_test.cpp',
     'bas/volume/ext4/Ext4_forest_test.cpp',
+    'bas/volume/exfat/Exfat_test.cpp',
+    'bas/volume/exfat/Exfat_simple_test.cpp',
     'bas/volume/fat32/Fat32_persistence_test.cpp',
     'bas/volume/fat32/Fat32_write_test.cpp',
     'bas/volume/fat32/Fat32_test.cpp',
@@ -422,8 +437,7 @@ foreach test_rel_path : all_test_files
         include_directories: exe_inc,
         link_with: lib_bas_cpp,
         dependencies: exe_deps,
-        cpp_args: cpp_nowarn
-        + ['-DLOGGER_NAME=test', '-DASSETS_NAME=bas_cpp'],
+        cpp_args: cpp_nowarn + ['-DLOGGER_NAME=test', '-DASSETS_NAME=bas_cpp'],
         #cpp_pch: cpp_pch,
         install: false,
     )

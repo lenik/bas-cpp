@@ -1,0 +1,73 @@
+# FAT32 Stress Test
+# Tests filesystem with many files and complex operations
+
+print "Starting FAT32 stress test..."
+
+# === Create Many Files ===
+print "Creating 100 files..."
+
+mkdir "/stress"
+cd "/stress"
+
+# Create files in batches
+put "file_001.txt" "Content for file 1"
+put "file_002.txt" "Content for file 2"
+put "file_003.txt" "Content for file 3"
+put "file_004.txt" "Content for file 4"
+put "file_005.txt" "Content for file 5"
+put "file_006.txt" "Content for file 6"
+put "file_007.txt" "Content for file 7"
+put "file_008.txt" "Content for file 8"
+put "file_009.txt" "Content for file 9"
+put "file_010.txt" "Content for file 10"
+
+# Larger files
+put "large_001.bin" h"000102030405060708090A0B0C0D0E0F101112131415161718191A1B1C1D1E1F"
+put "large_002.bin" h"FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+
+cd "/"
+
+# === Deep Nesting ===
+print "Testing deep directory nesting..."
+
+mkdir "/deep"
+mkdir "/deep/l1"
+mkdir "/deep/l1/l2"
+mkdir "/deep/l1/l2/l3"
+mkdir "/deep/l1/l2/l3/l4"
+mkdir "/deep/l1/l2/l3/l4/l5"
+
+put "/deep/l1/l2/l3/l4/l5/deepest.txt" "I'm at the bottom!"
+check "/deep/l1/l2/l3/l4/l5/deepest.txt" "I'm at the bottom!"
+
+# === Special Characters in Names ===
+print "Testing special characters in filenames..."
+
+mkdir "/special"
+put "/special/file-with-dash.txt" "Dash in name"
+put "/special/file_with_underscore.txt" "Underscore in name"
+put "/special/file123.txt" "Numbers in name"
+
+check "/special/file-with-dash.txt" "Dash in name"
+check "/special/file_with_underscore.txt" "Underscore in name"
+
+# === Large Content ===
+print "Testing larger content..."
+
+put "/stress/medium.txt" "This is a medium-sized file with more content than usual. It should still fit easily within a single cluster. The quick brown fox jumps over the lazy dog."
+
+check "/stress/medium.txt" "This is a medium-sized file with more content than usual. It should still fit easily within a single cluster. The quick brown fox jumps over the lazy dog."
+
+# === Hash Verification ===
+print "Computing stress test hash..."
+hash "stress_hash"
+print "Stress test hash: ${stress_hash}"
+
+# === Cleanup ===
+print "Cleaning up stress test files..."
+
+delete "/stress"
+delete "/deep"
+delete "/special"
+
+print "✓ FAT32 stress test completed!"
