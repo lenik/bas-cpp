@@ -1,5 +1,5 @@
 #include "Fat32Volume.hpp"
-#include "../../io/BlockDevice.hpp"
+#include "../dev/MemDevice.hpp"
 
 #include "../../io/IOException.hpp"
 
@@ -49,7 +49,7 @@ int main() {
     inFile.close();
 
     std::cout << "Mounting FAT32 from memory device...\n";
-    auto device = createMemDevice(imageBuffer.data(), imageSize);
+    auto device = std::make_shared<MemDevice>(imageBuffer.data(), imageSize);
     Fat32Volume vol(device);
     assert(vol.getClass() == "fat32");
 

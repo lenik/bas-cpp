@@ -10,8 +10,8 @@ void dumpLayers() {
     for (const auto& layer : layers) {
         // Layer <id>: <source> [ <root file count> ]
         auto node = layer->readDir("/");
-        std::cout << "Layer " << layer->getId() << ": " << layer->getSource() //
-                  << " [ " << node->childCount() << " ]"                      //
+        std::cout << "Layer " << layer->getUrl() << ": " << layer->getDeviceUrl() //
+                  << " [ " << node->childCount() << " ]"                          //
                   << std::endl;
     }
 }
@@ -40,7 +40,7 @@ int main(int argc, char** argv) {
             AssetsRegistry::instance()->ls(path, opts);
 
             Volume* w = overlay->layerExists(path);
-            std::cout << "Layer exists: " << (w ? w->getSource() : "no") << std::endl;
+            std::cout << "Layer exists: " << (w ? w->getDeviceUrl() : "no") << std::endl;
 
             std::string normalized = overlay->normalize(path);
             std::cout << "Normalized: " << normalized << std::endl;

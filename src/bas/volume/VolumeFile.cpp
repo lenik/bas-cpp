@@ -31,8 +31,8 @@ std::string VolumeFile::getLocalFile() const {
     // For LocalVolume, this might return the actual local path
     // For SeczureVolume, this will return empty
     // This is volume-specific behavior
-    std::string localFile = m_volume->getLocalFile(m_path);
-    return localFile;
+    auto localFile = m_volume->getLocalFile(m_path);
+    return localFile.value_or("");
 }
 
 size_t VolumeFile::cReadFile(uint8_t* buf, size_t off, size_t len, int64_t file_offset,

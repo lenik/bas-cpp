@@ -69,7 +69,7 @@ VolumeType LocalVolume::getType() const {
 
 std::string LocalVolume::getDefaultLabel() const { return "Local Volume"; }
 
-std::string LocalVolume::getLabel() {
+std::string LocalVolume::getLabel() const {
     // Check if root path is a mount point and use device label
     cacheMountInfo();
     if (!m_cachedLabel.empty()) {
@@ -80,13 +80,13 @@ std::string LocalVolume::getLabel() {
 
 void LocalVolume::setLabel(std::string_view label) { Volume::setLabel(label); }
 
-std::string LocalVolume::getUUID() {
+std::string LocalVolume::getUUID() const {
     // Check if root path is a mount point and use device UUID
     cacheMountInfo();
     return m_cachedUUID;
 }
 
-std::string LocalVolume::getSerial() {
+std::string LocalVolume::getSerial() const {
     // For now, return empty string or could use device serial number
     // This could be extended to get device serial from /sys/block/ or similar
     return getUUID();
@@ -487,24 +487,6 @@ bool majMinIsLoopDevice(int major, int minor) { return major == 7; }
 
 bool devicePathIsLoop(const std::string& device) { return device.rfind("/dev/loop", 0) == 0; }
 
-std::string readLoopBackingFile(const std::string& loopDev) {
-    fs::path p(loopDev);
-    std::string base = p.filename().string();
-    if (base.size() < 5 || base.compare(0, 4, "loop") != 0)
-        return {};
-    fs::path sysfs = fs::path("/sys/class/block") / base / "loop" / "backing_file";
-    std::error_code ec;
-    if (!fs::exists(sysfs, ec))
-        return {};
-    std::ifstream in(sysfs.string());
-    std::string line;
-    if (!std::getline(in, line))
-        return {};
-    while (!line.empty() && (line.back() == '\n' || line.back() == '\r'))
-        line.pop_back();
-    return line;
-}
-
 bool lookupLinuxMountProc(const std::string& canonicalMount, MountInfo& out) {
     std::ifstream mountinfo("/proc/self/mountinfo");
     if (mountinfo.is_open()) {
@@ -771,40 +753,5 @@ void LocalVolume::cacheMountInfo() const {
 
     m_mountInfoCached = true;
 }
-
-std::string LocalVolume::getSource() const {
-    cacheMountInfo();
-    if (!m_device.has_value() || m_device->empty()) {
-        return "local:dir " + m_rootPath;
-    }
-    const std::string& dev = *m_device;
-    if (m_isLoop) {
-        std::string backing = readLoopBackingFile(dev);
-        if (!backing.empty())
-            return "local:img " + backing;
-        return "local:img " + dev;
-    }
-    if (m_logicalType == LocalLogicalType::OVERLAY) {
-        return "local:dir " + m_rootPath;
-    }
-    if (m_logicalType == LocalLogicalType::BIND) {
-        if (!m_mountInfo.root.empty() && m_mountInfo.root != "/")
-            return "local:dir " + m_mountInfo.root;
-        if (!dev.empty() && dev[0] == '/' && dev.rfind("/dev/", 0) != 0)
-            return "local:dir " + dev;
-        return "local:dir " + m_rootPath;
-    }
-    if (!dev.empty() && dev.rfind("/dev/", 0) == 0)
-        return "local:dev " + dev;
-    return "local:dir " + m_rootPath;
-}
-
-#elif defined(WINDOWS)
-
-std::string LocalVolume::getSource() const { return "local:dir " + m_rootPath; }
-
-#else
-
-std::string LocalVolume::getSource() const { return "local:dir " + m_rootPath; }
 
 #endif

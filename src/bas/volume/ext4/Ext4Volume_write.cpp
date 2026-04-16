@@ -2,6 +2,8 @@
 
 #include "../../io/IOException.hpp"
 
+#include "Ext4IoManager.hpp"
+
 #include <ext2fs/ext2_fs.h>
 #include <ext2fs/ext2fs.h>
 
@@ -22,8 +24,8 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
     
     // Open filesystem with write flag
     ext2_filsys fs = nullptr;
-    errcode_t rc = ext2fs_open(m_imagePath.c_str(), EXT2_FLAG_64BITS | EXT2_FLAG_RW, 0, 0, 
-                               unix_io_manager, &fs);
+    const std::string imagePath = m_device->uri();
+    int rc = ext4io::openFsFromBlockDevice(m_device, EXT2_FLAG_64BITS | EXT2_FLAG_RW, &fs);
     if (rc) {
         throw IOException("writeFile", std::string(path), "ext2fs_open failed");
     }
@@ -157,6 +159,62 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
     }
 }
 
+void Ext4Volume::appendFileUnchecked(std::string_view path, const uint8_t* data, size_t len) {
+    if (!data || len == 0) return;
+    const std::string normalized = normalizeArg(path);
+    Inode node;
+    if (!resolveNode(normalized, &node) || node.isDirectory) {
+        throw IOException("appendFile", std::string(path), "File not found or is a directory");
+    }
+
+    ext2_filsys fs = nullptr;
+    const std::string imagePath = m_device->uri();
+    int rc = ext4io::openFsFromBlockDevice(m_device, EXT2_FLAG_64BITS | EXT2_FLAG_RW, &fs);
+    if (rc) throw IOException("appendFile", std::string(path), "ext2fs_open failed");
+
+    rc = ext2fs_read_bitmaps(fs);
+    if (rc) {
+        ext2fs_close(fs);
+        throw IOException("appendFile", std::string(path), "Failed to read bitmaps");
+    }
+
+    ext2_file_t file;
+    rc = ext2fs_file_open(fs, static_cast<ext2_ino_t>(node.ino), EXT2_FILE_WRITE, &file);
+    if (rc) {
+        ext2fs_close(fs);
+        throw IOException("appendFile", std::string(path), "Failed to open file");
+    }
+
+    rc = ext2fs_file_llseek(file, node.size, 0, nullptr);
+    if (rc) {
+        ext2fs_file_close(file);
+        ext2fs_close(fs);
+        throw IOException("appendFile", std::string(path), "Failed to seek file end");
+    }
+
+    unsigned int written = 0;
+    rc = ext2fs_file_write(file, data, static_cast<unsigned int>(len), &written);
+    if (rc || written != len) {
+        ext2fs_file_close(file);
+        ext2fs_close(fs);
+        throw IOException("appendFile", std::string(path), "Failed to append data");
+    }
+
+    ext2fs_file_close(file);
+    rc = ext2fs_flush(fs);
+    if (rc) {
+        ext2fs_close(fs);
+        throw IOException("appendFile", std::string(path), "Failed to flush filesystem");
+    }
+    ext2fs_close(fs);
+
+    auto nit = m_nodes.find(node.ino);
+    if (nit != m_nodes.end()) {
+        nit->second.size += len;
+    }
+    m_mem.erase(node.ino);
+}
+
 void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
     const std::string normalized = normalizeArg(path);
     if (normalized == "/" || normalized.empty()) {
@@ -174,8 +232,8 @@ void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
 
     // Open filesystem with write flag
     ext2_filsys fs = nullptr;
-    errcode_t rc = ext2fs_open(m_imagePath.c_str(), EXT2_FLAG_64BITS | EXT2_FLAG_RW, 0, 0,
-                               unix_io_manager, &fs);
+    const std::string imagePath = m_device->uri();
+    int rc = ext4io::openFsFromBlockDevice(m_device, EXT2_FLAG_64BITS | EXT2_FLAG_RW, &fs);
     if (rc) {
         throw IOException("createDirectory", std::string(path), "ext2fs_open failed");
     }
@@ -284,8 +342,8 @@ void Ext4Volume::removeDirectoryThrowsUnchecked(std::string_view path) {
 
     // Open filesystem with write flag
     ext2_filsys fs = nullptr;
-    errcode_t rc = ext2fs_open(m_imagePath.c_str(), EXT2_FLAG_64BITS | EXT2_FLAG_RW, 0, 0,
-                               unix_io_manager, &fs);
+    const std::string imagePath = m_device->uri();
+    int rc = ext4io::openFsFromBlockDevice(m_device, EXT2_FLAG_64BITS | EXT2_FLAG_RW, &fs);
     if (rc) {
         throw IOException("removeDirectory", std::string(path), "ext2fs_open failed");
     }
@@ -319,8 +377,8 @@ void Ext4Volume::removeFileThrowsUnchecked(std::string_view path) {
 
     // Open filesystem with write flag
     ext2_filsys fs = nullptr;
-    errcode_t rc = ext2fs_open(m_imagePath.c_str(), EXT2_FLAG_64BITS | EXT2_FLAG_RW, 0, 0,
-                               unix_io_manager, &fs);
+    const std::string imagePath = m_device->uri();
+    int rc = ext4io::openFsFromBlockDevice(m_device, EXT2_FLAG_64BITS | EXT2_FLAG_RW, &fs);
     if (rc) {
         throw IOException("removeFile", std::string(path), "ext2fs_open failed");
     }
@@ -383,8 +441,8 @@ void Ext4Volume::moveFileThrowsUnchecked(std::string_view src, std::string_view 
 
     // Open filesystem with write flag
     ext2_filsys fs = nullptr;
-    errcode_t rc = ext2fs_open(m_imagePath.c_str(), EXT2_FLAG_64BITS | EXT2_FLAG_RW, 0, 0,
-                               unix_io_manager, &fs);
+    const std::string imagePath = m_device->uri();
+    int rc = ext4io::openFsFromBlockDevice(m_device, EXT2_FLAG_64BITS | EXT2_FLAG_RW, &fs);
     if (rc) {
         throw IOException("moveFile", std::string(src), "ext2fs_open failed");
     }
@@ -438,8 +496,8 @@ void Ext4Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::string
 
     // Open filesystem with write flag
     ext2_filsys fs = nullptr;
-    errcode_t rc = ext2fs_open(m_imagePath.c_str(), EXT2_FLAG_64BITS | EXT2_FLAG_RW, 0, 0,
-                               unix_io_manager, &fs);
+    const std::string imagePath = m_device->uri();
+    int rc = ext4io::openFsFromBlockDevice(m_device, EXT2_FLAG_64BITS | EXT2_FLAG_RW, &fs);
     if (rc) {
         throw IOException("renameFile", std::string(oldPath), "ext2fs_open failed");
     }

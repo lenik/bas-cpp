@@ -4,6 +4,7 @@
 #include "Volume.hpp"
 #include "mountinfo.hpp"
 
+#include "BlockDevice.hpp"
 #include "ext4/Ext4Volume.hpp"
 #include "fat32/Fat32Volume.hpp"
 
@@ -124,14 +125,18 @@ bool VolumeManager::addFat32Volume(std::string_view imagePath) {
     if (imagePath.empty()) {
         throw std::invalid_argument("VolumeManager::addFat32Volume: imagePath is required");
     }
-    return addVolume(std::make_unique<Fat32Volume>(imagePath));
+    auto device = BlockDevice::file(std::string(imagePath));
+    Fat32Options options;
+    return addVolume(std::make_unique<Fat32Volume>(std::move(device), options));
 }
 
 bool VolumeManager::addExt4Volume(std::string_view imagePath) {
     if (imagePath.empty()) {
         throw std::invalid_argument("VolumeManager::addExt4Volume: imagePath is required");
     }
-    return addVolume(std::make_unique<Ext4Volume>(imagePath));
+    auto device = BlockDevice::file(std::string(imagePath));
+    Ext4Options options;
+    return addVolume(std::make_unique<Ext4Volume>(std::move(device), options));
 }
 
 void VolumeManager::addLocalVolumes(bool includeSymbols, bool excludeReadOnly) {

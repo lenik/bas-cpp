@@ -1,12 +1,11 @@
 #include "Fat32Volume.hpp"
+#include "../BlockDevice.hpp"
 
 #include <algorithm>
 #include <cassert>
-#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <random>
 #include <string>
@@ -152,7 +151,8 @@ int main() {
     // Phase 1: Create all files and directories
     std::cout << "\nPhase 1: Creating file tree...\n";
     {
-        Fat32Volume vol(image.string());
+        auto device = BlockDevice::file(image.string(), 0, 0, false, false);
+        Fat32Volume vol(device);
         
         size_t created = 0;
         size_t errors = 0;
@@ -183,7 +183,8 @@ int main() {
     // Phase 2: Verify all files exist and have correct content
     std::cout << "\nPhase 2: Verifying file tree...\n";
     {
-        Fat32Volume vol(image.string());
+        auto device = BlockDevice::file(image.string(), 0, 0, false, false);
+        Fat32Volume vol(device);
         
         size_t verified = 0;
         size_t errors = 0;
@@ -243,7 +244,8 @@ int main() {
     // Phase 3: Test basic directory listing
     std::cout << "\nPhase 3: Testing directory listings...\n";
     {
-        Fat32Volume vol(image.string());
+        auto device = BlockDevice::file(image.string(), 0, 0, false, false);
+        Fat32Volume vol(device);
         
         try {
             auto root = vol.readDir("/", false);
@@ -257,7 +259,8 @@ int main() {
     // Phase 4: Test basic file operations (simplified)
     std::cout << "\nPhase 4: Testing basic file operations...\n";
     {
-        Fat32Volume vol(image.string());
+        auto device = BlockDevice::file(image.string(), 0, 0, false, false);
+        Fat32Volume vol(device);
         
         // Just test creating and removing a test file
         try {

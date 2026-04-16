@@ -1,5 +1,6 @@
 #include "Fat32Volume.hpp"
-#include "../../io/BlockDevice.hpp"
+#include "../dev/FileDevice.hpp"
+#include "../dev/MemDevice.hpp"
 
 #include <cassert>
 #include <cstdlib>
@@ -51,7 +52,7 @@ int main() {
     // Phase 1: Write data
     std::cout << "Phase 1: Writing data to FAT32 image...\n";
     {
-        auto device = createMemDevice(imageBuffer.data(), imageSize);
+        auto device = std::make_shared<MemDevice>(imageBuffer.data(), imageSize);
         Fat32Volume vol(device);
         
         // Write several files
@@ -69,7 +70,7 @@ int main() {
     // Phase 2: Remount and verify (create new MemDevice from same buffer)
     std::cout << "\nPhase 2: Remounting and verifying data...\n";
     {
-        auto device = createMemDevice(imageBuffer.data(), imageSize);
+        auto device = std::make_shared<MemDevice>(imageBuffer.data(), imageSize);
         Fat32Volume vol(device);
         
         // Verify files exist
@@ -110,7 +111,7 @@ int main() {
     // Phase 3: Modify data
     std::cout << "\nPhase 3: Modifying data...\n";
     {
-        auto device = createMemDevice(imageBuffer.data(), imageSize);
+        auto device = std::make_shared<MemDevice>(imageBuffer.data(), imageSize);
         Fat32Volume vol(device);
         
         // Update a file
@@ -133,7 +134,7 @@ int main() {
     // Phase 4: Verify modifications
     std::cout << "\nPhase 4: Verifying modifications...\n";
     {
-        auto device = createMemDevice(imageBuffer.data(), imageSize);
+        auto device = std::make_shared<MemDevice>(imageBuffer.data(), imageSize);
         Fat32Volume vol(device);
         
         // Verify update

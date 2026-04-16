@@ -2,20 +2,27 @@
 
 #include "../../io/IOException.hpp"
 
+#include "Ext4IoManager.hpp"
+
 #include <ext2fs/ext2_fs.h>
 #include <ext2fs/ext2fs.h>
 
-Ext4FileInputStream::Ext4FileInputStream(std::string imagePath, uint32_t inode)
-    : m_imagePath(std::move(imagePath)), m_inode(inode) {
-    errcode_t rc = ext2fs_open(m_imagePath.c_str(), EXT2_FLAG_64BITS, 0, 0, unix_io_manager, &m_fs);
+Ext4FileInputStream::Ext4FileInputStream(std::shared_ptr<BlockDevice> device, uint32_t inode)
+    : m_device(std::move(device)), m_inode(inode) {
+    if (!m_device) {
+        throw IOException("Ext4FileInputStream", "", "Null BlockDevice");
+    }
+    m_deviceId = m_device->uri();
+
+    int rc = ext4io::openFsFromBlockDevice(m_device, EXT2_FLAG_64BITS, &m_fs);
     if (rc) {
-        throw IOException("Ext4FileInputStream", m_imagePath, "ext2fs_open failed");
+        throw IOException("Ext4FileInputStream", m_deviceId, "ext2fs_open failed");
     }
     rc = ext2fs_file_open(m_fs, m_inode, 0, &m_file);
     if (rc) {
         ext2fs_close(m_fs);
         m_fs = nullptr;
-        throw IOException("Ext4FileInputStream", m_imagePath, "ext2fs_file_open failed");
+        throw IOException("Ext4FileInputStream", m_deviceId, "ext2fs_file_open failed");
     }
 }
 
@@ -33,9 +40,9 @@ size_t Ext4FileInputStream::read(uint8_t* buf, size_t off, size_t len) {
         return 0;
     }
     unsigned int got = 0;
-    errcode_t rc = ext2fs_file_read(m_file, buf + off, static_cast<unsigned int>(len), &got);
+    int rc = ext2fs_file_read(m_file, buf + off, static_cast<unsigned int>(len), &got);
     if (rc) {
-        throw IOException("read", m_imagePath, "ext2fs_file_read failed");
+        throw IOException("read", m_deviceId, "ext2fs_file_read failed");
     }
     m_pos += static_cast<int64_t>(got);
     return static_cast<size_t>(got);
@@ -73,7 +80,7 @@ bool Ext4FileInputStream::seek(int64_t offset, std::ios::seekdir dir) {
     } else if (dir == std::ios::end) {
         return false;
     }
-    errcode_t rc = ext2fs_file_llseek(m_file, target, 0, nullptr);
+    int rc = ext2fs_file_llseek(m_file, target, 0, nullptr);
     if (rc) {
         return false;
     }

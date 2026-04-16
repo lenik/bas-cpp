@@ -1,12 +1,12 @@
 #include "Ext4Volume.hpp"
 
+#include "../dev/FileDevice.hpp"
+
 #include <algorithm>
 #include <cassert>
-#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <random>
 #include <string>
@@ -152,7 +152,8 @@ int main() {
     // Phase 1: Create all files and directories
     std::cout << "\nPhase 1: Creating file tree...\n";
     {
-        Ext4Volume vol(image.string());
+        auto device = BlockDevice::file(image.string(), 0, 0, false, false);
+        Ext4Volume vol(device);
         
         size_t created = 0;
         size_t errors = 0;
@@ -183,7 +184,8 @@ int main() {
     // Phase 2: Verify all files exist and have correct content
     std::cout << "\nPhase 2: Verifying file tree...\n";
     {
-        Ext4Volume vol(image.string());
+        auto device = BlockDevice::file(image.string(), 0, 0, false, false);
+        Ext4Volume vol(device);
         
         size_t verified = 0;
         size_t errors = 0;
@@ -241,7 +243,8 @@ int main() {
     // Phase 3: Test directory listing
     std::cout << "\nPhase 3: Testing directory listings...\n";
     {
-        Ext4Volume vol(image.string());
+        auto device = BlockDevice::file(image.string(), 0, 0, false, false);
+        Ext4Volume vol(device);
         
         try {
             auto root = vol.readDir("/", false);
@@ -260,7 +263,8 @@ int main() {
     // Phase 4: Stress test - create and delete many files
     std::cout << "\nPhase 4: Stress test (create/delete cycles)...\n";
     {
-        Ext4Volume vol(image.string());
+        auto device = BlockDevice::file(image.string(), 0, 0, false, false);
+        Ext4Volume vol(device);
         
         const size_t stressIterations = 50;
         size_t success = 0;

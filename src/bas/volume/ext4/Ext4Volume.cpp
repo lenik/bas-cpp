@@ -4,8 +4,8 @@
 #include "Ext4FileOutputStream.hpp"
 
 #include "../../io/IOException.hpp"
-#include "../../io/StringReader.hpp"
-#include "../../io/PrintStream.hpp"
+
+#include "Ext4IoManager.hpp"
 
 #include <ext2fs/ext2_fs.h>
 #include <ext2fs/ext2fs.h>
@@ -23,44 +23,10 @@ namespace {
 constexpr uint32_t kRootInode = 2;
 }
 
-Ext4Volume::Ext4Volume(std::string_view imagePath) 
-    : m_imagePath(imagePath)
-    , m_mountOptions(MountOptions::file(std::string(imagePath)))
+Ext4Volume::Ext4Volume(std::shared_ptr<BlockDevice> device, const Ext4Options& options)
+    : m_device(device)
+    , m_options(options)
 {
-    if (m_imagePath.empty()) {
-        throw std::invalid_argument("Ext4Volume: image path is required");
-    }
-    buildIndex();
-}
-
-Ext4Volume::Ext4Volume(const uint8_t* memoryRegion, size_t size)
-    : m_memoryRegion(memoryRegion)
-    , m_memorySize(size)
-    , m_mountOptions(MountOptions::memory(memoryRegion, size))
-{
-    if (!memoryRegion || size == 0) {
-        throw std::invalid_argument("Ext4Volume: invalid memory region");
-    }
-    buildIndex();
-}
-
-Ext4Volume::Ext4Volume(const MountOptions& options)
-    : m_mountOptions(options)
-{
-    if (options.isMemoryBacked()) {
-        // Memory-backed
-        if (!options.memoryRegion || options.memorySize == 0) {
-            throw std::invalid_argument("Ext4Volume: invalid memory region in options");
-        }
-        m_memoryRegion = options.memoryRegion;
-        m_memorySize = options.memorySize;
-    } else if (options.isFileBacked()) {
-        // File-backed
-        m_imagePath = options.imagePath;
-    } else {
-        throw std::invalid_argument("Ext4Volume: must specify either file or memory region");
-    }
-    
     buildIndex();
 }
 
@@ -87,10 +53,6 @@ void Ext4Volume::refreshContextGroups() {
 }
 
 std::string Ext4Volume::getDefaultLabel() const { return "EXT Image"; }
-
-std::string Ext4Volume::getLocalFile(std::string_view /*path*/) const { return ""; }
-
-std::string Ext4Volume::getSource() const { return "ext4 " + m_imagePath; }
 
 bool Ext4Volume::exists(std::string_view path) const {
     Inode node;
@@ -203,7 +165,7 @@ std::unique_ptr<InputStream> Ext4Volume::newInputStream(std::string_view path) {
     if (!checkMode(node, 4)) {
         throw IOException("newInputStream", std::string(path), "Permission denied");
     }
-    return std::make_unique<Ext4FileInputStream>(m_imagePath, node.ino);
+    return std::make_unique<Ext4FileInputStream>(m_device, node.ino);
 }
 
 std::unique_ptr<RandomInputStream> Ext4Volume::newRandomInputStream(std::string_view path) {
@@ -212,7 +174,7 @@ std::unique_ptr<RandomInputStream> Ext4Volume::newRandomInputStream(std::string_
 }
 
 std::unique_ptr<OutputStream> Ext4Volume::newOutputStream(std::string_view path, bool append) {
-    return std::make_unique<Ext4FileOutputStream>(m_imagePath, std::string(path), append);
+    return std::make_unique<Ext4FileOutputStream>(this, std::string(path), append);
 }
 
 
@@ -222,6 +184,23 @@ std::string Ext4Volume::getTempDir() {
 
 std::string Ext4Volume::createTempFile(std::string_view /*prefix*/, std::string_view /*suffix*/) {
     throw IOException("createTempFile", "", "Ext4Volume does not support temp file operations");
+}
+
+Ext4Volume::WritePlan Ext4Volume::planWriteLayout(std::string_view /*path*/, uint64_t oldSize,
+                                                  uint64_t newSize, bool appendLike) const {
+    WritePlan p;
+    p.oldSize = oldSize;
+    p.newSize = newSize;
+    p.appendLike = appendLike;
+    const uint64_t growth = (newSize > oldSize) ? (newSize - oldSize) : 0;
+    p.preferAppendPath = appendLike && newSize >= oldSize;
+    p.delayedAlloc = growth < (8ull * 1024ull * 1024ull);
+    if (growth >= (16ull * 1024ull * 1024ull)) p.commitChunkBytes = 4u * 1024u * 1024u;
+    else if (growth >= (4ull * 1024ull * 1024ull)) p.commitChunkBytes = 2u * 1024u * 1024u;
+    else p.commitChunkBytes = 1024u * 1024u;
+    // Append growth can avoid rewrite path; other patterns keep full rewrite safety.
+    p.rewriteWholeFile = !p.preferAppendPath;
+    return p;
 }
 
 std::vector<uint8_t> Ext4Volume::readFileUnchecked(std::string_view path, int64_t off, size_t len) {
@@ -265,19 +244,11 @@ void Ext4Volume::buildIndex() {
     m_rtnodes.clear();
     m_mem.clear();
 
-    // For memory-backed volumes, ext2fs would need a custom I/O manager
-    // For now, we only support file-backed ext4 volumes in buildIndex
-    // Memory-backed ext4 requires implementing a custom io_manager
-    if (m_memoryRegion != nullptr) {
-        // TODO: Implement custom io_manager for memory-backed ext4
-        // For now, throw an error
-        throw IOException("Ext4Volume", "memory", "Memory-backed ext4 requires custom I/O manager (not yet implemented)");
-    }
-
     ext2_filsys fs = nullptr;
-    errcode_t rc = ext2fs_open(m_imagePath.c_str(), EXT2_FLAG_64BITS, 0, 0, unix_io_manager, &fs);
+    const std::string imagePath = m_device->uri();
+    int rc = ext4io::openFsFromBlockDevice(m_device, EXT2_FLAG_64BITS, &fs);
     if (rc) {
-        throw IOException("Ext4Volume", m_imagePath, "ext2fs_open failed");
+        throw IOException("Ext4Volume", imagePath, "ext2fs_open failed");
     }
     struct ext2_inode rootIno{};
     if (ext2fs_read_inode(fs, kRootInode, &rootIno) == 0) {
@@ -388,9 +359,10 @@ const Ext4Volume::RtNode* Ext4Volume::getDirectoryEntries(uint32_t inode) const 
     auto rtnode = std::make_shared<RtNode>();
 
     ext2_filsys fs = nullptr;
-    errcode_t rc = ext2fs_open(m_imagePath.c_str(), EXT2_FLAG_64BITS, 0, 0, unix_io_manager, &fs);
+    const std::string imagePath = m_device->uri();
+    int rc = ext4io::openFsFromBlockDevice(m_device, EXT2_FLAG_64BITS, &fs);
     if (rc) {
-        throw IOException("Ext4Volume", m_imagePath, "ext2fs_open failed");
+        throw IOException("Ext4Volume", imagePath, "ext2fs_open failed");
     }
 
     struct Scope {

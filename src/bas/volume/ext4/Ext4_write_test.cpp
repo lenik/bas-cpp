@@ -1,4 +1,5 @@
 #include "Ext4Volume.hpp"
+#include "../dev/FileDevice.hpp"
 
 #include <cassert>
 #include <cstdlib>
@@ -36,7 +37,8 @@ int main() {
     assert(run_cmd("mkfs.ext4 -F \"" + image.string() + "\" >/dev/null 2>&1") == 0);
 
     std::cout << "Opening ext4 image...\n";
-    Ext4Volume vol(image.string());
+    auto device = BlockDevice::file(image.string(), 0, 0, false, false);
+    Ext4Volume vol(device);
     assert(vol.getClass() == "ext");
 
     std::cout << "\n=== ext4 Write API Tests ===\n";

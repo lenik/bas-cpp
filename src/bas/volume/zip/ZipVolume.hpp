@@ -1,6 +1,8 @@
-#ifndef MEMORYZIP_H
-#define MEMORYZIP_H
+#ifndef ZIPVOLUME_H
+#define ZIPVOLUME_H
 
+#include "../BlockDevice.hpp"
+#include "../MountOptions.hpp"
 #include "../Volume.hpp"
 
 #include "../../io/InputStream.hpp"
@@ -14,6 +16,10 @@
 #include <memory>
 #include <string>
 #include <vector>
+
+struct ZipOptions : public MountOptions {
+    
+};
 
 // ZIP parsing structures
 struct ZipEntry {
@@ -36,24 +42,24 @@ struct ZipEntry {
 };
 
 /**
- * MemoryZip provides read-only access to a ZIP archive embedded in memory
+ * ZipVolume provides read-only access to a ZIP archive backed by a BlockDevice.
+ * (e.g. assets can be backed by MemDevice; real zip can be backed by FileDevice/MMapDevice.)
  */
-class MemoryZip : public Volume {
+class ZipVolume : public Volume {
   private:
-    std::string m_sym;
-    const uint8_t* m_data;
-    size_t m_size;
+    std::shared_ptr<BlockDevice> m_device;
+    ZipOptions m_options;
 
     std::map<std::string, ZipEntry> m_entries; // Use map for faster lookup
 
   public:
-    MemoryZip(std::string_view sym, const uint8_t* data, size_t length);
+    ZipVolume(std::shared_ptr<BlockDevice> device, const ZipOptions& options = ZipOptions());
 
     // Volume interface
     std::string getClass() const override;
-    std::string getId() const override;
+    std::string getUrl() const override;
+    std::string getDeviceUrl() const override;
     VolumeType getType() const override;
-    std::string getSource() const override;
     bool isLocal() const override { return false; }
     void setLabel(std::string_view) override {}
 
@@ -79,7 +85,7 @@ class MemoryZip : public Volume {
     std::unique_ptr<RandomReader> newRandomReader(std::string_view path,
                                                   std::string_view encoding = "UTF-8") override;
 
-    std::string getLocalFile(std::string_view path) const override;
+    std::optional<std::string> getLocalFile(std::string_view path) const override;
     std::string getTempDir() override;
     std::string createTempFile(std::string_view prefix = "tmp.",
                                std::string_view suffix = "") override;
@@ -104,4 +110,4 @@ class MemoryZip : public Volume {
     std::vector<uint8_t> decompressEntry(const ZipEntry& entry) const;
 };
 
-#endif // MEMORYZIP_H
+#endif // ZIPVOLUME_H

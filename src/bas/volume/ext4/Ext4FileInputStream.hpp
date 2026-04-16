@@ -5,13 +5,16 @@
 
 #include <cstdint>
 #include <ios>
+#include <memory>
 #include <string>
 
 #include <ext2fs/ext2fs.h>
 
+#include "../BlockDevice.hpp"
+
 class Ext4FileInputStream : public RandomInputStream {
 public:
-    Ext4FileInputStream(std::string imagePath, uint32_t inode);
+    Ext4FileInputStream(std::shared_ptr<BlockDevice> device, uint32_t inode);
     ~Ext4FileInputStream() override;
 
     int read() override;
@@ -22,7 +25,8 @@ public:
     void close() override;
 
 private:
-    std::string m_imagePath;
+    std::shared_ptr<BlockDevice> m_device;
+    std::string m_deviceId;
     uint32_t m_inode = 0;
     int64_t m_pos = 0;
 

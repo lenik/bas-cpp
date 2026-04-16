@@ -2,21 +2,20 @@
 
 #include <algorithm>
 
-Fat32FileInputStream::Fat32FileInputStream(std::string imagePath, std::vector<uint32_t> clusterChain,
+Fat32FileInputStream::Fat32FileInputStream(std::shared_ptr<BlockDevice> device, std::vector<uint32_t> clusterChain,
                                            uint64_t dataOffset, uint32_t clusterSize, uint64_t fileSize)
-    : m_imagePath(std::move(imagePath))
+    : m_device(std::move(device))
     , m_chain(std::move(clusterChain))
     , m_dataOffset(dataOffset)
     , m_clusterSize(clusterSize)
-    , m_fileSize(fileSize)
-    , m_file(m_imagePath, std::ios::binary) {}
+    , m_fileSize(fileSize) {}
 
 Fat32FileInputStream::~Fat32FileInputStream() {
     close();
 }
 
 bool Fat32FileInputStream::readAt(uint64_t pos, uint8_t* dst, size_t len) {
-    if (!m_file.is_open() || !dst || len == 0 || pos >= m_fileSize) {
+    if (!m_device || !dst || len == 0 || pos >= m_fileSize) {
         return false;
     }
     size_t remain = len;
@@ -31,19 +30,12 @@ bool Fat32FileInputStream::readAt(uint64_t pos, uint8_t* dst, size_t len) {
             remain, std::min<uint64_t>(m_clusterSize - inClusterOff, m_fileSize - pos));
         const uint64_t imageOff =
             m_dataOffset + (static_cast<uint64_t>(m_chain[clusterIndex]) - 2) * m_clusterSize + inClusterOff;
-        m_file.clear();
-        m_file.seekg(static_cast<std::streamoff>(imageOff), std::ios::beg);
-        if (!m_file.good()) {
+        if (!m_device->read(imageOff, dst + out, static_cast<size_t>(canTake))) {
             return false;
         }
-        m_file.read(reinterpret_cast<char*>(dst + out), static_cast<std::streamsize>(canTake));
-        const std::streamsize got = m_file.gcount();
-        if (got <= 0) {
-            return false;
-        }
-        out += static_cast<size_t>(got);
-        remain -= static_cast<size_t>(got);
-        pos += static_cast<uint64_t>(got);
+        out += static_cast<size_t>(canTake);
+        remain -= static_cast<size_t>(canTake);
+        pos += static_cast<uint64_t>(canTake);
     }
     return out > 0;
 }
@@ -97,7 +89,5 @@ bool Fat32FileInputStream::seek(int64_t offset, std::ios::seekdir dir) {
 }
 
 void Fat32FileInputStream::close() {
-    if (m_file.is_open()) {
-        m_file.close();
-    }
+    m_device.reset();
 }

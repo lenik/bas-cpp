@@ -3,8 +3,9 @@
 
 #include "IUserDb.hpp"
 
-#include "../Volume.hpp"
+#include "../BlockDevice.hpp"
 #include "../MountOptions.hpp"
+#include "../Volume.hpp"
 
 #include <cstdint>
 #include <ctime>
@@ -15,8 +16,27 @@
 
 typedef std::vector<uint8_t> ByteArray;
 
+/**
+ * ext4 filesystem mount options.
+ */
+ struct Ext4Options : public MountOptions {
+    
+    /** Use journaling (if supported) */
+    bool journal = true;
+};
+
 class Ext4Volume : public Volume {
+    friend class Ext4FileOutputStream;
   public:
+    struct WritePlan {
+        uint64_t oldSize = 0;
+        uint64_t newSize = 0;
+        bool appendLike = false;
+        bool delayedAlloc = true;
+        bool preferAppendPath = false;
+        uint32_t commitChunkBytes = 1024 * 1024;
+        bool rewriteWholeFile = true;
+    };
     struct Inode {
         bool isDirectory = false;
         uint64_t size = 0;
@@ -51,12 +71,8 @@ class Ext4Volume : public Volume {
     };
 
 private:
-    std::string m_imagePath;
-    
-    // Memory-backed support
-    const uint8_t* m_memoryRegion = nullptr;
-    size_t m_memorySize = 0;
-    MountOptions m_mountOptions;
+    std::shared_ptr<BlockDevice> m_device;
+    Ext4Options m_options;
     
     mutable std::unordered_map<std::string, ino_t> m_files; // normalized-path -> ino
     mutable std::unordered_map<ino_t, Inode> m_nodes;
@@ -69,14 +85,8 @@ private:
     std::vector<int> m_contextGroupIds;
 
   public:
-    // File-backed volume
-    explicit Ext4Volume(std::string_view imagePath);
-    
-    // Memory-backed volume
-    explicit Ext4Volume(const uint8_t* memoryRegion, size_t size);
-    
     // Volume with mount options
-    explicit Ext4Volume(const MountOptions& options);
+    explicit Ext4Volume(std::shared_ptr<BlockDevice> device, const Ext4Options& options = Ext4Options());
     
     ~Ext4Volume() override;
 
@@ -86,11 +96,10 @@ private:
     int getContextGid() const { return m_contextGid; }
 
     std::string getClass() const override { return "ext"; }
-    std::string getId() const override { return m_imagePath; }
+    std::string getUrl() const override { return "ext4:" + m_device->uri(); }
+    std::string getDeviceUrl() const override { return m_device->uri(); }
     VolumeType getType() const override { return VolumeType::ARCHIVE; }
-    std::string getSource() const override;
     bool isLocal() const override { return false; }
-    std::string getLocalFile(std::string_view path) const override;
 
     bool exists(std::string_view path) const override;
     bool isFile(std::string_view path) const override;
@@ -113,6 +122,7 @@ private:
     std::vector<uint8_t> readFileUnchecked(std::string_view path, int64_t off = 0,
                                            size_t len = 0) override;
     void writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) override;
+    void appendFileUnchecked(std::string_view path, const uint8_t* data, size_t len);
 
     void createDirectoryThrowsUnchecked(std::string_view path) override;
     void removeDirectoryThrowsUnchecked(std::string_view path) override;
@@ -129,6 +139,8 @@ private:
     const RtNode* getDirectoryEntries(uint32_t inode) const;
     bool hasGroup(uint32_t gid) const;
     bool checkMode(const Inode& node, int needMask) const;
+    WritePlan planWriteLayout(std::string_view path, uint64_t oldSize, uint64_t newSize,
+                              bool appendLike) const;
 
     // Write support
     uint32_t resolveParentInode(std::string_view path) const;

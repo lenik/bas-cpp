@@ -4,9 +4,9 @@
 
 #include "../../io/IOException.hpp"
 
+#include <cctype>
 #include <cstdint>
 #include <cstring>
-#include <fstream>
 #include <vector>
 #include <unistd.h>
 #include <fcntl.h>
@@ -301,14 +301,8 @@ bool Fat32Volume::writeAt(uint64_t offset, const uint8_t* src, size_t len) {
     return m_device->write(offset, src, len);
 }
 
-uint32_t Fat32Volume::findFreeCluster() const {
-    for (uint32_t cluster = 2; cluster < 0x0FFFFFF8; ++cluster) {
-        uint32_t entry = getFatEntry(cluster);
-        if (entry == 0) {
-            return cluster;
-        }
-    }
-    return 0; // No free cluster found
+uint32_t Fat32Volume::findFreeCluster() {
+    return m_clusterManager->findFreeFromHint();
 }
 
 uint32_t Fat32Volume::allocateCluster(uint32_t prevCluster) {
@@ -340,17 +334,156 @@ void Fat32Volume::freeClusterChain(uint32_t firstCluster) {
     }
 }
 
-void Fat32Volume::setFatEntry(uint32_t cluster, uint32_t value) {
-    const uint64_t off = m_fatOffset + static_cast<uint64_t>(cluster) * 4;
-    if (off + 4 > m_device->size()) {
-        throw IOException("Fat32Volume", m_imagePath, "FAT entry out of range");
+int64_t Fat32Volume::findContiguousFreeRun(uint32_t count) {
+    return m_clusterManager->findContiguousFreeRun(count);
+}
+
+std::vector<uint32_t> Fat32Volume::allocateClusterChain(uint32_t count) {
+    std::vector<uint32_t> out;
+    if (count == 0) {
+        return out;
     }
-    uint8_t b[4];
-    b[0] = value & 0xFF;
-    b[1] = (value >> 8) & 0xFF;
-    b[2] = (value >> 16) & 0xFF;
-    b[3] = (value >> 24) & 0xFF;
-    writeAt(off, b, sizeof(b));
+    // Fast path: reserve a contiguous run to minimize FAT updates and improve sequential I/O.
+    const int64_t runStart = m_clusterManager->findContiguousFreeRun(count);
+    if (runStart >= 2) {
+        out.reserve(count);
+        for (uint32_t i = 0; i < count; ++i) {
+            const uint32_t c = static_cast<uint32_t>(runStart) + i;
+            const uint32_t next =
+                (i + 1 < count) ? (static_cast<uint32_t>(runStart) + i + 1) : 0x0FFFFFF8;
+            setFatEntry(c, next);
+            out.push_back(c);
+        }
+        m_clusterManager->setAllocHint(static_cast<uint32_t>(runStart) + count);
+        return out;
+    }
+    out.reserve(count);
+    uint32_t prev = 0;
+    for (uint32_t i = 0; i < count; ++i) {
+        const uint32_t c = m_clusterManager->findFreeFromHint();
+        if (c == 0) {
+            if (!out.empty()) {
+                freeClusterChain(out.front());
+            }
+            throw IOException("reallocClusters", m_device->uri(), "No space left on device");
+        }
+        setFatEntry(c, 0x0FFFFFF8);
+        if (prev != 0) {
+            setFatEntry(prev, c);
+        }
+        out.push_back(c);
+        prev = c;
+    }
+    return out;
+}
+
+Fat32Volume::ReallocStrategy Fat32Volume::analyzeReallocStrategy(const std::vector<uint32_t>& clusters,
+                                                                 uint32_t needClusters) {
+    if (clusters.size() == needClusters) {
+        return ReallocStrategy::KEEP_AS_IS;
+    }
+    if (clusters.size() > needClusters) {
+        return ReallocStrategy::SHRINK_TAIL;
+    }
+    if (!clusters.empty()) {
+        const uint32_t grow = needClusters - static_cast<uint32_t>(clusters.size());
+        const uint32_t tail = clusters.back();
+        bool contiguous = true;
+        for (uint32_t i = 1; i <= grow; ++i) {
+            if (getFatEntry(tail + i) != 0) {
+                contiguous = false;
+                break;
+            }
+        }
+        if (contiguous) {
+            return ReallocStrategy::EXTEND_TAIL_CONTIGUOUS;
+        }
+    }
+    if (m_clusterManager->findContiguousFreeRun(needClusters) >= 2) {
+        return ReallocStrategy::RELOCATE_CONTIGUOUS;
+    }
+    return ReallocStrategy::REALLOC_FRAGMENTED;
+}
+
+std::vector<uint32_t> Fat32Volume::reallocClusters(const std::vector<uint32_t>& clusters, uint64_t newSize) {
+    const uint32_t needClusters =
+        (newSize == 0) ? 0u : static_cast<uint32_t>((newSize + m_clusterSize - 1) / m_clusterSize);
+    if (needClusters == 0) {
+        if (!clusters.empty()) {
+            freeClusterChain(clusters.front());
+        }
+        m_clusterManager->flushDirty();
+        return {};
+    }
+
+    std::vector<uint32_t> out = clusters;
+    const ReallocStrategy strategy = analyzeReallocStrategy(clusters, needClusters);
+    if (strategy == ReallocStrategy::KEEP_AS_IS) {
+        return out;
+    }
+
+    if (strategy == ReallocStrategy::SHRINK_TAIL) {
+        const uint32_t keepLast = out[needClusters - 1];
+        if (needClusters < out.size()) {
+            freeClusterChain(out[needClusters]);
+        }
+        setFatEntry(keepLast, 0x0FFFFFF8);
+        out.resize(needClusters);
+        m_clusterManager->flushDirty();
+        return out;
+    }
+
+    const uint32_t grow = needClusters - static_cast<uint32_t>(out.size());
+    if (strategy == ReallocStrategy::EXTEND_TAIL_CONTIGUOUS && !out.empty()) {
+        const uint32_t tail = out.back();
+        uint32_t prev = tail;
+        for (uint32_t i = 1; i <= grow; ++i) {
+            const uint32_t c = tail + i;
+            setFatEntry(prev, c);
+            setFatEntry(c, 0x0FFFFFF8);
+            out.push_back(c);
+            prev = c;
+        }
+        m_clusterManager->flushDirty();
+        return out;
+    }
+
+    if (strategy == ReallocStrategy::RELOCATE_CONTIGUOUS) {
+        const int64_t runStart = m_clusterManager->findContiguousFreeRun(needClusters);
+        std::vector<uint32_t> rebuilt;
+        rebuilt.reserve(needClusters);
+        for (uint32_t i = 0; i < needClusters; ++i) {
+            rebuilt.push_back(static_cast<uint32_t>(runStart) + i);
+        }
+        for (uint32_t i = 0; i < needClusters; ++i) {
+            const uint32_t c = rebuilt[i];
+            if (getFatEntry(c) != 0) {
+                rebuilt.clear();
+                break;
+            }
+            const uint32_t next = (i + 1 < needClusters) ? rebuilt[i + 1] : 0x0FFFFFF8;
+            setFatEntry(c, next);
+        }
+        if (!rebuilt.empty()) {
+            if (!clusters.empty()) {
+                freeClusterChain(clusters.front());
+            }
+            m_clusterManager->flushDirty();
+            return rebuilt;
+        }
+    }
+
+    // Fallback: fragmented allocation with general head.
+    std::vector<uint32_t> rebuilt = allocateClusterChain(needClusters);
+    if (!clusters.empty()) {
+        freeClusterChain(clusters.front());
+    }
+    m_clusterManager->flushDirty();
+    return rebuilt;
+}
+
+void Fat32Volume::setFatEntry(uint32_t cluster, uint32_t value) {
+    m_clusterManager->set(cluster, value);
 }
 
 void Fat32Volume::createFileEntry(std::string_view path, uint32_t firstCluster, uint32_t size) {
@@ -498,7 +631,7 @@ void Fat32Volume::expandDirectoryIfNeeded(uint32_t dirCluster) {
         // Allocate first cluster for directory
         uint32_t newCluster = allocateCluster(0);
         if (newCluster == 0) {
-            throw IOException("expandDirectory", m_imagePath, "No space for directory expansion");
+            throw IOException("expandDirectory", m_device->uri(), "No space for directory expansion");
         }
 
         // Clear the cluster
@@ -532,74 +665,173 @@ void Fat32Volume::writeDirectoryEntryToDisk(std::string_view path, const Dirent&
         parentCluster = m_rootCluster;
     }
 
-    // Ensure directory has space
+    if (m_clusterSize % 32 != 0) {
+        throw IOException("writeDirectoryEntryToDisk", m_device->uri(), "Invalid FAT32 cluster size");
+    }
+
+    // We always need consecutive 32-byte slots for (LFN entries + short name entry).
+    constexpr size_t ENTRY_SIZE = 32;
+    const uint32_t slotsPerCluster = m_clusterSize / ENTRY_SIZE;
+
+    const bool needsLFN = fileName.size() > 12 || fileName.find('.') != std::string::npos;
+    const size_t lfnEntries = needsLFN ? ((fileName.size() + 12) / 13) : 0;
+    const uint32_t requiredSlots = needsLFN ? static_cast<uint32_t>(lfnEntries + 1) : 1;
+
+    // Ensure directory has at least one cluster.
     expandDirectoryIfNeeded(parentCluster);
 
-    // Find free slot - returns byte offset within cluster chain
-    uint32_t slotOffset = findFreeDirEntrySlot(parentCluster);
-    if (slotOffset == 0xFFFFFFFF) {
-        throw IOException("writeDirectoryEntryToDisk", std::string(path), "No space in directory");
-    }
-
-    // Write to disk - calculate which cluster and offset
     std::vector<uint32_t> chain = readClusterChain(parentCluster);
-    uint32_t clusterIndex = slotOffset / m_clusterSize;
-    uint32_t offsetInCluster = slotOffset % m_clusterSize;
-
-    if (clusterIndex >= chain.size()) {
-        throw IOException("writeDirectoryEntryToDisk", std::string(path), "Invalid cluster index");
+    if (chain.empty()) {
+        throw IOException("writeDirectoryEntryToDisk", m_device->uri(), "Directory has no clusters");
     }
 
-    // Check if LFN entries are needed (name > 8 chars or has extension > 3 chars or has special chars)
-    bool needsLFN = fileName.size() > 12 || fileName.find('.') != std::string::npos;
-    
+    // ---- Placement policy (same spirit as exFAT):
+    // 1) Prefer contiguous empty slots starting from the first 0x00 entry (end-of-entries marker).
+    // 2) If directory page is full, backfill contiguous deleted slots (0xE5 / 0x05) before that marker.
+    // 3) If still full, extend the directory cluster chain and write into the newly added space.
+
+    const size_t totalSlots = chain.size() * static_cast<size_t>(slotsPerCluster);
+    size_t emptyStartSlotAbs = static_cast<size_t>(-1);
+    size_t emptyRunLen = 0;
+    bool emptyRunReachesEnd = false;
+
+    size_t deletedCandidateStartSlotAbs = 0;
+    bool deletedCandidateFound = false;
+    size_t deletedRunLen = 0;
+    size_t deletedRunStartSlotAbs = 0;
+
+    bool emptyFound = false;
+    bool emptyRunBroke = false;
+
+    size_t slotAbs = 0;
+    for (size_t ci = 0; ci < chain.size() && !emptyRunBroke; ++ci) {
+        std::vector<uint8_t> block(m_clusterSize, 0);
+        const uint64_t baseOff = clusterToOffset(chain[ci]);
+        if (!readAt(baseOff, block.data(), block.size())) {
+            throw IOException("writeDirectoryEntryToDisk", m_device->uri(), "Failed to read directory cluster");
+        }
+
+        for (uint32_t si = 0; si < slotsPerCluster; ++si) {
+            const uint8_t firstByte = block[static_cast<size_t>(si) * ENTRY_SIZE];
+
+            if (!emptyFound) {
+                if (firstByte == 0x00) {
+                    emptyFound = true;
+                    emptyStartSlotAbs = slotAbs;
+                    emptyRunLen = 1;
+                    deletedRunLen = 0;
+                    continue;
+                }
+                if (firstByte == 0xE5 || firstByte == 0x05) {
+                    if (deletedRunLen == 0) deletedRunStartSlotAbs = slotAbs;
+                    deletedRunLen++;
+                    if (!deletedCandidateFound && deletedRunLen >= requiredSlots) {
+                        deletedCandidateStartSlotAbs = deletedRunStartSlotAbs;
+                        deletedCandidateFound = true;
+                    }
+                } else {
+                    deletedRunLen = 0;
+                }
+            } else {
+                if (firstByte == 0x00) {
+                    emptyRunLen++;
+                } else {
+                    emptyRunBroke = true;
+                    emptyRunReachesEnd = false;
+                    break;
+                }
+            }
+
+            ++slotAbs;
+        }
+    }
+
+    if (emptyFound && !emptyRunBroke) {
+        emptyRunReachesEnd = true;
+    }
+
+    size_t startSlotAbs = 0;
+    bool placementInExisting = false;
+    if (emptyFound && emptyRunLen >= requiredSlots) {
+        startSlotAbs = emptyStartSlotAbs;
+        placementInExisting = true;
+    } else if (deletedCandidateFound) {
+        startSlotAbs = deletedCandidateStartSlotAbs;
+        placementInExisting = true;
+    } else {
+        // Need to extend cluster chain.
+        if (emptyFound && emptyRunReachesEnd) {
+            startSlotAbs = emptyStartSlotAbs;
+        } else {
+            startSlotAbs = totalSlots; // first slot in the newly appended area
+        }
+    }
+
+    // If we chose an existing start slot, make sure it can fit (it should for empty/deleted placement).
+    // For extension placement, we ensure there are enough slots after appending.
+    const size_t availableSlots = (startSlotAbs <= totalSlots) ? (totalSlots - startSlotAbs) : 0;
+    size_t missingSlots = 0;
+    if (!placementInExisting) {
+        missingSlots = requiredSlots - availableSlots;
+    }
+
+    if (!placementInExisting && missingSlots > 0) {
+        const size_t extraClustersNeeded =
+            (missingSlots + slotsPerCluster - 1) / slotsPerCluster;
+
+        uint32_t prev = chain.back();
+        const std::vector<uint8_t> zeroCluster(m_clusterSize, 0);
+        for (size_t i = 0; i < extraClustersNeeded; ++i) {
+            uint32_t newCluster = allocateCluster(prev);
+            if (newCluster == 0) {
+                throw IOException("writeDirectoryEntryToDisk", m_device->uri(), "No space left on device");
+            }
+            if (!writeAt(clusterToOffset(newCluster), zeroCluster.data(), zeroCluster.size())) {
+                throw IOException("writeDirectoryEntryToDisk", m_device->uri(), "Failed to init extended directory cluster");
+            }
+            chain.push_back(newCluster);
+            prev = newCluster;
+        }
+        m_clusterManager->flushDirty();
+    }
+
+    // Reload chain to keep clusterIndex computations consistent with the extended chain.
+    chain = readClusterChain(parentCluster);
+    const uint64_t insertByteOffset = static_cast<uint64_t>(startSlotAbs) * ENTRY_SIZE;
+
     if (needsLFN) {
-        // Write LFN entries first, then short name entry
-        uint8_t checksum = calculateLFNChecksumForShortName(fileName);
-        
-        // Calculate how many LFN entries we need (13 chars per entry)
-        size_t lfnEntries = (fileName.size() + 12) / 13;
-        
-        // Find enough consecutive slots for LFN + short name
-        uint32_t totalSlotsNeeded = lfnEntries + 1;  // LFN entries + 1 short name entry
-        uint32_t slotOffset = findFreeDirEntrySlots(parentCluster, totalSlotsNeeded);
-        if (slotOffset == 0xFFFFFFFF) {
-            throw IOException("writeDirectoryEntryToDisk", std::string(path), 
-                              "No space for LFN entries in directory");
+        const uint8_t checksum = calculateLFNChecksumForShortName(fileName);
+        writeLFNEntries(parentCluster, static_cast<uint32_t>(insertByteOffset), fileName, checksum);
+
+        const uint64_t shortNameSlotByteOffset = insertByteOffset + static_cast<uint64_t>(lfnEntries) * ENTRY_SIZE;
+        const uint32_t shortClusterIndex = static_cast<uint32_t>(shortNameSlotByteOffset / m_clusterSize);
+        const uint32_t shortOffsetInCluster = static_cast<uint32_t>(shortNameSlotByteOffset % m_clusterSize);
+        if (shortClusterIndex >= chain.size()) {
+            throw IOException("writeDirectoryEntryToDisk", m_device->uri(), "Invalid cluster index for short name");
         }
-        
-        // Write LFN entries
-        writeLFNEntries(parentCluster, slotOffset, fileName, checksum);
-        
-        // Write short name entry after LFN entries
-        uint32_t shortNameSlot = slotOffset + (lfnEntries * 32);
-        clusterIndex = shortNameSlot / m_clusterSize;
-        offsetInCluster = shortNameSlot % m_clusterSize;
-        
-        if (clusterIndex >= chain.size()) {
-            throw IOException("writeDirectoryEntryToDisk", std::string(path), 
-                              "Invalid cluster index for short name");
-        }
-        
-        uint64_t clusterOffset = clusterToOffset(chain[clusterIndex]) + offsetInCluster;
-        std::vector<uint8_t> entry(32);
-        std::string shortName = createShortName(fileName);
+        const uint64_t clusterOffset = clusterToOffset(chain[shortClusterIndex]) + shortOffsetInCluster;
+
+        std::vector<uint8_t> entry(ENTRY_SIZE, 0);
+        const std::string shortName = createShortName(fileName);
         writeDirEntry(entry.data(), shortName, dirent.firstCluster, dirent.size, dirent.isDirectory,
                       dirent.mtime, dirent.atime, dirent.creationTime);
         if (!writeAt(clusterOffset, entry.data(), entry.size())) {
-            throw IOException("writeDirectoryEntryToDisk", std::string(path),
-                              "Failed to write short name entry to disk");
+            throw IOException("writeDirectoryEntryToDisk", m_device->uri(), "Failed to write short name entry to disk");
         }
     } else {
-        // Simple 8.3 name, just write one entry
-        uint64_t clusterOffset = clusterToOffset(chain[clusterIndex]) + offsetInCluster;
-        std::vector<uint8_t> entry(32);
-        std::string shortName = createShortName(fileName);
+        const uint32_t clusterIndex = static_cast<uint32_t>(insertByteOffset / m_clusterSize);
+        const uint32_t offsetInCluster = static_cast<uint32_t>(insertByteOffset % m_clusterSize);
+        if (clusterIndex >= chain.size()) {
+            throw IOException("writeDirectoryEntryToDisk", m_device->uri(), "Invalid cluster index for entry");
+        }
+
+        const uint64_t clusterOffset = clusterToOffset(chain[clusterIndex]) + offsetInCluster;
+        std::vector<uint8_t> entry(ENTRY_SIZE, 0);
+        const std::string shortName = createShortName(fileName);
         writeDirEntry(entry.data(), shortName, dirent.firstCluster, dirent.size, dirent.isDirectory,
                       dirent.mtime, dirent.atime, dirent.creationTime);
         if (!writeAt(clusterOffset, entry.data(), entry.size())) {
-            throw IOException("writeDirectoryEntryToDisk", std::string(path),
-                              "Failed to write entry to disk");
+            throw IOException("writeDirectoryEntryToDisk", m_device->uri(), "Failed to write entry to disk");
         }
     }
 }
@@ -608,6 +840,114 @@ void Fat32Volume::updateDirectoryEntryOnDisk(std::string_view path, const Dirent
     // For now, just write as new entry
     // A full implementation would find and update the existing entry
     writeDirectoryEntryToDisk(path, dirent);
+}
+
+bool Fat32Volume::findDirEntryLocation(std::string_view path, uint32_t& dirCluster, uint32_t& dirIndex,
+                                       Dirent* outDirent) const {
+    dirCluster = 0;
+    dirIndex = INVALID_DIR_INDEX;
+    const std::string resolved = resolvePath(path);
+    if (resolved.empty()) {
+        return false;
+    }
+    auto it = m_dirents.find(resolved);
+    if (it == m_dirents.end() || it->second.isDirectory) {
+        return false;
+    }
+    if (outDirent) {
+        *outDirent = it->second;
+    }
+
+    const std::string parent = getParentPath(resolved);
+    std::string fileName = getFileName(resolved);
+    fileName = createShortName(fileName);
+
+    auto pit = m_dirents.find(parent);
+    if (pit == m_dirents.end() || !pit->second.isDirectory) {
+        return false;
+    }
+    uint32_t parentCluster = pit->second.firstCluster;
+    if (parent == "/" && parentCluster == 0) {
+        parentCluster = m_rootCluster;
+    }
+
+    uint8_t fatName[11];
+    memset(fatName, ' ', 11);
+    std::string base = fileName;
+    std::string ext;
+    size_t dotPos = fileName.find('.');
+    if (dotPos != std::string::npos && dotPos + 1 < fileName.size()) {
+        base = fileName.substr(0, dotPos);
+        ext = fileName.substr(dotPos + 1);
+    }
+    for (size_t i = 0; i < 8 && i < base.size(); ++i) {
+        fatName[i] = static_cast<uint8_t>(std::toupper(static_cast<unsigned char>(base[i])));
+    }
+    for (size_t i = 0; i < 3 && i < ext.size(); ++i) {
+        fatName[8 + i] = static_cast<uint8_t>(std::toupper(static_cast<unsigned char>(ext[i])));
+    }
+
+    const std::vector<uint32_t> chain = readClusterChain(parentCluster);
+    for (uint32_t cluster : chain) {
+        std::vector<uint8_t> block(m_clusterSize);
+        const uint64_t baseOff = clusterToOffset(cluster);
+        if (!readAt(baseOff, block.data(), block.size())) {
+            continue;
+        }
+        for (uint32_t pos = 0; pos + 32 <= m_clusterSize; pos += 32) {
+            if (block[pos] == 0x00) {
+                return false;
+            }
+            if (block[pos] == 0xE5 || block[pos] == 0x05 || block[pos + 11] == 0x0F) {
+                continue;
+            }
+            bool matched = true;
+            for (int i = 0; i < 11; ++i) {
+                if (block[pos + i] != fatName[i]) {
+                    matched = false;
+                    break;
+                }
+            }
+            if (matched) {
+                dirCluster = cluster;
+                dirIndex = pos / 32;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+void Fat32Volume::updateDirEntry(uint32_t dirCluster, uint32_t dirIndex, const Dirent& dirent) {
+    if (dirCluster < 2 || dirIndex == INVALID_DIR_INDEX) {
+        throw IOException("updateDirEntry", m_device->uri(), "Invalid directory entry location");
+    }
+    const uint64_t off = clusterToOffset(dirCluster) + static_cast<uint64_t>(dirIndex) * 32;
+    if (off + 32 > m_device->size()) {
+        throw IOException("updateDirEntry", m_device->uri(), "Directory entry out of range");
+    }
+
+    std::vector<uint8_t> oldEnt(32);
+    if (!readAt(off, oldEnt.data(), oldEnt.size())) {
+        throw IOException("updateDirEntry", m_device->uri(), "Failed to read old directory entry");
+    }
+    if (oldEnt[0] == 0x00 || oldEnt[0] == 0xE5 || oldEnt[11] == 0x0F) {
+        throw IOException("updateDirEntry", m_device->uri(), "Target entry is invalid");
+    }
+
+    oldEnt[11] = dirent.isDirectory ? (oldEnt[11] | 0x10) : (oldEnt[11] & ~0x10);
+    oldEnt[20] = static_cast<uint8_t>((dirent.firstCluster >> 16) & 0xFF);
+    oldEnt[21] = static_cast<uint8_t>((dirent.firstCluster >> 24) & 0xFF);
+    oldEnt[26] = static_cast<uint8_t>(dirent.firstCluster & 0xFF);
+    oldEnt[27] = static_cast<uint8_t>((dirent.firstCluster >> 8) & 0xFF);
+    oldEnt[28] = static_cast<uint8_t>(dirent.size & 0xFF);
+    oldEnt[29] = static_cast<uint8_t>((dirent.size >> 8) & 0xFF);
+    oldEnt[30] = static_cast<uint8_t>((dirent.size >> 16) & 0xFF);
+    oldEnt[31] = static_cast<uint8_t>((dirent.size >> 24) & 0xFF);
+
+    if (!writeAt(off, oldEnt.data(), oldEnt.size())) {
+        throw IOException("updateDirEntry", m_device->uri(), "Failed to write directory entry");
+    }
 }
 
 void Fat32Volume::markDirectoryEntryAsDeleted(uint32_t dirCluster, std::string_view name) {
@@ -653,7 +993,7 @@ void Fat32Volume::markDirectoryEntryAsDeleted(uint32_t dirCluster, std::string_v
             if (block[pos] == 0x00) {
                 // End of directory entries
                 if (!found) {
-                    throw IOException("markDirectoryEntryAsDeleted", m_imagePath, 
+                    throw IOException("markDirectoryEntryAsDeleted", m_device->uri(),
                                      "Entry not found: " + std::string(name));
                 }
                 return;
@@ -683,13 +1023,13 @@ void Fat32Volume::markDirectoryEntryAsDeleted(uint32_t dirCluster, std::string_v
                 block[pos] = 0xE5;
                 bool writeOk = writeAt(offset + pos, block.data() + pos, 32);
                 if (!writeOk) {
-                    throw IOException("markDirectoryEntryAsDeleted", m_imagePath, "Failed to write deletion marker");
+                    throw IOException("markDirectoryEntryAsDeleted", m_device->uri(), "Failed to write deletion marker");
                 }
                 
                 // Verify the write by reading back
                 std::vector<uint8_t> verifyBlock(32);
                 if (readAt(offset + pos, verifyBlock.data(), 32) && verifyBlock[0] != 0xE5) {
-                    throw IOException("markDirectoryEntryAsDeleted", m_imagePath, 
+                    throw IOException("markDirectoryEntryAsDeleted", m_device->uri(),
                                      "Write verification failed - marker not persisted");
                 }
                 
@@ -706,7 +1046,7 @@ void Fat32Volume::markDirectoryEntryAsDeleted(uint32_t dirCluster, std::string_v
     }
     
     if (!found) {
-        throw IOException("markDirectoryEntryAsDeleted", m_imagePath, 
+        throw IOException("markDirectoryEntryAsDeleted", m_device->uri(),
                          "Entry not found in directory: " + std::string(name));
     }
 }
@@ -771,7 +1111,7 @@ void Fat32Volume::writeLFNEntries(uint32_t dirCluster, uint32_t slotOffset,
         uint32_t offsetInCluster = absoluteOffset % m_clusterSize;
 
         if (clusterIndex >= chain.size()) {
-            throw IOException("writeLFNEntries", m_imagePath, "Invalid cluster index for LFN");
+            throw IOException("writeLFNEntries", m_device->uri(), "Invalid cluster index for LFN");
         }
 
         // Create LFN entry

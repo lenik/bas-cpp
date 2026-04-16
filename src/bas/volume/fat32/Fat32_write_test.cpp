@@ -1,11 +1,10 @@
 #include "Fat32Volume.hpp"
 
-#include "../../io/IOException.hpp"
+#include "../BlockDevice.hpp"
 
 #include <cassert>
 #include <cstdlib>
 #include <filesystem>
-#include <fstream>
 #include <iostream>
 #include <string>
 
@@ -39,7 +38,8 @@ int main() {
     assert(run_cmd("mkfs.fat -F 32 \"" + image.string() + "\" >/dev/null 2>&1") == 0);
 
     std::cout << "Opening FAT32 image...\n";
-    Fat32Volume vol(image.string());
+    auto device = BlockDevice::file(image.string(), 0, 0, false, false);
+    Fat32Volume vol(device);
     assert(vol.getClass() == "fat32");
 
     std::cout << "\n=== FAT32 Write API Tests ===\n";
