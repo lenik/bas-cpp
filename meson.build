@@ -24,14 +24,22 @@ endif
 cpp_nowarn = []
 #cpp_nowarn += cpp.get_supported_arguments(['-w', '/w'])
 
+if fs.is_dir('subprojects/bas-c')
+    subproject('bas-c')
+endif
+
 # libbas-c
-subproject('bas-c')
 bas_c_dep = dependency('bas-c', required: true)
 bas_c_static_dep = dependency('bas-c-static', required: true)
 
-boost_sub = subproject('boost')
-boost_json_dep = boost_sub.get_variable('boost_json_dep')
-boost_locale_dep = boost_sub.get_variable('boost_locale_dep')
+if fs.is_dir('subprojects/boost')
+    boost_sub = subproject('boost')
+    boost_json_dep = boost_sub.get_variable('boost_json_dep')
+    boost_locale_dep = boost_sub.get_variable('boost_locale_dep')
+    boost_dep = declare_dependency(dependencies: [boost_json_dep, boost_locale_dep])
+else
+    boost_dep = dependency('boost', modules: ['json', 'locale'], required: true)
+endif
 
 date_dep = subproject('date_tz').get_variable('date_dep')
 
@@ -132,45 +140,44 @@ cpp_sources = files(
     './src/bas/script/boost_json.cpp',
     './src/bas/script/json.cpp',
     './src/bas/script/scriptable.cpp',
-    './src/bas/util/ClipboardHelper.cpp',
-    './src/bas/util/FileTypeDetector.cpp',
-    './src/bas/util/encoding.cpp',
-    './src/bas/util/LogBuffer.cpp',
-    './src/bas/util/Path.cpp',
-    './src/bas/util/PathHelper.cpp',
-    './src/bas/util/urls.cpp',
-    './src/bas/util/uuid.cpp',
+    './src/bas/time/Duration.cpp',
     './src/bas/time/Instant.cpp',
     './src/bas/time/LocalDate.cpp',
     './src/bas/time/LocalDateTime.cpp',
     './src/bas/time/LocalTime.cpp',
     './src/bas/time/OffsetDateTime.cpp',
     './src/bas/time/OffsetTime.cpp',
-    './src/bas/time/ZoneId.cpp',
-    './src/bas/time/ZonedDateTime.cpp',
-    './src/bas/time/TimeTypes.cpp',
-    './src/bas/time/TimeApiDefaults.cpp',
-    './src/bas/time/ZonedTime.cpp',
-    './src/bas/time/Duration.cpp',
     './src/bas/time/Period.cpp',
     './src/bas/time/Temporal.cpp',
     './src/bas/time/TemporalAccessor.cpp',
+    './src/bas/time/TimeApiDefaults.cpp',
+    './src/bas/time/TimeTypes.cpp',
+    './src/bas/time/ZoneId.cpp',
+    './src/bas/time/ZonedDateTime.cpp',
+    './src/bas/time/ZonedTime.cpp',
+    './src/bas/util/ClipboardHelper.cpp',
+    './src/bas/util/FileTypeDetector.cpp',
+    './src/bas/util/LogBuffer.cpp',
+    './src/bas/util/Path.cpp',
+    './src/bas/util/PathHelper.cpp',
+    './src/bas/util/encoding.cpp',
+    './src/bas/util/urls.cpp',
+    './src/bas/util/uuid.cpp',
+    './src/bas/volume/BlockDevice.cpp',
     './src/bas/volume/DirNode.cpp',
     './src/bas/volume/LocalVolume.cpp',
     './src/bas/volume/OverlayVolume.cpp',
-    './src/bas/volume/overlay_ls.cpp',
     './src/bas/volume/Volume.cpp',
     './src/bas/volume/VolumeFile.cpp',
     './src/bas/volume/VolumeManager.cpp',
     './src/bas/volume/Volume_utils.cpp',
-    './src/bas/volume/BlockDevice.cpp',
     './src/bas/volume/dev/FileDevice.cpp',
-    './src/bas/volume/dev/MemDevice.cpp',
-    './src/bas/volume/dev/MMapDevice.cpp',
     './src/bas/volume/dev/LoopDevice.cpp',
+    './src/bas/volume/dev/MMapDevice.cpp',
+    './src/bas/volume/dev/MemDevice.cpp',
+    './src/bas/volume/exfat/ExfatClusterManager.cpp',
     './src/bas/volume/exfat/ExfatFileInputStream.cpp',
     './src/bas/volume/exfat/ExfatFileOutputStream.cpp',
-    './src/bas/volume/exfat/ExfatClusterManager.cpp',
     './src/bas/volume/exfat/ExfatVolume.cpp',
     './src/bas/volume/exfat/ExfatVolume_stubs.cpp',
     './src/bas/volume/exfat/ExfatVolume_write.cpp',
@@ -179,13 +186,14 @@ cpp_sources = files(
     './src/bas/volume/ext4/Ext4IoManager.cpp',
     './src/bas/volume/ext4/Ext4Volume.cpp',
     './src/bas/volume/ext4/Ext4Volume_write.cpp',
+    './src/bas/volume/fat32/Fat32ClusterManager.cpp',
     './src/bas/volume/fat32/Fat32FileInputStream.cpp',
     './src/bas/volume/fat32/Fat32FileOutputStream.cpp',
-    './src/bas/volume/fat32/Fat32ClusterManager.cpp',
     './src/bas/volume/fat32/Fat32Volume.cpp',
     './src/bas/volume/fat32/Fat32Volume_write.cpp',
     './src/bas/volume/fat32/fat32_utils.cpp',
     './src/bas/volume/mountinfo.cpp',
+    './src/bas/volume/overlay_ls.cpp',
     './src/bas/volume/zip/ZipVolume.cpp',
     './src/module.cpp',
 )
@@ -223,14 +231,19 @@ assets_o = custom_target(
     'assets_o',
     output: 'assets.o',
     input: [assets_s, assets_zip],
-    command: [as, '-o', '@OUTPUT@', '@INPUT0@'],
+    command: [
+        'sh',
+        '-c', 'cd "$1" && "$2" -o assets.o assets.s',
+        'sh',
+        build_dir,
+        as,
+    ],
     depends: assets_zip,
 )
 
 exe_deps = [
     bas_c_dep,
-    boost_json_dep,
-    boost_locale_dep,
+    boost_dep,
     date_dep,
     ext2fs_dep,
     glib_dep,
@@ -243,8 +256,7 @@ exe_deps = [
 
 exe_static_deps = [
     bas_c_static_dep,
-    boost_json_dep,
-    boost_locale_dep,
+    boost_dep,
     date_dep,
     ext2fs_dep,
     glib_dep,
@@ -309,7 +321,7 @@ pkgconfig.generate(
     description: 'C++ base library: I/O, network, volume, formatting, scripting',
     version: meson.project_version(),
     subdirs: 'bas',
-    requires: ['bas-c', 'date-tz', 'glib-2.0', 'icu-uc', 'libcurl', 'openssl', 'zlib'],
+    requires: ['bas-c', 'glib-2.0', 'icu-uc', 'libcurl', 'openssl', 'zlib'],
 )
 
 pkgconfig.generate(
@@ -318,7 +330,7 @@ pkgconfig.generate(
     description: 'C++ base library: I/O, network, volume, formatting, scripting',
     version: meson.project_version(),
     subdirs: 'bas',
-    requires: ['date-tz', 'glib-2.0', 'icu-uc', 'libcurl', 'openssl', 'zlib'],
+    requires: ['glib-2.0', 'icu-uc', 'libcurl', 'openssl', 'zlib'],
 )
 
 # ---- Headers for libbas-c package (includedir/bas-c) ----
