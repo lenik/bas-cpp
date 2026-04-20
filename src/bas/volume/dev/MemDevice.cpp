@@ -1,5 +1,7 @@
 #include "MemDevice.hpp"
 
+#include <bas/util/encoding.hpp>
+
 #include <stdexcept>
 
 MemDevice::MemDevice(size_t size, std::string_view name)
@@ -39,17 +41,14 @@ MemDevice::~MemDevice() {
 BlockDeviceType MemDevice::type() const { return BlockDeviceType::MEM; }
 
 std::string MemDevice::name() const {
-    std::string uri = "mem:";
-    if (m_name.empty())
-        uri += std::to_string(reinterpret_cast<uintptr_t>(m_data));
-    else
-        uri += m_name;
-    uri += ":" + std::to_string(m_size);
-    return uri;
+    if (!m_name.empty())
+        return m_name;
+    return encoding::to_hex(reinterpret_cast<uintptr_t>(m_data)) + "h" + ":" +
+           std::to_string(m_size);
 }
 
 std::string MemDevice::uri() const {
-    std::string uri = "mem:" + std::to_string(reinterpret_cast<uintptr_t>(m_data));
+    std::string uri = "mem:" + encoding::to_hex(reinterpret_cast<uintptr_t>(m_data)) + "h";
     uri += ":" + std::to_string(m_size);
     return uri;
 }

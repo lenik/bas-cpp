@@ -1,5 +1,7 @@
 #include "Volume.hpp"
 
+#include <bas/cli/opt_parser.h>
+
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -126,6 +128,71 @@ ListOptions ListOptions::parse(std::string_view options) {
             break;
         }
     }
+    return opts;
+}
+
+std::optional<ListOptions> ListOptions::parse(int& argc, char**& argv) {
+    ListOptions opts;
+    opt_parser_t parser;
+    opt_parser_init(&parser);
+
+    static const struct option long_options[] = {
+        {"recursive", no_argument, nullptr, 'R'}, {"long", no_argument, nullptr, 'l'},
+        {"all", no_argument, nullptr, 'a'},       {"almost-all", no_argument, nullptr, 'A'},
+        {"classify", no_argument, nullptr, 'F'},  {"human-readable", no_argument, nullptr, 'h'},
+        {"color", no_argument, nullptr, 'C'},     {"tree", no_argument, nullptr, 'T'},
+        {"help", no_argument, nullptr, 1},        {nullptr, 0, nullptr, 0},
+    };
+
+    int opt = 0;
+    while ((opt = opt_parse_long(&parser, argc, argv, "RlaAFhCT", long_options, nullptr)) != -1) {
+        switch (opt) {
+        case 1:
+            std::puts("Usage: assets [OPTIONS] [PATH...]");
+            std::puts("Options:");
+            std::puts("  -R, --recursive        list subdirectories recursively");
+            std::puts("  -l, --long             use a long listing format");
+            std::puts("  -a, --all              include entries starting with . and ..");
+            std::puts("  -A, --almost-all       include entries starting with . except . and ..");
+            std::puts("  -F, --classify         append file type indicators");
+            std::puts("  -h, --human-readable   print sizes in human-readable form");
+            std::puts("  -C, --color            enable colored output");
+            std::puts("  -T, --tree             print as directory tree");
+            std::puts("      --help             display this help and exit");
+            return std::nullopt;
+        case 'R':
+            opts.recursive = true;
+            break;
+        case 'l':
+            opts.longFormat = true;
+            break;
+        case 'a':
+            opts.includeDotFiles = true;
+            opts.includeDotDot = true;
+            break;
+        case 'A':
+            opts.includeDotFiles = true;
+            break;
+        case 'F':
+            opts.formatSuffix = true;
+            break;
+        case 'h':
+            opts.human = true;
+            break;
+        case 'C':
+            opts.color = true;
+            break;
+        case 'T':
+            opts.tree = true;
+            break;
+        case '?':
+        default:
+            break;
+        }
+    }
+
+    argc -= parser.optind;
+    argv += parser.optind;
     return opts;
 }
 

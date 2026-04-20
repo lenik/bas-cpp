@@ -158,6 +158,7 @@ cpp_sources = files(
     './src/bas/volume/DirNode.cpp',
     './src/bas/volume/LocalVolume.cpp',
     './src/bas/volume/OverlayVolume.cpp',
+    './src/bas/volume/overlay_ls.cpp',
     './src/bas/volume/Volume.cpp',
     './src/bas/volume/VolumeFile.cpp',
     './src/bas/volume/VolumeManager.cpp',

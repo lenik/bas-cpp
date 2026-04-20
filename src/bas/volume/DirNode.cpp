@@ -246,7 +246,7 @@ std::string DirNode::path() const {
 }
 
 DirNode* DirNode::root() { return parent ? parent->root() : this; }
-size_t DirNode::childCount() const { return children_valid ? children.size() : 0; }
+size_t DirNode::childCount() const { return children_valid ? children.size() : -1; }
 
 DirNode* DirNode::findChild(std::string_view name) { return findChild(std::string(name)); }
 DirNode* DirNode::findChild(const std::string& name) {

@@ -219,11 +219,9 @@ std::string to_dir_path(std::string_view _path) {
 
 std::string ZipVolume::getClass() const { return "mz"; }
 
-std::string ZipVolume::getUrl() const { return "zip:" + m_device->uri(); }
+std::string ZipVolume::getUrl() const { return "zip:" + m_device->name(); }
 
-std::string ZipVolume::getDeviceUrl() const {
-    return m_device->uri();
-}
+std::string ZipVolume::getDeviceUrl() const { return m_device->uri(); }
 
 VolumeType ZipVolume::getType() const { return VolumeType::ARCHIVE; }
 
@@ -309,6 +307,7 @@ void ZipVolume::readDir_inplace(DirNode& context, std::string_view path, bool re
         item_entry(node.get(), pair.second, base);
 
         parent->putChild(std::move(node));
+        parent->children_valid = true;
     } // for m_entries
 }
 
@@ -449,8 +448,8 @@ void ZipVolume::renameFileThrowsUnchecked(std::string_view oldPath, std::string_
 }
 
 std::optional<std::string> ZipVolume::getLocalFile(std::string_view path) const {
-    (void)path; // Suppress unused parameter warning
-    return std::nullopt;  // ZipVolume doesn't map to local files
+    (void)path;          // Suppress unused parameter warning
+    return std::nullopt; // ZipVolume doesn't map to local files
 }
 
 std::string ZipVolume::getTempDir() {
@@ -470,7 +469,8 @@ void ZipVolume::parseZip() {
     }
 
     const uint64_t zipSize = m_device->size();
-    if (zipSize < sizeof(ZipEndOfCentralDir)) return;
+    if (zipSize < sizeof(ZipEndOfCentralDir))
+        return;
 
     // EOCD is usually within last 64KB; also include EOCD itself.
     const uint64_t tailSize = std::min<uint64_t>(zipSize, 65536ull + sizeof(ZipEndOfCentralDir));
@@ -489,7 +489,8 @@ void ZipVolume::parseZip() {
             break;
         }
     }
-    if (eocdPos == std::string::npos) return;
+    if (eocdPos == std::string::npos)
+        return;
 
     const uint8_t* eocdPtr = tail.data() + eocdPos;
     const uint32_t cdSize = readLE32(eocdPtr + 12);
@@ -497,7 +498,8 @@ void ZipVolume::parseZip() {
     const uint16_t totalRecords = readLE16(eocdPtr + 10);
 
     const uint64_t cdOffset = cdOffset32;
-    if (cdOffset + cdSize > zipSize) return;
+    if (cdOffset + cdSize > zipSize)
+        return;
 
     std::vector<uint8_t> cd(cdSize);
     if (cdSize > 0 && !m_device->read(cdOffset, cd.data(), cd.size())) {
@@ -507,8 +509,10 @@ void ZipVolume::parseZip() {
     const size_t centralEntryFixedSize = sizeof(ZipCentralDirEntry);
     size_t pos = 0;
     for (uint16_t i = 0; i < totalRecords; ++i) {
-        if (pos + centralEntryFixedSize > cd.size()) break;
-        if (readLE32(cd.data() + pos) != 0x02014b50) break;
+        if (pos + centralEntryFixedSize > cd.size())
+            break;
+        if (readLE32(cd.data() + pos) != 0x02014b50)
+            break;
 
         // Parse fixed part (little-endian).
         const uint16_t compression = readLE16(cd.data() + pos + 10);
@@ -525,10 +529,12 @@ void ZipVolume::parseZip() {
         const size_t extraOffset = filenameOffset + filenameLen;
         const size_t commentOffset = extraOffset + extraFieldLen;
 
-        if (commentOffset + commentLen > cd.size()) break;
+        if (commentOffset + commentLen > cd.size())
+            break;
 
         ZipEntry entry;
-        entry.name = std::string(reinterpret_cast<const char*>(cd.data() + filenameOffset), filenameLen);
+        entry.name =
+            std::string(reinterpret_cast<const char*>(cd.data() + filenameOffset), filenameLen);
         entry.localHeaderOffset = localHeaderOffset;
         entry.compressedSize = compressedSize;
         entry.uncompressedSize = uncompressedSize;
@@ -552,7 +558,8 @@ void ZipVolume::parseZip() {
         m_entries[entry.name] = entry;
 
         pos = commentOffset + commentLen;
-        if (pos >= cd.size()) break;
+        if (pos >= cd.size())
+            break;
     }
 }
 
@@ -585,7 +592,8 @@ std::vector<uint8_t> ZipVolume::decompressEntry(const ZipEntry& entry) const {
     const uint16_t filenameLen = readLE16(lfhBuf.data() + 26);
     const uint16_t extraFieldLen = readLE16(lfhBuf.data() + 28);
 
-    const uint64_t dataOffset = entry.localHeaderOffset + sizeof(ZipLocalFileHeader) + filenameLen + extraFieldLen;
+    const uint64_t dataOffset =
+        entry.localHeaderOffset + sizeof(ZipLocalFileHeader) + filenameLen + extraFieldLen;
     if (dataOffset + entry.compressedSize > zipSize) {
         throw IOException("decompressEntry", entry.name, "Invalid ZIP entry size");
     }

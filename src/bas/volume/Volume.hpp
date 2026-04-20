@@ -61,6 +61,8 @@ struct ListOptions {
     std::string color_time = "\033[36m";
 
     static ListOptions parse(std::string_view options);
+    static std::optional<ListOptions> parse(int& argc, char**& argv);
+
     static const ListOptions DEFAULT;
 };
 
@@ -88,7 +90,9 @@ class Volume {
 
     virtual bool isEncrypted() const { return false; }
     virtual bool isLocal() const { return false; }
-    virtual std::optional<std::string> getLocalFile(std::string_view path) const { return std::nullopt; }
+    virtual std::optional<std::string> getLocalFile(std::string_view path) const {
+        return std::nullopt;
+    }
 
     // default implementation: by file .rc/UUID
     virtual std::string getUUID() const;
@@ -102,7 +106,7 @@ class Volume {
 
     std::unique_ptr<const VolumeFile> getRootFile() const;
     std::unique_ptr<VolumeFile> getRootFile();
-    
+
     std::unique_ptr<VolumeFile> resolve(std::string_view path);
     std::unique_ptr<const VolumeFile> resolve(std::string_view path) const;
 
@@ -274,17 +278,17 @@ class Volume {
     std::string m_uuidFile = "UUID";
     std::string m_serialFile = "SERIAL";
     std::string m_labelFile = "LABEL";
-    
+
     // FSLang integration
     struct ExecutionResult {
         bool success = false;
         std::string error;
         int failedLine = 0;
     };
-    
-    ExecutionResult run(const std::string& fslangSource, 
-                       std::optional<std::function<void()>> commitCallback = std::nullopt);
-    
+
+    ExecutionResult run(const std::string& fslangSource,
+                        std::optional<std::function<void()>> commitCallback = std::nullopt);
+
     std::string deepHash() const;
 };
 
