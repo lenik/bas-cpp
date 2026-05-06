@@ -3,14 +3,14 @@
 #include "../dev/FileDevice.hpp"
 #include "../dev/MemDevice.hpp"
 
-#include <ext2fs/ext2fs.h>
-#include <ext2fs/ext2_io.h>
-
 #include <cinttypes>
 #include <cstring>
 #include <mutex>
 #include <unordered_map>
 #include <vector>
+
+#include <ext2fs/ext2_io.h>
+#include <ext2fs/ext2fs.h>
 
 namespace ext4io {
 

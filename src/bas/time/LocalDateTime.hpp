@@ -1,13 +1,13 @@
 #ifndef BAS_TIME_LOCAL_DATE_TIME_HPP
 #define BAS_TIME_LOCAL_DATE_TIME_HPP
 
+#include "LocalDate.hpp"
+#include "LocalTime.hpp"
+
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
-
-#include "LocalDate.hpp"
-#include "LocalTime.hpp"
 
 namespace bas::time {
 

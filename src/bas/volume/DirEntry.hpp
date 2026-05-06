@@ -1,11 +1,11 @@
 #ifndef DIRENTRY_H
 #define DIRENTRY_H
 
-#include <date/tz.h>
-
 #include <cstdint>
 #include <ctime>
 #include <string>
+
+#include <date/tz.h>
 
 enum class FileType : uint8_t {
     Unknown = 0,

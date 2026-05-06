@@ -1,5 +1,4 @@
 #include "Fat32Volume.hpp"
-
 #include "fat32_utils.hpp"
 
 #include "../../io/IOException.hpp"
@@ -8,8 +7,9 @@
 #include <cstdint>
 #include <cstring>
 #include <vector>
-#include <unistd.h>
+
 #include <fcntl.h>
+#include <unistd.h>
 
 void Fat32Volume::writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) {
     const std::string normalized = normalizeArg(path);

@@ -4,10 +4,12 @@
 #include "../BlockDevice.hpp"
 
 #include <cstring>
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <unistd.h>
 #include <vector>
+
+#include <sys/stat.h>
+
+#include <fcntl.h>
+#include <unistd.h>
 
 class FileDevice : public BlockDevice {
   public:

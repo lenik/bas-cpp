@@ -1,8 +1,9 @@
 #ifndef EXFATFILEOUTPUTSTREAM_H
 #define EXFATFILEOUTPUTSTREAM_H
 
-#include "../../io/OutputStream.hpp"
 #include "ExfatVolume.hpp"
+
+#include "../../io/OutputStream.hpp"
 
 #include <string>
 #include <vector>

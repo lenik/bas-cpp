@@ -1,10 +1,10 @@
 #ifndef BAS_TIME_DURATION_HPP
 #define BAS_TIME_DURATION_HPP
 
+#include "Temporal.hpp"
+
 #include <cstdint>
 #include <memory>
-
-#include "Temporal.hpp"
 
 namespace bas::time {
 

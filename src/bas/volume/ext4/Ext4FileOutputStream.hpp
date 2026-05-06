@@ -3,9 +3,9 @@
 
 #include "../../io/OutputStream.hpp"
 
+#include <cstdint>
 #include <string>
 #include <vector>
-#include <cstdint>
 
 class Ext4Volume;
 

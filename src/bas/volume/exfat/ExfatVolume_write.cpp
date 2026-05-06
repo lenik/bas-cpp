@@ -1,9 +1,10 @@
 #include "ExfatVolume.hpp"
+
 #include "../../io/IOException.hpp"
 
 #include <algorithm>
-#include <cstring>
 #include <chrono>
+#include <cstring>
 
 // Helper to get current time as exFAT timestamp
 static uint32_t getExfatTimestamp() {

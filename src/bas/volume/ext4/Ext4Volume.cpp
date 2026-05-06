@@ -2,13 +2,9 @@
 
 #include "Ext4FileInputStream.hpp"
 #include "Ext4FileOutputStream.hpp"
-
-#include "../../io/IOException.hpp"
-
 #include "Ext4IoManager.hpp"
 
-#include <ext2fs/ext2_fs.h>
-#include <ext2fs/ext2fs.h>
+#include "../../io/IOException.hpp"
 
 #include <algorithm>
 #include <chrono>
@@ -16,6 +12,9 @@
 #include <stdexcept>
 #include <unordered_set>
 #include <vector>
+
+#include <ext2fs/ext2_fs.h>
+#include <ext2fs/ext2fs.h>
 
 #include <sys/stat.h>
 

@@ -1,7 +1,9 @@
 #include "Ext4FileOutputStream.hpp"
 
-#include "../../io/IOException.hpp"
+#include "Ext4IoManager.hpp"
 #include "Ext4Volume.hpp"
+
+#include "../../io/IOException.hpp"
 
 #include <algorithm>
 #include <cstring>
@@ -11,8 +13,6 @@
 
 #include <ext2fs/ext2_fs.h>
 #include <ext2fs/ext2fs.h>
-
-#include "Ext4IoManager.hpp"
 
 Ext4FileOutputStream::Ext4FileOutputStream(Ext4Volume* volume, std::string path, bool append)
     : m_volume(volume)

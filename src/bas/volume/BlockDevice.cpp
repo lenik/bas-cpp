@@ -6,9 +6,11 @@
 #include "dev/MemDevice.hpp"
 
 #include <cstring>
-#include <fcntl.h>
+
 #include <sys/mman.h>
 #include <sys/stat.h>
+
+#include <fcntl.h>
 #include <unistd.h>
 
 // Static member initialization

@@ -1,8 +1,8 @@
 #ifndef MOUNTOPTIONS_H
 #define MOUNTOPTIONS_H
 
-#include <string>
 #include <memory>
+#include <string>
 
 /**
  * Filesystem mount options.

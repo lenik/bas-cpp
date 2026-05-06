@@ -6,14 +6,14 @@
 #include "../../io/StringReader.hpp"
 #include "../../io/Uint8ArrayInputStream.hpp"
 
-#include <bas/log/uselog.h>
-
 #include <algorithm>
 #include <chrono>
 #include <cstring>
 #include <ctime>
 #include <map>
 #include <sstream>
+
+#include <bas/log/uselog.h>
 
 #include <unicode/unistr.h>
 

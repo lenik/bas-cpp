@@ -1,8 +1,8 @@
 #ifndef ENCODING_HPP
 #define ENCODING_HPP
 
-#include <string>
 #include <sstream>
+#include <string>
 
 namespace encoding {
 

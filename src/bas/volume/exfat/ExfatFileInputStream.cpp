@@ -1,4 +1,5 @@
 #include "ExfatFileInputStream.hpp"
+
 #include <algorithm>
 
 ExfatFileInputStream::ExfatFileInputStream(std::shared_ptr<BlockDevice> device, std::vector<uint32_t> clusterChain,

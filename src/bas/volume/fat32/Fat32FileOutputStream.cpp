@@ -1,11 +1,12 @@
 #include "Fat32FileOutputStream.hpp"
 
-#include "../../io/IOException.hpp"
 #include "Fat32Volume.hpp"
 
+#include "../../io/IOException.hpp"
+
 #include <algorithm>
-#include <vector>
 #include <cstring>
+#include <vector>
 
 Fat32FileOutputStream::Fat32FileOutputStream(Fat32Volume* volume, std::string path, bool append,
                                              uint32_t dirCluster, uint32_t dirIndex)

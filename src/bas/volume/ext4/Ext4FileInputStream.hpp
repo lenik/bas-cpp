@@ -1,6 +1,8 @@
 #ifndef EXT4FILEINPUTSTREAM_H
 #define EXT4FILEINPUTSTREAM_H
 
+#include "../BlockDevice.hpp"
+
 #include "../../io/InputStream.hpp"
 
 #include <cstdint>
@@ -9,8 +11,6 @@
 #include <string>
 
 #include <ext2fs/ext2fs.h>
-
-#include "../BlockDevice.hpp"
 
 class Ext4FileInputStream : public RandomInputStream {
 public:

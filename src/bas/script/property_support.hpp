@@ -22,6 +22,8 @@ class observable {
 
     using change_signal_t = boost::signals2::signal< //
         void(T const& new_value, T const& old_value)>;
+
+    // Keep this for public API reference or explicit slot creation
     using slot_type = typename change_signal_t::slot_type;
 
     observable() //
@@ -103,8 +105,8 @@ class observable {
         return &m_value;
     }
 
-    boost::signals2::connection connect(const slot_type& slot) { //
-        return onchange->connect(slot);
+    template <typename Slot> boost::signals2::connection connect(Slot&& slot) { //
+        return onchange->connect(std::forward<Slot>(slot));
     }
 
     void disconnect() { //

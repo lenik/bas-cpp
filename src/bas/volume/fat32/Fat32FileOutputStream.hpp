@@ -1,12 +1,13 @@
 #ifndef FAT32FILEOUTPUTSTREAM_H
 #define FAT32FILEOUTPUTSTREAM_H
 
-#include "../../io/OutputStream.hpp"
 #include "Fat32Volume.hpp"
 
+#include "../../io/OutputStream.hpp"
+
+#include <cstdint>
 #include <string>
 #include <vector>
-#include <cstdint>
 
 class Fat32FileOutputStream : public OutputStream {
 public:

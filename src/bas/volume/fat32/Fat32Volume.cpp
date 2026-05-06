@@ -1,11 +1,11 @@
 #include "Fat32Volume.hpp"
 
-#include "fat32_utils.hpp"
-
 #include "Fat32FileInputStream.hpp"
 #include "Fat32FileOutputStream.hpp"
+#include "fat32_utils.hpp"
 
 #include "../BlockDevice.hpp"
+
 #include "../../io/IOException.hpp"
 #include "../../io/PrintStream.hpp"
 #include "../../io/StringReader.hpp"
@@ -17,6 +17,7 @@
 #include <ctime>
 #include <stdexcept>
 #include <unordered_set>
+
 #include <sys/stat.h>
 
 void Fat32Volume::Dirent::copyTo(DirNode& node) const {

@@ -1,10 +1,11 @@
 #include "overlay_ls.hpp"
 
-#include <bas/log/uselog.h>
 #include <bas/proc/AssetsRegistry.hpp>
 #include <bas/volume/OverlayVolume.hpp>
 
 #include <iostream>
+
+#include <bas/log/uselog.h>
 
 class OverlayUtils {
   public:

@@ -1,7 +1,5 @@
 #include "Volume.hpp"
 
-#include <bas/cli/opt_parser.h>
-
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -15,6 +13,8 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include <bas/cli/opt_parser.h>
 
 #include <sys/stat.h>
 

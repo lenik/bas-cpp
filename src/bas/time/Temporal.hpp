@@ -1,14 +1,13 @@
 #ifndef BAS_TIME_TEMPORAL_HPP
 #define BAS_TIME_TEMPORAL_HPP
 
-#include <cstdint>
-#include <memory>
-
 #include "TemporalAccessor.hpp"
 #include "TimeTypes.hpp"
 
 #include <chrono>
+#include <cstdint>
 #include <filesystem>
+#include <memory>
 #include <string>
 
 namespace bas::time {

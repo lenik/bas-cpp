@@ -1,8 +1,8 @@
 #include "Ext4FileInputStream.hpp"
 
-#include "../../io/IOException.hpp"
-
 #include "Ext4IoManager.hpp"
+
+#include "../../io/IOException.hpp"
 
 #include <ext2fs/ext2_fs.h>
 #include <ext2fs/ext2fs.h>

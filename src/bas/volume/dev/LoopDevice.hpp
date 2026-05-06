@@ -3,11 +3,11 @@
 
 #include "../BlockDevice.hpp"
 
-#include <memory>
-#include <cstdint>
 #include <cstddef>
-#include <cstring>
+#include <cstdint>
 #include <cstdlib>
+#include <cstring>
+#include <memory>
 #include <string>
 
 class LoopDevice : public BlockDevice {

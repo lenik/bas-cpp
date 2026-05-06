@@ -1,8 +1,9 @@
 #ifndef EXFATFILEINPUTSTREAM_H
 #define EXFATFILEINPUTSTREAM_H
 
-#include "../../io/InputStream.hpp"
 #include "../BlockDevice.hpp"
+
+#include "../../io/InputStream.hpp"
 
 #include <cstdint>
 #include <memory>

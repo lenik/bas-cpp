@@ -1,9 +1,11 @@
 #include "ExfatVolume.hpp"
+
+#include "ExfatFileInputStream.hpp"
+#include "ExfatFileOutputStream.hpp"
+
 #include "../../io/IOException.hpp"
 #include "../../io/PrintStream.hpp"
 #include "../../io/StringReader.hpp"
-#include "ExfatFileInputStream.hpp"
-#include "ExfatFileOutputStream.hpp"
 
 #include <algorithm>
 #include <cctype>

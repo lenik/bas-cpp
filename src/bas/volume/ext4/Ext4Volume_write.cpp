@@ -1,16 +1,15 @@
+#include "Ext4IoManager.hpp"
 #include "Ext4Volume.hpp"
 
 #include "../../io/IOException.hpp"
 
-#include "Ext4IoManager.hpp"
+#include <cstdint>
+#include <cstring>
 
 #include <ext2fs/ext2_fs.h>
 #include <ext2fs/ext2fs.h>
 
-#include <cstdint>
-#include <cstring>
 #include <unistd.h>
-
 
 void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data) {
     const std::string normalized = normalizeArg(path);

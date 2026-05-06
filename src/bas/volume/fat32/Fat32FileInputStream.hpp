@@ -1,8 +1,9 @@
 #ifndef FAT32FILEINPUTSTREAM_H
 #define FAT32FILEINPUTSTREAM_H
 
-#include "../../io/InputStream.hpp"
 #include "../BlockDevice.hpp"
+
+#include "../../io/InputStream.hpp"
 
 #include <cstdint>
 #include <ios>

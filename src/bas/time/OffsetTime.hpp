@@ -1,12 +1,12 @@
 #ifndef BAS_TIME_OFFSET_TIME_HPP
 #define BAS_TIME_OFFSET_TIME_HPP
 
+#include "LocalTime.hpp"
+
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <string>
-
-#include "LocalTime.hpp"
 
 namespace bas::time {
 

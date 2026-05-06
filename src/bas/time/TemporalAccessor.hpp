@@ -1,10 +1,10 @@
 #ifndef BAS_TIME_TEMPORAL_ACCESSOR_HPP
 #define BAS_TIME_TEMPORAL_ACCESSOR_HPP
 
+#include "TimeTypes.hpp"
+
 #include <cstdint>
 #include <optional>
-
-#include "TimeTypes.hpp"
 
 namespace bas::time {
 

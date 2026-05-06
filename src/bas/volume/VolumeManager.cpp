@@ -1,10 +1,10 @@
 #include "VolumeManager.hpp"
 
+#include "BlockDevice.hpp"
 #include "LocalVolume.hpp"
 #include "Volume.hpp"
 #include "mountinfo.hpp"
 
-#include "BlockDevice.hpp"
 #include "ext4/Ext4Volume.hpp"
 #include "fat32/Fat32Volume.hpp"
 

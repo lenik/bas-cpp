@@ -6,6 +6,9 @@
 #include <memory>
 
 #include <ext2fs/ext2fs.h>
+#ifdef clamp
+#undef clamp
+#endif
 
 /**
  * Open an ext2/3/4 filesystem image using the correct ext2fs io_manager.

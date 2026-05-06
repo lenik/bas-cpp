@@ -1,11 +1,11 @@
 #ifndef BAS_TIME_LOCAL_DATE_HPP
 #define BAS_TIME_LOCAL_DATE_HPP
 
+#include "Temporal.hpp"
+
 #include <cstdint>
 #include <memory>
 #include <string>
-
-#include "Temporal.hpp"
 
 namespace bas::time {
 

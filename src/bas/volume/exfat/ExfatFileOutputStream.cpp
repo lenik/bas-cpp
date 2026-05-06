@@ -1,4 +1,5 @@
 #include "ExfatFileOutputStream.hpp"
+
 #include "../../io/IOException.hpp"
 
 #include <algorithm>
