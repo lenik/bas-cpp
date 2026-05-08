@@ -66,8 +66,8 @@ private:
     static std::string getFileExtension(std::string_view filename);
     static bool hasSignature(const std::vector<uint8_t>& data, const std::vector<uint8_t>& signature);
 
-    std::string m_monoStyle = "/asset/heroicons/normal/";
-    std::string m_colorStyle = "/asset/streamline-vectors/core/pop/";
+    std::string m_monoStyle = "heroicons/svg/normal/";
+    std::string m_colorStyle = "streamline-vectors/core/pop/";
 };
 
 #endif // FILETYPEDETECTOR_H
