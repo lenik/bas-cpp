@@ -244,8 +244,7 @@ bool Volume::createDirectories(std::string_view _path) {
     }
 
     if (exists(path)) {
-        if (!isDirectory(path))
-            return false;
+        return isDirectory(path);
     }
 
     std::vector<std::string> mkdir_list;
