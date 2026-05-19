@@ -22,6 +22,7 @@ struct ExfatOptions : public MountOptions {};
 class ExfatVolume : public Volume {
     friend class ExfatFileOutputStream;
     friend class ExfatFileInputStream;
+
   public:
     struct Dirent {
         bool isDirectory = false;
@@ -69,7 +70,8 @@ class ExfatVolume : public Volume {
 
   public:
     // File-backed volume
-    explicit ExfatVolume(std::shared_ptr<BlockDevice> device, const ExfatOptions& options = ExfatOptions());
+    explicit ExfatVolume(std::shared_ptr<BlockDevice> device,
+                         const ExfatOptions& options = ExfatOptions());
 
     std::string getClass() const override { return "exfat"; }
     std::string getUrl() const override { return "exfat:" + m_device->uri(); }
@@ -96,8 +98,8 @@ class ExfatVolume : public Volume {
   protected:
     std::string getDefaultLabel() const override;
 
-    std::vector<uint8_t> readFileUnchecked(std::string_view path, int64_t off = 0,
-                                           size_t len = 0) override;
+    std::optional<std::vector<uint8_t>> readFileUnchecked(std::string_view path, int64_t off = 0,
+                                                          size_t len = 0) override;
     void writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) override;
 
     void createDirectoryThrowsUnchecked(std::string_view path) override;

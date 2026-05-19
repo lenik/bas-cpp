@@ -20,7 +20,7 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
     // Check permissions
     const std::string parent = normalized.substr(0, normalized.find_last_of('/'));
     uint32_t parentIno = resolveParentInode(normalized);
-    
+
     // Open filesystem with write flag
     ext2_filsys fs = nullptr;
     const std::string imagePath = m_device->uri();
@@ -28,7 +28,7 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
     if (rc) {
         throw IOException("writeFile", std::string(path), "ext2fs_open failed");
     }
-    
+
     // Read bitmaps and initialize filesystem state
     rc = ext2fs_read_bitmaps(fs);
     if (rc) {
@@ -38,7 +38,7 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
 
     struct ext2_inode inode{};
     ext2_ino_t ino = 0;
-    
+
     // Try to find existing inode
     Inode existingNode;
     if (resolveNode(normalized, &existingNode)) {
@@ -54,7 +54,7 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
             ext2fs_close(fs);
             throw IOException("writeFile", std::string(path), "Failed to allocate inode");
         }
-        
+
         memset(&inode, 0, sizeof(inode));
         inode.i_mode = 0100644; // Regular file, rw-r--r--
         inode.i_uid = m_contextUid;
@@ -88,7 +88,7 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
         ext2fs_close(fs);
         throw IOException("writeFile", std::string(path), "Failed to re-read inode");
     }
-    
+
     // Ensure size is correct
     if (inode.i_size != data.size()) {
         inode.i_size = data.size();
@@ -113,10 +113,12 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
         }
         if (rc) {
             ext2fs_close(fs);
-            throw IOException("writeFile", std::string(path), "Failed to create directory entry: " + std::string(error_message(rc)));
+            throw IOException("writeFile", std::string(path),
+                              "Failed to create directory entry: " +
+                                  std::string(error_message(rc)));
         }
     }
-    
+
     // Flush filesystem to ensure changes are written to disk
     rc = ext2fs_flush(fs);
     if (rc) {
@@ -125,13 +127,13 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
     }
 
     ext2fs_close(fs);
-    
+
     // Force OS to sync the file to disk
     ::sync();
-    
+
     // Manually add the new file to cache since buildIndex() doesn't scan directories
     m_files[normalized] = ino;
-    
+
     // Add inode to cache
     Inode newInode;
     newInode.isDirectory = false;
@@ -142,10 +144,10 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
     newInode.gid = m_contextGid;
     newInode.atime = newInode.mtime = newInode.ctime = time(nullptr);
     m_nodes[ino] = newInode;
-    
+
     // Clear cached file content
     m_mem.erase(ino);
-    
+
     // Clear parent directory cache to force re-scan
     const std::string parentPath = normalized.substr(0, normalized.find_last_of('/'));
     if (!parentPath.empty()) {
@@ -159,7 +161,8 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
 }
 
 void Ext4Volume::appendFileUnchecked(std::string_view path, const uint8_t* data, size_t len) {
-    if (!data || len == 0) return;
+    if (!data || len == 0)
+        return;
     const std::string normalized = normalizeArg(path);
     Inode node;
     if (!resolveNode(normalized, &node) || node.isDirectory) {
@@ -169,7 +172,8 @@ void Ext4Volume::appendFileUnchecked(std::string_view path, const uint8_t* data,
     ext2_filsys fs = nullptr;
     const std::string imagePath = m_device->uri();
     int rc = ext4io::openFsFromBlockDevice(m_device, EXT2_FLAG_64BITS | EXT2_FLAG_RW, &fs);
-    if (rc) throw IOException("appendFile", std::string(path), "ext2fs_open failed");
+    if (rc)
+        throw IOException("appendFile", std::string(path), "ext2fs_open failed");
 
     rc = ext2fs_read_bitmaps(fs);
     if (rc) {
@@ -236,7 +240,7 @@ void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
     if (rc) {
         throw IOException("createDirectory", std::string(path), "ext2fs_open failed");
     }
-    
+
     // Read bitmaps and initialize filesystem state
     rc = ext2fs_read_bitmaps(fs);
     if (rc) {
@@ -281,9 +285,10 @@ void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
     }
     if (rc) {
         ext2fs_close(fs);
-        throw IOException("createDirectory", std::string(path), "Failed to create directory entry: " + std::string(error_message(rc)));
+        throw IOException("createDirectory", std::string(path),
+                          "Failed to create directory entry: " + std::string(error_message(rc)));
     }
-    
+
     // Flush to ensure directory entry is written
     rc = ext2fs_flush(fs);
     if (rc) {
@@ -295,7 +300,7 @@ void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
 
     // Manually add directory to cache
     m_files[normalized] = ino;
-    
+
     Inode dirInode;
     dirInode.isDirectory = true;
     dirInode.size = 0;
@@ -305,7 +310,7 @@ void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
     dirInode.gid = m_contextGid;
     dirInode.atime = dirInode.mtime = dirInode.ctime = time(nullptr);
     m_nodes[ino] = dirInode;
-    
+
     // Clear parent directory cache to force re-scan
     const std::string parentPath = normalized.substr(0, normalized.find_last_of('/'));
     if (!parentPath.empty()) {
@@ -316,7 +321,7 @@ void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
     } else {
         m_rtnodes.erase(2);
     }
-    
+
     // Also clear our own runtime node cache entry so it gets re-scanned
     m_rtnodes.erase(ino);
 }
@@ -406,7 +411,8 @@ void Ext4Volume::copyFileThrowsUnchecked(std::string_view src, std::string_view 
     // Check source file
     Inode srcNode;
     if (!resolveNode(srcNormalized, &srcNode) || srcNode.isDirectory) {
-        throw IOException("copyFile", std::string(src), "Source file does not exist or is a directory");
+        throw IOException("copyFile", std::string(src),
+                          "Source file does not exist or is a directory");
     }
 
     // Check if destination already exists
@@ -416,10 +422,13 @@ void Ext4Volume::copyFileThrowsUnchecked(std::string_view src, std::string_view 
     }
 
     // Read source file data
-    std::vector<uint8_t> data = readFile(src);
+    auto data = readFile(src);
+    if (!data.has_value()) {
+        throw IOException("copyFile", std::string(src), "Source file is not readable");
+    }
 
     // Write to destination
-    writeFileUnchecked(destNormalized, data);
+    writeFileUnchecked(destNormalized, *data);
 }
 
 void Ext4Volume::moveFileThrowsUnchecked(std::string_view src, std::string_view dest) {
@@ -429,7 +438,8 @@ void Ext4Volume::moveFileThrowsUnchecked(std::string_view src, std::string_view 
     // Check source file
     Inode srcNode;
     if (!resolveNode(srcNormalized, &srcNode) || srcNode.isDirectory) {
-        throw IOException("moveFile", std::string(src), "Source file does not exist or is a directory");
+        throw IOException("moveFile", std::string(src),
+                          "Source file does not exist or is a directory");
     }
 
     // Check if destination already exists
@@ -447,10 +457,13 @@ void Ext4Volume::moveFileThrowsUnchecked(std::string_view src, std::string_view 
     }
 
     // Read source data
-    std::vector<uint8_t> data = readFile(src);
+    auto data = readFile(src);
+    if (!data.has_value()) {
+        throw IOException("moveFile", std::string(src), "Source file is not readable");
+    }
 
     // Write to destination
-    writeFileUnchecked(destNormalized, data);
+    writeFileUnchecked(destNormalized, *data);
 
     // Remove source
     const std::string srcParent = srcNormalized.substr(0, srcNormalized.find_last_of('/'));

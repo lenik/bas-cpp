@@ -89,15 +89,15 @@ int main() {
         
         // Verify content
         auto content1 = vol.readFileUTF8("/file1.txt");
-        assert(content1 == "Hello from FAT32!\n");
+        assert(content1 && *content1 == "Hello from FAT32!\n");
         std::cout << "  ✓ /file1.txt content verified\n";
         
         auto content2 = vol.readFileUTF8("/file2.txt");
-        assert(content2 == "Second file content\n");
+        assert(content2 && *content2 == "Second file content\n");
         std::cout << "  ✓ /file2.txt content verified\n";
         
         auto content3 = vol.readFileUTF8("/subdir/nested.txt");
-        assert(content3 == "Nested file content\n");
+        assert(content3 && *content3 == "Nested file content\n");
         std::cout << "  ✓ /subdir/nested.txt content verified\n";
         
         // List directory
@@ -139,7 +139,7 @@ int main() {
         
         // Verify update
         auto content1 = vol.readFileUTF8("/file1.txt");
-        assert(content1 == "Updated content!\n");
+        assert(content1 && *content1 == "Updated content!\n");
         std::cout << "  ✓ /file1.txt update verified\n";
         
         // Verify new file
@@ -153,7 +153,7 @@ int main() {
         // Verify copy
         assert(vol.exists("/file3_copy.txt"));
         auto copyContent = vol.readFileUTF8("/file3_copy.txt");
-        assert(copyContent == "Third file\n");
+        assert(copyContent && *copyContent == "Third file\n");
         std::cout << "  ✓ /file3_copy.txt exists with correct content\n";
         
         // List all files

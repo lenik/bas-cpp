@@ -19,14 +19,15 @@ typedef std::vector<uint8_t> ByteArray;
 /**
  * ext4 filesystem mount options.
  */
- struct Ext4Options : public MountOptions {
-    
+struct Ext4Options : public MountOptions {
+
     /** Use journaling (if supported) */
     bool journal = true;
 };
 
 class Ext4Volume : public Volume {
     friend class Ext4FileOutputStream;
+
   public:
     struct WritePlan {
         uint64_t oldSize = 0;
@@ -49,8 +50,8 @@ class Ext4Volume : public Volume {
         time_t ctime = 0;
 
         Inode() = default;
-        Inode(bool isDirectory, uint64_t size, ino_t ino, uint16_t mode, uint32_t uid,
-              uint32_t gid, time_t atime, time_t mtime, time_t ctime)
+        Inode(bool isDirectory, uint64_t size, ino_t ino, uint16_t mode, uint32_t uid, uint32_t gid,
+              time_t atime, time_t mtime, time_t ctime)
             : isDirectory(isDirectory), size(size), ino(ino), mode(mode), uid(uid), gid(gid),
               atime(atime), mtime(mtime), ctime(ctime) {}
     };
@@ -70,15 +71,15 @@ class Ext4Volume : public Volume {
             : Inode(isDirectory, size, ino, mode, uid, gid, atime, mtime, ctime) {}
     };
 
-private:
+  private:
     std::shared_ptr<BlockDevice> m_device;
     Ext4Options m_options;
-    
+
     mutable std::unordered_map<std::string, ino_t> m_files; // normalized-path -> ino
     mutable std::unordered_map<ino_t, Inode> m_nodes;
     mutable std::unordered_map<ino_t, RtNodeObj> m_rtnodes;
     mutable std::unordered_map<ino_t, ByteArray> m_mem; // ino -> file content cache
-    
+
     IUserDb* m_userDb = nullptr;
     int m_contextUid = 0;
     int m_contextGid = 0;
@@ -86,8 +87,9 @@ private:
 
   public:
     // Volume with mount options
-    explicit Ext4Volume(std::shared_ptr<BlockDevice> device, const Ext4Options& options = Ext4Options());
-    
+    explicit Ext4Volume(std::shared_ptr<BlockDevice> device,
+                        const Ext4Options& options = Ext4Options());
+
     ~Ext4Volume() override;
 
     void setUserDb(IUserDb* userDb);
@@ -119,8 +121,8 @@ private:
   protected:
     std::string getDefaultLabel() const override;
 
-    std::vector<uint8_t> readFileUnchecked(std::string_view path, int64_t off = 0,
-                                           size_t len = 0) override;
+    std::optional<std::vector<uint8_t>> readFileUnchecked(std::string_view path, int64_t off = 0,
+                                                          size_t len = 0) override;
     void writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) override;
     void appendFileUnchecked(std::string_view path, const uint8_t* data, size_t len);
 

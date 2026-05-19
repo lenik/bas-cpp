@@ -19,9 +19,10 @@ std::unique_ptr<InputStream> ExfatVolume::newInputStream(std::string_view path) 
     if (it->second.firstCluster >= 2 && it->second.size > 0) {
         chain = readClusterChain(it->second.firstCluster);
     }
-    auto in = std::make_unique<ExfatFileInputStream>(m_device, std::move(chain),  //
-                                                      static_cast<uint64_t>(m_clusterHeapOffset) * m_bytesPerSector,
-                                                      m_clusterSize, it->second.size);
+    auto in = std::make_unique<ExfatFileInputStream>(m_device, std::move(chain), //
+                                                     static_cast<uint64_t>(m_clusterHeapOffset) *
+                                                         m_bytesPerSector,
+                                                     m_clusterSize, it->second.size);
     if (!in->isOpen()) {
         throw IOException("newInputStream", std::string(path), "Failed to open input stream");
     }
@@ -45,14 +46,17 @@ std::string ExfatVolume::createTempFile(std::string_view /*prefix*/, std::string
     throw IOException("createTempFile", "", "exFAT does not support temp file");
 }
 
-std::vector<uint8_t> ExfatVolume::readFileUnchecked(std::string_view path, int64_t off, size_t len) {
+std::optional<std::vector<uint8_t>> ExfatVolume::readFileUnchecked(std::string_view path,
+                                                                   int64_t off, size_t len) {
     const std::string normalized = normalizeArg(path);
     if (!ensurePathIndexed(normalized)) {
-        throw IOException("readFile", std::string(path), "Path not found");
+        // throw IOException("readFile", std::string(path), "Path not found");
+        return std::nullopt;
     }
     auto it = m_dirents.find(normalized);
     if (it == m_dirents.end() || it->second.isDirectory) {
-        throw IOException("readFile", std::string(path), "Not a regular file");
+        // throw IOException("readFile", std::string(path), "Not a regular file");
+        return std::nullopt;
     }
 
     std::vector<uint8_t> out;
@@ -60,15 +64,19 @@ std::vector<uint8_t> ExfatVolume::readFileUnchecked(std::string_view path, int64
     if (it->second.size > 0 && it->second.firstCluster >= 2) {
         auto stream = newInputStream(normalized);
         out = stream->readBytesUntilEOF();
-        if (out.size() > it->second.size) out.resize(static_cast<size_t>(it->second.size));
+        if (out.size() > it->second.size)
+            out.resize(static_cast<size_t>(it->second.size));
     }
 
     int64_t start64 = (off >= 0) ? off : (static_cast<int64_t>(out.size()) + off + 1);
-    if (start64 < 0) start64 = 0;
+    if (start64 < 0)
+        start64 = 0;
     size_t start = static_cast<size_t>(start64);
-    if (start >= out.size()) return {};
+    if (start >= out.size())
+        return {};
     size_t end = out.size();
-    if (len > 0) end = std::min(end, start + len);
+    if (len > 0)
+        end = std::min(end, start + len);
     return std::vector<uint8_t>(out.begin() + start, out.begin() + end);
 }
 
@@ -89,7 +97,8 @@ void ExfatVolume::readDir_inplace(DirNode& context, std::string_view path, bool 
         d->copyTo(*node);
         DirNode* childNode = context.putChild(std::move(node));
         if (recursive && d->isDirectory) {
-            const std::string childPath = (normalized == "/") ? ("/" + name) : (normalized + "/" + name);
+            const std::string childPath =
+                (normalized == "/") ? ("/" + name) : (normalized + "/" + name);
             readDir_inplace(*childNode, childPath, true);
         }
     }

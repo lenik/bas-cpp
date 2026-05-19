@@ -1,5 +1,5 @@
-#include "Fat32Volume.hpp"
 #include "../dev/MemDevice.hpp"
+#include "Fat32Volume.hpp"
 
 #include "../../io/IOException.hpp"
 
@@ -20,7 +20,7 @@ namespace fs = std::filesystem;
 
 extern "C" logger_t test_logger = {};
 
-static int run_cmd(const std::string& cmd) { 
+static int run_cmd(const std::string& cmd) {
     int ret = std::system(cmd.c_str());
     if (ret != 0) {
         std::cerr << "Command failed: " << cmd << " (exit code: " << ret << ")\n";
@@ -29,14 +29,14 @@ static int run_cmd(const std::string& cmd) {
 }
 
 int main() {
-    const fs::path tmpBase =
-        fs::temp_directory_path() / (PREFIX + std::to_string(::getpid()));
+    const fs::path tmpBase = fs::temp_directory_path() / (PREFIX + std::to_string(::getpid()));
     fs::create_directories(tmpBase);
 
     const fs::path image = tmpBase / "disk.img";
 
     std::cout << "Creating FAT32 image...\n";
-    assert(run_cmd("dd if=/dev/zero of=\"" + image.string() + "\" bs=1M count=16 status=none") == 0);
+    assert(run_cmd("dd if=/dev/zero of=\"" + image.string() + "\" bs=1M count=16 status=none") ==
+           0);
     assert(run_cmd("mkfs.fat -F 32 \"" + image.string() + "\" >/dev/null 2>&1") == 0);
 
     std::cout << "Loading FAT32 image into memory...\n";
@@ -60,12 +60,13 @@ int main() {
         // Test 1: writeFile - write a new file
         {
             std::cout << "  Test 1: writeFile... ";
-            std::vector<uint8_t> testData = {'H', 'e', 'l', 'l', 'o', ' ', 'F', 'A', 'T', '3', '2', '!'};
+            std::vector<uint8_t> testData = {'H', 'e', 'l', 'l', 'o', ' ',
+                                             'F', 'A', 'T', '3', '2', '!'};
             vol.writeFile("/test_write.txt", testData);
-            
+
             // Verify by reading back
             auto readData = vol.readFile("/test_write.txt");
-            assert(readData == testData);
+            assert(readData && *readData == testData);
             std::cout << "PASSED\n";
         }
 
@@ -74,7 +75,7 @@ int main() {
             std::cout << "  Test 2: writeFileUTF8... ";
             vol.writeFileUTF8("/test_text.txt", "Hello World!\n");
             auto content = vol.readFileUTF8("/test_text.txt");
-            assert(content == "Hello World!\n");
+            assert(content && *content == "Hello World!\n");
             std::cout << "PASSED\n";
         }
 
@@ -102,7 +103,7 @@ int main() {
             std::vector<uint8_t> subData = {'S', 'u', 'b', 'd', 'i', 'r', ' ', 'f', 'i', 'l', 'e'};
             vol.writeFile("/test_dir/nested/subfile.bin", subData);
             auto readData = vol.readFile("/test_dir/nested/subfile.bin");
-            assert(readData == subData);
+            assert(readData && *readData == subData);
             std::cout << "PASSED\n";
         }
 
@@ -113,7 +114,7 @@ int main() {
             assert(vol.exists("/test_copy.txt"));
             auto original = vol.readFile("/test_write.txt");
             auto copy = vol.readFile("/test_copy.txt");
-            assert(original == copy);
+            assert(original && copy && *original == *copy);
             std::cout << "PASSED\n";
         }
 
@@ -162,7 +163,7 @@ int main() {
             }
             vol.writeFile("/large_file.bin", largeData);
             auto readData = vol.readFile("/large_file.bin");
-            assert(readData == largeData);
+            assert(readData && *readData == largeData);
             std::cout << "PASSED\n";
         }
 
@@ -187,7 +188,7 @@ int main() {
     std::ofstream outFile(image.string(), std::ios::binary);
     outFile.write(reinterpret_cast<const char*>(imageBuffer.data()), imageSize);
     outFile.close();
-    
+
     fs::remove_all(tmpBase);
     return 0;
 }

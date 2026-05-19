@@ -51,6 +51,20 @@ LocalVolume::LocalVolume(std::string_view rootPath) : m_rootPath(rootPath) {
     }
 }
 
+LocalVolume& LocalVolume::home() {
+    static LocalVolume* s_home;
+    if (s_home == nullptr) {
+#ifdef _WIN32
+        auto home = std::filesystem::path(getenv("USERPROFILE"));
+        s_home = new LocalVolume(home.string());
+#else
+        auto home = std::filesystem::path(getenv("HOME"));
+        s_home = new LocalVolume(home.string());
+#endif
+    }
+    return *s_home;
+}
+
 void LocalVolume::setRootPath(std::string_view rootPath) {
     m_rootPath = rootPath;
     strip_trailing_slashes(m_rootPath);
@@ -314,12 +328,12 @@ std::unique_ptr<Writer> LocalVolume::newWriter(std::string_view _path, bool appe
     return writer;
 }
 
-std::vector<uint8_t> LocalVolume::readFileUnchecked(std::string_view _path, int64_t off,
-                                                    size_t len) {
+std::optional<std::vector<uint8_t>> LocalVolume::readFileUnchecked(std::string_view _path,
+                                                                   int64_t off, size_t len) {
     std::string localPath = resolveLocal(_path);
     std::ifstream file(localPath, std::ios::binary);
     if (!file)
-        return {};
+        return std::nullopt;
 
     file.seekg(0, std::ios::end);
     size_t size = file.tellg();

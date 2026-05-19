@@ -23,9 +23,7 @@ constexpr uint32_t kRootInode = 2;
 }
 
 Ext4Volume::Ext4Volume(std::shared_ptr<BlockDevice> device, const Ext4Options& options)
-    : m_device(device)
-    , m_options(options)
-{
+    : m_device(device), m_options(options) {
     buildIndex();
 }
 
@@ -176,7 +174,6 @@ std::unique_ptr<OutputStream> Ext4Volume::newOutputStream(std::string_view path,
     return std::make_unique<Ext4FileOutputStream>(this, std::string(path), append);
 }
 
-
 std::string Ext4Volume::getTempDir() {
     throw IOException("getTempDir", "", "Ext4Volume does not support temp file operations");
 }
@@ -194,27 +191,33 @@ Ext4Volume::WritePlan Ext4Volume::planWriteLayout(std::string_view /*path*/, uin
     const uint64_t growth = (newSize > oldSize) ? (newSize - oldSize) : 0;
     p.preferAppendPath = appendLike && newSize >= oldSize;
     p.delayedAlloc = growth < (8ull * 1024ull * 1024ull);
-    if (growth >= (16ull * 1024ull * 1024ull)) p.commitChunkBytes = 4u * 1024u * 1024u;
-    else if (growth >= (4ull * 1024ull * 1024ull)) p.commitChunkBytes = 2u * 1024u * 1024u;
-    else p.commitChunkBytes = 1024u * 1024u;
+    if (growth >= (16ull * 1024ull * 1024ull))
+        p.commitChunkBytes = 4u * 1024u * 1024u;
+    else if (growth >= (4ull * 1024ull * 1024ull))
+        p.commitChunkBytes = 2u * 1024u * 1024u;
+    else
+        p.commitChunkBytes = 1024u * 1024u;
     // Append growth can avoid rewrite path; other patterns keep full rewrite safety.
     p.rewriteWholeFile = !p.preferAppendPath;
     return p;
 }
 
-std::vector<uint8_t> Ext4Volume::readFileUnchecked(std::string_view path, int64_t off, size_t len) {
+std::optional<std::vector<uint8_t>> Ext4Volume::readFileUnchecked(std::string_view path,
+                                                                  int64_t off, size_t len) {
     const std::string normalized = normalizeArg(path);
     Inode node;
     if (!resolveNode(normalized, &node) || node.isDirectory) {
-        throw IOException("readFile", std::string(path), "File not found or is a directory");
+        // throw IOException("readFile", std::string(path), "File not found or is a directory");
+        return std::nullopt;
     }
     if (!checkMode(node, 4)) {
-        throw IOException("readFile", std::string(path), "Permission denied");
+        // throw IOException("readFile", std::string(path), "Permission denied");
+        return std::nullopt;
     }
 
     auto in = newInputStream(path);
     if (!in)
-        return {};
+        return std::nullopt;
     auto data = in->readBytesUntilEOF();
     if (data.size() > node.size)
         data.resize(static_cast<size_t>(node.size));
@@ -389,14 +392,19 @@ const Ext4Volume::RtNode* Ext4Volume::getDirectoryEntries(uint32_t inode) const 
                 return 0;
             const bool isDir = LINUX_S_ISDIR(inodeBuf.i_mode);
             const uint64_t size = EXT2_I_SIZE(&inodeBuf);
-            
+
             // Cache the inode
-            Inode childInode{
-                isDir, size, dirent->inode, inodeBuf.i_mode, inodeBuf.i_uid, inodeBuf.i_gid,
-                static_cast<time_t>(inodeBuf.i_atime), static_cast<time_t>(inodeBuf.i_mtime),
-                static_cast<time_t>(inodeBuf.i_ctime)};
+            Inode childInode{isDir,
+                             size,
+                             dirent->inode,
+                             inodeBuf.i_mode,
+                             inodeBuf.i_uid,
+                             inodeBuf.i_gid,
+                             static_cast<time_t>(inodeBuf.i_atime),
+                             static_cast<time_t>(inodeBuf.i_mtime),
+                             static_cast<time_t>(inodeBuf.i_ctime)};
             scope->volume->m_nodes[dirent->inode] = childInode;
-            
+
             RtNode* ctx = scope->rtnode;
             auto child = std::make_shared<RtNode>(
                 isDir, size, dirent->inode, inodeBuf.i_mode, inodeBuf.i_uid, inodeBuf.i_gid,
@@ -446,17 +454,18 @@ uint32_t Ext4Volume::resolveParentInode(std::string_view path) const {
     if (normalized == "/" || normalized.empty()) {
         return kRootInode;
     }
-    
+
     const std::string parent = normalized.substr(0, normalized.find_last_of('/'));
     if (parent.empty() || parent == "/") {
         return kRootInode;
     }
-    
+
     Inode parentNode;
     if (!resolveNode(parent, &parentNode) || !parentNode.isDirectory) {
-        throw IOException("resolveParentInode", std::string(path), "Parent directory does not exist");
+        throw IOException("resolveParentInode", std::string(path),
+                          "Parent directory does not exist");
     }
-    
+
     return parentNode.ino;
 }
 
@@ -465,18 +474,18 @@ std::string Ext4Volume::getBaseName(std::string_view path) const {
     if (normalized == "/" || normalized.empty()) {
         return "";
     }
-    
+
     size_t lastSlash = normalized.find_last_of('/');
     if (lastSlash == std::string::npos || lastSlash == 0) {
         return normalized;
     }
-    
+
     return normalized.substr(lastSlash + 1);
 }
 
 void Ext4Volume::invalidateCache(std::string_view path) {
     const std::string normalized = normalizeArg(path);
-    
+
     // Remove from path cache
     auto fit = m_files.find(normalized);
     if (fit != m_files.end()) {
@@ -489,7 +498,7 @@ void Ext4Volume::invalidateCache(std::string_view path) {
         m_mem.erase(ino);
         m_files.erase(fit);
     }
-    
+
     // Also invalidate parent directory cache
     const std::string parent = normalized.substr(0, normalized.find_last_of('/'));
     if (!parent.empty() && parent != "/") {

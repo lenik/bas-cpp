@@ -34,17 +34,13 @@ void Fat32Volume::Dirent::copyTo(DirNode& node) const {
 }
 
 Fat32Volume::Fat32Volume(std::shared_ptr<BlockDevice> device, const Fat32Options& options)
-    : m_device(device)
-    , m_options(options)
-{
+    : m_device(device), m_options(options) {
     parseBootSector();
     buildIndex();
 }
 std::string Fat32Volume::getDefaultLabel() const { return "FAT32 Image"; }
 
-bool Fat32Volume::exists(std::string_view path) const {
-    return ensurePathIndexed(path);
-}
+bool Fat32Volume::exists(std::string_view path) const { return ensurePathIndexed(path); }
 
 bool Fat32Volume::isFile(std::string_view path) const {
     if (!ensurePathIndexed(path)) {
@@ -58,8 +54,9 @@ bool Fat32Volume::isFile(std::string_view path) const {
         const size_t slash = normalized.find('/', pos);
         std::string part = (slash == std::string::npos) ? normalized.substr(pos)
                                                         : normalized.substr(pos, slash - pos);
-        if (part.empty()) break;
-        
+        if (part.empty())
+            break;
+
         std::string found = findPathInDirectory(current, part);
         if (!found.empty()) {
             current = found;
@@ -72,11 +69,12 @@ bool Fat32Volume::isFile(std::string_view path) const {
                 current = (current == "/") ? ("/" + shortPart) : (current + "/" + shortPart);
             }
         }
-        
-        if (slash == std::string::npos) break;
+
+        if (slash == std::string::npos)
+            break;
         pos = slash + 1;
     }
-    
+
     auto it = m_dirents.find(current);
     return it != m_dirents.end() && !it->second.isDirectory;
 }
@@ -92,8 +90,9 @@ bool Fat32Volume::isDirectory(std::string_view path) const {
         const size_t slash = normalized.find('/', pos);
         std::string part = (slash == std::string::npos) ? normalized.substr(pos)
                                                         : normalized.substr(pos, slash - pos);
-        if (part.empty()) break;
-        
+        if (part.empty())
+            break;
+
         std::string found = findPathInDirectory(current, part);
         if (!found.empty()) {
             current = found;
@@ -106,11 +105,12 @@ bool Fat32Volume::isDirectory(std::string_view path) const {
                 current = (current == "/") ? ("/" + shortPart) : (current + "/" + shortPart);
             }
         }
-        
-        if (slash == std::string::npos) break;
+
+        if (slash == std::string::npos)
+            break;
         pos = slash + 1;
     }
-    
+
     auto it = m_dirents.find(current);
     return it != m_dirents.end() && it->second.isDirectory;
 }
@@ -176,8 +176,8 @@ std::unique_ptr<InputStream> Fat32Volume::newInputStream(std::string_view path) 
     if (it->second.firstCluster >= 2 && it->second.size > 0) {
         chain = readClusterChain(it->second.firstCluster);
     }
-    auto stream = std::make_unique<Fat32FileInputStream>(
-        m_device, std::move(chain), m_dataOffset, m_clusterSize, it->second.size);
+    auto stream = std::make_unique<Fat32FileInputStream>(m_device, std::move(chain), m_dataOffset,
+                                                         m_clusterSize, it->second.size);
     if (!stream->isOpen()) {
         throw IOException("newInputStream", std::string(path), "Failed to open image");
     }
@@ -191,7 +191,11 @@ std::unique_ptr<RandomInputStream> Fat32Volume::newRandomInputStream(std::string
 
 std::unique_ptr<Reader> Fat32Volume::newReader(std::string_view path,
                                                std::string_view /*encoding*/) {
-    std::vector<uint8_t> bytes = readFile(path);
+    auto data = readFile(path);
+    if (!data.has_value()) {
+        throw IOException("newReader", std::string(path), "File is not readable");
+    }
+    std::vector<uint8_t> bytes = *data;
     std::string text(bytes.begin(), bytes.end());
     return std::make_unique<StringReader>(text);
 }
@@ -205,7 +209,8 @@ std::unique_ptr<OutputStream> Fat32Volume::newOutputStream(std::string_view path
     uint32_t dirCluster = 0;
     uint32_t dirIndex = INVALID_DIR_INDEX;
     findDirEntryLocation(path, dirCluster, dirIndex, nullptr);
-    return std::make_unique<Fat32FileOutputStream>(this, std::string(path), append, dirCluster, dirIndex);
+    return std::make_unique<Fat32FileOutputStream>(this, std::string(path), append, dirCluster,
+                                                   dirIndex);
 }
 
 std::unique_ptr<Writer> Fat32Volume::newWriter(std::string_view path, bool append,
@@ -216,15 +221,17 @@ std::unique_ptr<Writer> Fat32Volume::newWriter(std::string_view path, bool appen
     return std::make_unique<PrintStream>(std::move(out), encoding);
 }
 
-std::vector<uint8_t> Fat32Volume::readFileUnchecked(std::string_view path, int64_t off,
-                                                    size_t len) {
+std::optional<std::vector<uint8_t>> Fat32Volume::readFileUnchecked(std::string_view path,
+                                                                   int64_t off, size_t len) {
     std::string resolved = resolvePath(path);
     if (resolved.empty()) {
-        throw IOException("readFile", std::string(path), "File not found");
+        // throw IOException("readFile", std::string(path), "File not found");
+        return std::nullopt;
     }
     auto it = m_dirents.find(resolved);
     if (it == m_dirents.end() || it->second.isDirectory) {
-        throw IOException("readFile", std::string(path), "File not found or is a directory");
+        // throw IOException("readFile", std::string(path), "File not found or is a directory");
+        return std::nullopt;
     }
 
     const Dirent& dirent = it->second;
@@ -321,9 +328,7 @@ uint64_t Fat32Volume::clusterToOffset(uint32_t cluster) const {
     return m_dataOffset + (dataClusterIndex * m_clusterSize);
 }
 
-uint32_t Fat32Volume::getFatEntry(uint32_t cluster) const {
-    return m_clusterManager->get(cluster);
-}
+uint32_t Fat32Volume::getFatEntry(uint32_t cluster) const { return m_clusterManager->get(cluster); }
 
 std::vector<uint32_t> Fat32Volume::readClusterChain(uint32_t firstCluster) const {
     std::vector<uint32_t> chain;
@@ -616,7 +621,7 @@ std::string Fat32Volume::toShortNamePath(const std::string& path) const {
     if (normalized == "/" || normalized.empty()) {
         return "/";
     }
-    
+
     std::string result;
     size_t pos = 0;
     while (pos < normalized.size()) {
@@ -629,7 +634,7 @@ std::string Fat32Volume::toShortNamePath(const std::string& path) const {
             component = normalized.substr(pos, nextSlash - pos + 1);
             pos = nextSlash + 1;
         }
-        
+
         if (!component.empty() && component != "/") {
             // Remove trailing slash for processing
             std::string name = component;
@@ -643,7 +648,7 @@ std::string Fat32Volume::toShortNamePath(const std::string& path) const {
             result = "/";
         }
     }
-    
+
     return result.empty() ? "/" : result;
 }
 
@@ -657,15 +662,16 @@ std::string Fat32Volume::resolvePath(std::string_view path) const {
     if (normalized.empty() || normalized == "/") {
         return "/";
     }
-    
+
     std::string current = "/";
     size_t pos = 1;
     while (pos <= normalized.size()) {
         const size_t slash = normalized.find('/', pos);
         std::string part = (slash == std::string::npos) ? normalized.substr(pos)
                                                         : normalized.substr(pos, slash - pos);
-        if (part.empty()) break;
-        
+        if (part.empty())
+            break;
+
         // Try to find the component
         std::string found = findPathInDirectory(current, part);
         if (!found.empty()) {
@@ -681,11 +687,12 @@ std::string Fat32Volume::resolvePath(std::string_view path) const {
                 return "";
             }
         }
-        
-        if (slash == std::string::npos) break;
+
+        if (slash == std::string::npos)
+            break;
         pos = slash + 1;
     }
-    
+
     // Verify the final path exists
     if (m_dirents.find(current) == m_dirents.end()) {
         return "";
@@ -693,19 +700,20 @@ std::string Fat32Volume::resolvePath(std::string_view path) const {
     return current;
 }
 
-std::string Fat32Volume::findPathInDirectory(const std::string& parentPath, const std::string& name) const {
+std::string Fat32Volume::findPathInDirectory(const std::string& parentPath,
+                                             const std::string& name) const {
     // First try exact match
     std::string fullPath = (parentPath == "/") ? ("/" + name) : (parentPath + "/" + name);
     if (m_dirents.find(fullPath) != m_dirents.end()) {
         return fullPath;
     }
-    
+
     // Try case-insensitive match in parent directory
     auto it = m_dirents.find(parentPath);
     if (it == m_dirents.end() || !it->second.isDirectory) {
         return "";
     }
-    
+
     const auto& parent = it->second;
     for (const auto& [childName, childPtr] : parent.children) {
         // Case-insensitive comparison
@@ -722,14 +730,14 @@ std::string Fat32Volume::findPathInDirectory(const std::string& parentPath, cons
             }
         }
     }
-    
+
     // Try matching against short name version
     std::string shortName = createShortName(name);
     fullPath = (parentPath == "/") ? ("/" + shortName) : (parentPath + "/" + shortName);
     if (m_dirents.find(fullPath) != m_dirents.end()) {
         return fullPath;
     }
-    
+
     // Try case-insensitive on short name
     for (const auto& [childName, childPtr] : parent.children) {
         if (childName.size() == shortName.size()) {
@@ -745,6 +753,6 @@ std::string Fat32Volume::findPathInDirectory(const std::string& parentPath, cons
             }
         }
     }
-    
+
     return "";
 }

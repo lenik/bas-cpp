@@ -28,6 +28,7 @@ struct Fat32Options : public MountOptions {
 
 class Fat32Volume : public Volume {
     friend class Fat32FileOutputStream;
+
   public:
     struct Dirent;
     using DirentObj = std::shared_ptr<Dirent>;
@@ -78,7 +79,8 @@ class Fat32Volume : public Volume {
      * Create FAT32 volume from block device (legacy).
      * @param device Block device
      */
-    explicit Fat32Volume(std::shared_ptr<BlockDevice> device, const Fat32Options& options = Fat32Options());
+    explicit Fat32Volume(std::shared_ptr<BlockDevice> device,
+                         const Fat32Options& options = Fat32Options());
 
     std::string getClass() const override { return "fat32"; }
     std::string getUrl() const override { return "fat32:" + m_device->uri(); }
@@ -111,8 +113,8 @@ class Fat32Volume : public Volume {
   protected:
     std::string getDefaultLabel() const override;
 
-    std::vector<uint8_t> readFileUnchecked(std::string_view path, int64_t off = 0,
-                                           size_t len = 0) override;
+    std::optional<std::vector<uint8_t>> readFileUnchecked(std::string_view path, int64_t off = 0,
+                                                          size_t len = 0) override;
     void writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) override;
 
     void createDirectoryThrowsUnchecked(std::string_view path) override;
@@ -180,7 +182,8 @@ class Fat32Volume : public Volume {
 
     // Stream-oriented low-level APIs
     std::vector<uint32_t> reallocClusters(const std::vector<uint32_t>& clusters, uint64_t newSize);
-    ReallocStrategy analyzeReallocStrategy(const std::vector<uint32_t>& clusters, uint32_t needClusters);
+    ReallocStrategy analyzeReallocStrategy(const std::vector<uint32_t>& clusters,
+                                           uint32_t needClusters);
     bool findDirEntryLocation(std::string_view path, uint32_t& dirCluster, uint32_t& dirIndex,
                               Dirent* outDirent = nullptr) const;
     void updateDirEntry(uint32_t dirCluster, uint32_t dirIndex, const Dirent& dirent);

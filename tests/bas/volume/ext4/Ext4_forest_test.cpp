@@ -214,10 +214,10 @@ int main() {
                     }
                     
                     auto content = vol.readFile(node.path);
-                    if (content != node.content) {
+                    if (!content || *content != node.content) {
                         std::cerr << "  CONTENT MISMATCH: " << node.path 
                                   << " (expected " << node.content.size() 
-                                  << " bytes, got " << content.size() << ")\n";
+                                  << " bytes, got " << (content ? content->size() : 0) << ")\n";
                         errors++;
                     }
                 }
@@ -278,7 +278,7 @@ int main() {
                 vol.writeFile(path, data);
                 
                 auto readData = vol.readFile(path);
-                if (readData != data) {
+                if (!readData || *readData != data) {
                     std::cerr << "  Content mismatch at iteration " << i << "\n";
                     failures++;
                     continue;

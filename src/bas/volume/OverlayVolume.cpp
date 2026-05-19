@@ -269,8 +269,8 @@ std::string OverlayVolume::createTempFile(std::string_view prefix, std::string_v
     return top->createTempFile(prefix, suffix);
 }
 
-std::vector<uint8_t> OverlayVolume::readFileUnchecked(std::string_view path, int64_t off,
-                                                      size_t len) {
+std::optional<std::vector<uint8_t>> OverlayVolume::readFileUnchecked(std::string_view path,
+                                                                     int64_t off, size_t len) {
     Volume* v = layerForFile(path);
     if (!v) {
         throw IOException("readFile", path, "Path is not a readable file");
@@ -303,9 +303,12 @@ void OverlayVolume::copyFileThrowsUnchecked(std::string_view src, std::string_vi
     if (!srcLayer) {
         throw IOException("copyFile", src, "Source file does not exist");
     }
-    std::vector<uint8_t> data = srcLayer->readFile(src);
+    auto data = srcLayer->readFile(src);
+    if (!data.has_value()) {
+        throw IOException("copyFile", src, "Source file is not readable");
+    }
     Volume* top = m_layers.back();
-    top->writeFile(dest, data);
+    top->writeFile(dest, *data);
 }
 
 void OverlayVolume::moveFileThrowsUnchecked(std::string_view src, std::string_view dest) {

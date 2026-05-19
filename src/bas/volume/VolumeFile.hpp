@@ -49,13 +49,16 @@ struct VolumeFile {
                      int64_t file_offset = 0, std::ios::seekdir seek_dir = std::ios::beg) const;
     size_t cWriteFile(const uint8_t* buf, size_t off, size_t len, bool append = false) const;
 
-    std::vector<uint8_t>
+    std::optional<std::vector<uint8_t>>
     readFile(int64_t off = 0, size_t len = 0,
              std::optional<std::vector<uint8_t>> default_data = std::nullopt) const;
 
-    std::string readFileUTF8(std::optional<std::string> default_data = std::nullopt) const;
-    std::string readFileString(std::string_view encoding = "UTF-8",
-                               std::optional<std::string> default_data = std::nullopt) const;
+    std::optional<std::string>
+    readFileUTF8(std::optional<std::string> default_data = std::nullopt) const;
+    
+    std::optional<std::string>
+    readFileString(std::string_view encoding = "UTF-8",
+                   std::optional<std::string> default_data = std::nullopt) const;
 
     std::vector<std::string> readFileLines(std::string_view encoding = "UTF-8") const;
 

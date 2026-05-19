@@ -36,7 +36,7 @@ std::string VolumeFile::getLocalFile() const {
 }
 
 size_t VolumeFile::cReadFile(uint8_t* buf, size_t off, size_t len, int64_t file_offset,
-                            std::ios::seekdir seek_dir) const {
+                             std::ios::seekdir seek_dir) const {
     if (!m_volume || m_path.empty()) {
         return 0;
     }
@@ -61,29 +61,41 @@ size_t VolumeFile::cWriteFile(const uint8_t* buf, size_t off, size_t len, bool a
     return stream->write(buf, off, len);
 }
 
-std::vector<uint8_t> VolumeFile::readFile(int64_t off, size_t len,
-                                          std::optional<std::vector<uint8_t>> default_data) const {
+std::optional<std::vector<uint8_t>>
+VolumeFile::readFile(int64_t off, size_t len,
+                     std::optional<std::vector<uint8_t>> default_data) const {
     if (!m_volume) {
-        return std::vector<uint8_t>();
+        return std::nullopt;
     }
     if (m_path.empty()) {
-        return std::vector<uint8_t>();
+        return std::nullopt;
     }
     return m_volume->readFile(m_path, off, len, default_data);
 }
 
-std::string VolumeFile::readFileString(std::string_view encoding,
-                                       std::optional<std::string> default_data) const {
+std::optional<std::string> VolumeFile::readFileUTF8(std::optional<std::string> default_data) const {
     if (!m_volume || m_path.empty()) {
-        return "";
+        return default_data;
+    }
+    return m_volume->readFileUTF8(m_path, default_data);
+}
+
+std::optional<std::string>
+VolumeFile::readFileString(std::string_view encoding,
+                           std::optional<std::string> default_data) const {
+    if (!m_volume || m_path.empty()) {
+        return default_data;
     }
     return m_volume->readFileString(m_path, encoding, default_data);
 }
 
 std::vector<std::string> VolumeFile::readFileLines(std::string_view encoding) const {
-    std::string data = readFileString(encoding);
+    auto data = readFileString(encoding);
+    if (!data.has_value())
+        return {};
+
     std::vector<std::string> lines;
-    std::istringstream stream(data);
+    std::istringstream stream(*data);
     std::string line;
     while (std::getline(stream, line)) {
         lines.push_back(line);
@@ -312,16 +324,19 @@ std::string VolumeFile::exportToTempFile() const {
     }
 
     // Read file from virtual filesystem
-    std::vector<uint8_t> data = readFile();
-    if (data.empty()) {
+    auto data = readFile();
+    if (!data.has_value()) {
+        return "";
+    }
+    if (data->empty()) {
         return "";
     }
 
     // Write to temporary file
-    size_t cb = fwrite(data.data(), 1, data.size(), out);
+    size_t cb = fwrite(data->data(), 1, data->size(), out);
     fclose(out);
 
-    if (cb != data.size()) {
+    if (cb != data->size()) {
         fs::remove(tmpname);
         return "";
     }
