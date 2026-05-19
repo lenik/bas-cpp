@@ -1,0 +1,76 @@
+#!/bin/bash
+    : ${RCSID:=$Id: - @VERSION@ @DATE@ @TIME@ - $}
+    : ${PACKAGE:=@PACKAGE@}
+    : ${PROGRAM_TITLE:=}
+    : ${PROGRAM_SYNTAX:=[OPTIONS] [--] ...}
+
+    . shlib-import cliboot
+    option -r --root =ROOT      'Specify root dir/file'
+    option -q --quiet
+    option -v --verbose
+    option -h --help
+    option    --version
+
+    opt_root=
+
+function setopt() {
+    case "$1" in
+        -r|--root)
+            opt_root="$2";;
+        -h|--help)
+            help $1; exit;;
+        -q|--quiet)
+            LOGLEVEL=$((LOGLEVEL - 1));;
+        -v|--verbose)
+            LOGLEVEL=$((LOGLEVEL + 1));;
+        --version)
+            show_version; exit;;
+        *)
+            quit "invalid option: $1";;
+    esac
+}
+
+function main() {
+    if [ -n "$opt_root" ]; then
+        rm -rf "$opt_root"
+    fi
+
+    local vq=
+    for ((i = 1; i < LOGLEVEL; i++));  do vq=v$vq; done
+    for ((i = LOGLEVEL; i <= 0; i++)); do vq=q$vq; done
+    if [ -n "$vq" ]; then
+        regopts+=("-$vq")
+    fi
+
+    if [ -n "$opt_root" ]; then
+        regopts+=(-r "$opt_root")
+    fi
+
+    reg -s key1 'val1'
+    reg -s key2.key3 'val2'
+    reg -s key2.key4.key5 'val3'
+    reg -s dir1/key1 'val4'
+    reg -s dir2/key2.key3 'val5'
+    reg -s dir3/dir4/key4 'val6'
+
+    reg -g key1
+    reg -g key2.key3
+    reg -g key2.key4.key5
+    reg -g dir1/key1
+    reg -g dir2/key2.key3
+    reg -g dir3/dir4/key4
+
+    reg --dump key1
+    reg --dump dir1
+    reg --dump ''
+}
+
+: "${REG:=$(command -v reg)}"
+[ -n "$REG" ] || quit "can't find reg (set REG= to the reg binary)"
+
+regopts=()
+function reg() {
+    $REG "${regopts[@]}" "$@"
+}
+
+boot "$@"

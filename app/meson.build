@@ -3,13 +3,14 @@ exe_inc = include_directories('../src', '..')
 
 app_cpp_list = [
     'asl.cpp',
+    'reg.cpp',
     'vols.cpp',
 ]
 foreach app_cpp : app_cpp_list
     app_name = app_cpp.split('/')[-1].replace('.cpp', '')
-    if app_name == 'vols'
+    if app_name == 'vols' or app_name == 'reg'
         install_dir = get_option('bindir')
-        # Same logger as libbas-cpp so vols can tune levels for VolumeManager::logwarn etc.
+        # Same logger as libbas-cpp so vols/reg can tune levels for library log calls.
         app_logger = 'cpp'
     else
         install_dir = pkgdatadir / 'app'

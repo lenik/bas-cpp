@@ -1,54 +1,54 @@
 #ifndef OMNISHELL_CORE_VOLUME_REGISTRY_HPP
 #define OMNISHELL_CORE_VOLUME_REGISTRY_HPP
 
-#include "AbstractRegistry.hpp"
-#include "RegistryPath.hpp"
+#include "Registry.hpp"
+#include "Sub.hpp"
+#include "variant.hpp"
 
-#include <bas/volume/VolumeFile.hpp>
+#include "../volume/VolumeFile.hpp"
 
-#include <map>
-#include <memory>
 #include <string>
 #include <vector>
 
-namespace os {
+namespace bas::reg {
+
+constexpr std::string_view kDataJson = "DATA.json";
 
 /**
- * Dual-layout registry on a Volume (same key rules as LocalRegistry: '/' = path, '.' = JSON object).
+ * Dual-layout registry on a Volume (same key rules as LocalRegistry: '/' = path, '.' = JSON
+ * object).
  */
-class VolumeRegistry : public AbstractRegistry {
+class VolumeRegistry : public IRegistry, public IContainerManager {
   public:
-    explicit VolumeRegistry(VolumeFile root);
+    explicit VolumeRegistry(VolumeFile root, bool autoSave = true);
 
-    bool load() override;
-    bool save() const override;
+    std::optional<boost::json::value> readContainer(std::string_view container) const override;
+    void writeContainer(std::string_view container, const boost::json::value& value) override;
 
-    std::vector<std::string> list(const std::string& node_key, bool full_key) const override;
+    std::vector<std::string> list(std::string_view path) const override;
+    std::vector<std::string> listDir(std::string_view path) const override;
+    std::vector<std::string> listDomain(std::string_view path) const override;
+    bool delTree(std::string_view path) override;
 
-    reg::variant_t getVariant(const std::string& key) const override;
-    void setVariant(const std::string& key, reg::variant_t value) override;
-
-    bool has(const std::string& key) const override;
-    bool remove(const std::string& key) override;
-    bool delTree(const std::string& key) override;
-
-    std::map<std::string, std::string> snapshotStrings() const override;
+    reg::option_t getOption(std::string_view path) const override;
+    void setOption(std::string_view path, reg::option_t value) override;
 
   protected:
-    void ensureLoaded() const;
+    RRL parseRRL(std::string_view path) const;
 
-    void loadFromVolume();
-    bool writeAllToVolume() const;
-    std::unique_ptr<VolumeFile> fileForDual(const reg::DualPathResolution& r) const;
+    /** trim(container) + "/DATA.json" at registry root, or DATA.json when container is empty. */
+    VolumeFile resolveJsonFile(std::string_view container) const;
 
-    void syncDualFileForGroup(const reg::DualPathResolution& sample);
-    void collectKeysForGroup(const reg::DualPathResolution& sample,
-                             std::map<std::vector<std::string>, std::string>& out) const;
+    inline VolumeFile resolveJsonFile(RRL rrl) const { return resolveJsonFile(rrl.container); }
+    // std::string keyPath(std::string fragment) const;
+    // inline std::string keyPath(RRL rrl) const { return keyPath(rrl.fragment); }
+
+    VolumeFile m_root;
+    bool m_autoSave{true};
 
   private:
-    VolumeFile m_root;
 };
 
-} // namespace os
+} // namespace bas::reg
 
 #endif

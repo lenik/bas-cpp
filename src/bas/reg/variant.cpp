@@ -1,34 +1,83 @@
-#include "RegistryValueIo.hpp"
+#include "variant.hpp"
 
-#include <algorithm>
-#include <cctype>
+#include "strings.hpp"
+
+#include <boost/json/serialize.hpp>
 #include <climits>
 #include <cstdlib>
 
-namespace os::reg {
+namespace bas::reg {
 
-namespace {
-
-std::string trim(std::string s) {
-    auto notsp = [](unsigned char c) { return !std::isspace(c); };
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), notsp));
-    s.erase(std::find_if(s.rbegin(), s.rend(), notsp).base(), s.end());
-    return s;
+option_t jsonToOption(const boost::json::value& v) {
+    if (v.is_null()) {
+        return std::nullopt;
+    }
+    if (v.is_object()) {
+        auto json = boost::json::serialize(v);
+        return json;
+    }
+    if (v.is_array()) {
+        auto json = boost::json::serialize(v);
+        return json;
+    }
+    if (v.is_string()) {
+        boost::json::string str = v.as_string();
+        std::string s = str.c_str();
+        return parseOption(s);
+    }
+    if (v.is_bool()) {
+        return value_t{v.as_bool()};
+    }
+    if (v.is_double())
+        return value_t{v.to_number<double>()};
+    if (v.is_int64()) {
+        auto num = v.to_number<int64_t>();
+        return value_t{num};
+    }
+    if (v.is_uint64()) {
+        auto num = v.to_number<uint64_t>();
+        return value_t{(long)num};
+    }
+    if (v.is_number())
+        return value_t{v.to_number<double>()};
+    return std::nullopt;
 }
 
-bool iequals(const std::string& a, const std::string& b) {
-    if (a.size() != b.size())
-        return false;
-    for (size_t i = 0; i < a.size(); ++i)
-        if (std::tolower(static_cast<unsigned char>(a[i])) !=
-            std::tolower(static_cast<unsigned char>(b[i])))
-            return false;
-    return true;
+option_t jsonToOption(const std::optional<boost::json::value> v) {
+    if (!v.has_value())
+        return std::nullopt;
+    return jsonToOption(*v);
 }
 
-} // namespace
+boost::json::value optionToJson(const option_t& v) {
+    if (!v.has_value())
+        return boost::json::value(nullptr);
+    auto val = v.value();
+    switch (val.index()) {
+    case bool_kind:
+        return boost::json::value(std::get<bool>(v.value()));
+    case int_kind:
+        return boost::json::value(std::get<int>(v.value()));
+    case long_kind:
+        return boost::json::value(std::get<long>(v.value()));
+    case float_kind:
+        return boost::json::value(std::get<float>(v.value()));
+    case double_kind:
+        return boost::json::value(std::get<double>(v.value()));
+    case string_kind:
+        return boost::json::value(std::get<std::string>(v.value()));
+    case sys_time_kind:
+    case local_time_kind:
+    case zoned_time_kind:
+    case year_month_day_kind:
+    case time_of_day_kind:
+        auto s = valueToString(val);
+        return boost::json::value(s);
+    }
+    return boost::json::value(nullptr);
+}
 
-std::string valueToString(const registry_value_t& v) {
+std::string valueToString(const value_t& v) {
     return std::visit(
         [](auto&& x) -> std::string {
             using T = std::decay_t<decltype(x)>;
@@ -72,21 +121,21 @@ std::string valueToString(const registry_value_t& v) {
         v);
 }
 
-std::string variantToString(const variant_t& v) {
+std::string optionToString(const option_t& v) {
     if (!v.has_value())
         return "";
     return valueToString(*v);
 }
 
-variant_t parseValue(const std::string& raw) {
-    std::string s = trim(raw);
+option_t parseOption(const std::string& raw) {
+    std::string s = util::trim(raw);
     if (s.empty())
         return std::nullopt;
 
-    if (iequals(s, "true"))
-        return registry_value_t{true};
-    if (iequals(s, "false"))
-        return registry_value_t{false};
+    if (util::iequals(s, "true"))
+        return value_t{true};
+    if (util::iequals(s, "false"))
+        return value_t{false};
 
     if (s.rfind("ymd:", 0) == 0) {
         int y = 0, m = 0, d = 0;
@@ -94,22 +143,22 @@ variant_t parseValue(const std::string& raw) {
             year_month_day ymd{date::year{y}, date::month{static_cast<unsigned>(m)},
                                date::day{static_cast<unsigned>(d)}};
             if (ymd.ok())
-                return registry_value_t{ymd};
+                return value_t{ymd};
         }
-        return registry_value_t{s};
+        return value_t{s};
     }
     if (s.rfind("tod:", 0) == 0) {
         int H = 0, M = 0, Sec = 0;
         if (std::sscanf(s.c_str(), "tod:%d:%d:%d", &H, &M, &Sec) >= 3) {
             using namespace std::chrono;
-            return registry_value_t{
+            return value_t{
                 time_of_day{hours{H} + minutes{M} + seconds{static_cast<long long>(Sec)}}};
         }
-        return registry_value_t{s};
+        return value_t{s};
     }
     if (s.rfind("sys:", 0) == 0) {
         long long sec = std::atoll(s.c_str() + 4);
-        return registry_value_t{sys_time{std::chrono::seconds(sec)}};
+        return value_t{sys_time{std::chrono::seconds(sec)}};
     }
     if (s.rfind("zoned:", 0) == 0) {
         size_t last = s.rfind(':');
@@ -118,24 +167,24 @@ variant_t parseValue(const std::string& raw) {
                 std::string zone = s.substr(6, last - 6);
                 auto sec = std::chrono::seconds(std::atoll(s.c_str() + last + 1));
                 zoned_time zt{zone, sys_time{sec}};
-                return registry_value_t{zt};
+                return value_t{zt};
             } catch (...) {
-                return registry_value_t{s};
+                return value_t{s};
             }
         }
-        return registry_value_t{s};
+        return value_t{s};
     }
     if (s.rfind("local:", 0) == 0) {
         long long sec = std::atoll(s.c_str() + 6);
-        return registry_value_t{local_time{std::chrono::seconds(sec)}};
+        return value_t{local_time{std::chrono::seconds(sec)}};
     }
 
     char* end = nullptr;
     long long li = std::strtoll(s.c_str(), &end, 10);
     if (end == s.c_str() + s.size()) {
         if (li >= INT_MIN && li <= INT_MAX)
-            return registry_value_t{static_cast<int>(static_cast<int>(li))};
-        return registry_value_t{static_cast<long>(li)};
+            return value_t{static_cast<int>(static_cast<int>(li))};
+        return value_t{static_cast<long>(li)};
     }
 
     end = nullptr;
@@ -143,14 +192,14 @@ variant_t parseValue(const std::string& raw) {
     if (end == s.c_str() + s.size()) {
         float f = static_cast<float>(d);
         if (static_cast<double>(f) == d)
-            return registry_value_t{f};
-        return registry_value_t{d};
+            return value_t{f};
+        return value_t{d};
     }
 
-    return registry_value_t{s};
+    return value_t{s};
 }
 
-std::string optionalString(const variant_t& v, const std::string& def) {
+std::string optionalString(const option_t& v, const std::string& def) {
     if (!v.has_value())
         return def;
     if (auto* p = std::get_if<std::string>(&*v))
@@ -158,21 +207,21 @@ std::string optionalString(const variant_t& v, const std::string& def) {
     return valueToString(*v);
 }
 
-bool optionalBool(const variant_t& v, bool def) {
+bool optionalBool(const option_t& v, bool def) {
     if (!v.has_value())
         return def;
     if (auto* p = std::get_if<bool>(&*v))
         return *p;
     if (auto* p = std::get_if<std::string>(&*v)) {
-        if (iequals(*p, "true") || *p == "1")
+        if (util::iequals(*p, "true") || *p == "1")
             return true;
-        if (iequals(*p, "false") || *p == "0")
+        if (util::iequals(*p, "false") || *p == "0")
             return false;
     }
     return def;
 }
 
-int optionalInt(const variant_t& v, int def) {
+int optionalInt(const option_t& v, int def) {
     if (!v.has_value())
         return def;
     if (auto* p = std::get_if<int>(&*v))
@@ -184,7 +233,7 @@ int optionalInt(const variant_t& v, int def) {
     return def;
 }
 
-long optionalLong(const variant_t& v, long def) {
+long optionalLong(const option_t& v, long def) {
     if (!v.has_value())
         return def;
     if (auto* p = std::get_if<long>(&*v))
@@ -196,7 +245,7 @@ long optionalLong(const variant_t& v, long def) {
     return def;
 }
 
-float optionalFloat(const variant_t& v, float def) {
+float optionalFloat(const option_t& v, float def) {
     if (!v.has_value())
         return def;
     if (auto* p = std::get_if<float>(&*v))
@@ -208,7 +257,7 @@ float optionalFloat(const variant_t& v, float def) {
     return def;
 }
 
-double optionalDouble(const variant_t& v, double def) {
+double optionalDouble(const option_t& v, double def) {
     if (!v.has_value())
         return def;
     if (auto* p = std::get_if<double>(&*v))
@@ -220,22 +269,22 @@ double optionalDouble(const variant_t& v, double def) {
     return def;
 }
 
-std::optional<bool> tryBool(const variant_t& v) {
+std::optional<bool> tryBool(const option_t& v) {
     if (!v.has_value())
         return std::nullopt;
     if (auto* p = std::get_if<bool>(&*v))
         return *p;
     if (auto* p = std::get_if<std::string>(&*v)) {
-        if (iequals(*p, "true") || *p == "1")
+        if (util::iequals(*p, "true") || *p == "1")
             return true;
-        if (iequals(*p, "false") || *p == "0")
+        if (util::iequals(*p, "false") || *p == "0")
             return false;
         return std::nullopt;
     }
     return std::nullopt;
 }
 
-std::optional<int> tryInt(const variant_t& v) {
+std::optional<int> tryInt(const option_t& v) {
     if (!v.has_value())
         return std::nullopt;
     if (auto* p = std::get_if<int>(&*v))
@@ -243,7 +292,7 @@ std::optional<int> tryInt(const variant_t& v) {
     if (auto* p = std::get_if<long>(&*v))
         return static_cast<int>(*p);
     if (auto* p = std::get_if<std::string>(&*v)) {
-        std::string s = trim(*p);
+        std::string s = util::trim(*p);
         if (s.empty())
             return std::nullopt;
         char* end = nullptr;
@@ -257,7 +306,7 @@ std::optional<int> tryInt(const variant_t& v) {
     return std::nullopt;
 }
 
-std::optional<long> tryLong(const variant_t& v) {
+std::optional<long> tryLong(const option_t& v) {
     if (!v.has_value())
         return std::nullopt;
     if (auto* p = std::get_if<long>(&*v))
@@ -265,7 +314,7 @@ std::optional<long> tryLong(const variant_t& v) {
     if (auto* p = std::get_if<int>(&*v))
         return *p;
     if (auto* p = std::get_if<std::string>(&*v)) {
-        std::string s = trim(*p);
+        std::string s = util::trim(*p);
         if (s.empty())
             return std::nullopt;
         char* end = nullptr;
@@ -279,7 +328,7 @@ std::optional<long> tryLong(const variant_t& v) {
     return std::nullopt;
 }
 
-std::optional<float> tryFloat(const variant_t& v) {
+std::optional<float> tryFloat(const option_t& v) {
     if (!v.has_value())
         return std::nullopt;
     if (auto* p = std::get_if<float>(&*v))
@@ -287,7 +336,7 @@ std::optional<float> tryFloat(const variant_t& v) {
     if (auto* p = std::get_if<double>(&*v))
         return static_cast<float>(*p);
     if (auto* p = std::get_if<std::string>(&*v)) {
-        std::string s = trim(*p);
+        std::string s = util::trim(*p);
         if (s.empty())
             return std::nullopt;
         char* end = nullptr;
@@ -299,7 +348,7 @@ std::optional<float> tryFloat(const variant_t& v) {
     return std::nullopt;
 }
 
-std::optional<double> tryDouble(const variant_t& v) {
+std::optional<double> tryDouble(const option_t& v) {
     if (!v.has_value())
         return std::nullopt;
     if (auto* p = std::get_if<double>(&*v))
@@ -307,7 +356,7 @@ std::optional<double> tryDouble(const variant_t& v) {
     if (auto* p = std::get_if<float>(&*v))
         return *p;
     if (auto* p = std::get_if<std::string>(&*v)) {
-        std::string s = trim(*p);
+        std::string s = util::trim(*p);
         if (s.empty())
             return std::nullopt;
         char* end = nullptr;
@@ -319,7 +368,7 @@ std::optional<double> tryDouble(const variant_t& v) {
     return std::nullopt;
 }
 
-std::optional<sys_time> trySysTime(const variant_t& v) {
+std::optional<sys_time> trySysTime(const option_t& v) {
     if (!v.has_value())
         return std::nullopt;
     if (auto* p = std::get_if<sys_time>(&*v))
@@ -327,7 +376,7 @@ std::optional<sys_time> trySysTime(const variant_t& v) {
     return std::nullopt;
 }
 
-std::optional<local_time> tryLocalTime(const variant_t& v) {
+std::optional<local_time> tryLocalTime(const option_t& v) {
     if (!v.has_value())
         return std::nullopt;
     if (auto* p = std::get_if<local_time>(&*v))
@@ -335,7 +384,7 @@ std::optional<local_time> tryLocalTime(const variant_t& v) {
     return std::nullopt;
 }
 
-std::optional<zoned_time> tryZonedTime(const variant_t& v) {
+std::optional<zoned_time> tryZonedTime(const option_t& v) {
     if (!v.has_value())
         return std::nullopt;
     if (auto* p = std::get_if<zoned_time>(&*v))
@@ -343,7 +392,7 @@ std::optional<zoned_time> tryZonedTime(const variant_t& v) {
     return std::nullopt;
 }
 
-std::optional<year_month_day> tryYearMonthDay(const variant_t& v) {
+std::optional<year_month_day> tryYearMonthDay(const option_t& v) {
     if (!v.has_value())
         return std::nullopt;
     if (auto* p = std::get_if<year_month_day>(&*v))
@@ -351,7 +400,7 @@ std::optional<year_month_day> tryYearMonthDay(const variant_t& v) {
     return std::nullopt;
 }
 
-std::optional<time_of_day> tryTimeOfDay(const variant_t& v) {
+std::optional<time_of_day> tryTimeOfDay(const option_t& v) {
     if (!v.has_value())
         return std::nullopt;
     if (auto* p = std::get_if<time_of_day>(&*v))
@@ -359,4 +408,4 @@ std::optional<time_of_day> tryTimeOfDay(const variant_t& v) {
     return std::nullopt;
 }
 
-} // namespace os::reg
+} // namespace bas::reg
