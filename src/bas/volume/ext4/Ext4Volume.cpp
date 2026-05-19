@@ -202,22 +202,20 @@ Ext4Volume::WritePlan Ext4Volume::planWriteLayout(std::string_view /*path*/, uin
     return p;
 }
 
-std::optional<std::vector<uint8_t>> Ext4Volume::readFileUnchecked(std::string_view path,
-                                                                  int64_t off, size_t len) {
+std::vector<uint8_t> Ext4Volume::readFileUnchecked(std::string_view path, int64_t off, size_t len) {
     const std::string normalized = normalizeArg(path);
     Inode node;
     if (!resolveNode(normalized, &node) || node.isDirectory) {
-        // throw IOException("readFile", std::string(path), "File not found or is a directory");
-        return std::nullopt;
+        throw IOException("readFile", std::string(path), "File not found or is a directory");
     }
     if (!checkMode(node, 4)) {
-        // throw IOException("readFile", std::string(path), "Permission denied");
-        return std::nullopt;
+        throw IOException("readFile", std::string(path), "Permission denied");
     }
 
     auto in = newInputStream(path);
-    if (!in)
-        return std::nullopt;
+    if (!in) {
+        throw IOException("readFile", std::string(path), "File is not readable");
+    }
     auto data = in->readBytesUntilEOF();
     if (data.size() > node.size)
         data.resize(static_cast<size_t>(node.size));

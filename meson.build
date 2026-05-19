@@ -356,7 +356,7 @@ find_other_cmd = run_command(
 )
 other_files = find_other_cmd.stdout().strip().split('\n')
 
-other_list = []
+other_list = [ 'bulk.h', 'bulk.hpp' ]
 foreach f : other_files
     other_list += f.substring(4)
 endforeach

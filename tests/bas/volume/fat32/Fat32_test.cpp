@@ -1,8 +1,6 @@
 #include "../dev/MemDevice.hpp"
 #include "Fat32Volume.hpp"
 
-#include "../../io/IOException.hpp"
-
 #include <cassert>
 #include <cstdlib>
 #include <filesystem>
@@ -66,7 +64,7 @@ int main() {
 
             // Verify by reading back
             auto readData = vol.readFile("/test_write.txt");
-            assert(readData && *readData == testData);
+            assert(readData == testData);
             std::cout << "PASSED\n";
         }
 
@@ -75,7 +73,7 @@ int main() {
             std::cout << "  Test 2: writeFileUTF8... ";
             vol.writeFileUTF8("/test_text.txt", "Hello World!\n");
             auto content = vol.readFileUTF8("/test_text.txt");
-            assert(content && *content == "Hello World!\n");
+            assert(content == "Hello World!\n");
             std::cout << "PASSED\n";
         }
 
@@ -103,7 +101,7 @@ int main() {
             std::vector<uint8_t> subData = {'S', 'u', 'b', 'd', 'i', 'r', ' ', 'f', 'i', 'l', 'e'};
             vol.writeFile("/test_dir/nested/subfile.bin", subData);
             auto readData = vol.readFile("/test_dir/nested/subfile.bin");
-            assert(readData && *readData == subData);
+            assert(readData == subData);
             std::cout << "PASSED\n";
         }
 
@@ -114,7 +112,7 @@ int main() {
             assert(vol.exists("/test_copy.txt"));
             auto original = vol.readFile("/test_write.txt");
             auto copy = vol.readFile("/test_copy.txt");
-            assert(original && copy && *original == *copy);
+            assert(original == copy);
             std::cout << "PASSED\n";
         }
 
@@ -163,7 +161,7 @@ int main() {
             }
             vol.writeFile("/large_file.bin", largeData);
             auto readData = vol.readFile("/large_file.bin");
-            assert(readData && *readData == largeData);
+            assert(readData == largeData);
             std::cout << "PASSED\n";
         }
 

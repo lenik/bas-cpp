@@ -423,12 +423,9 @@ void Ext4Volume::copyFileThrowsUnchecked(std::string_view src, std::string_view 
 
     // Read source file data
     auto data = readFile(src);
-    if (!data.has_value()) {
-        throw IOException("copyFile", std::string(src), "Source file is not readable");
-    }
 
     // Write to destination
-    writeFileUnchecked(destNormalized, *data);
+    writeFileUnchecked(destNormalized, data);
 }
 
 void Ext4Volume::moveFileThrowsUnchecked(std::string_view src, std::string_view dest) {
@@ -458,12 +455,9 @@ void Ext4Volume::moveFileThrowsUnchecked(std::string_view src, std::string_view 
 
     // Read source data
     auto data = readFile(src);
-    if (!data.has_value()) {
-        throw IOException("moveFile", std::string(src), "Source file is not readable");
-    }
 
     // Write to destination
-    writeFileUnchecked(destNormalized, *data);
+    writeFileUnchecked(destNormalized, data);
 
     // Remove source
     const std::string srcParent = srcNormalized.substr(0, srcNormalized.find_last_of('/'));

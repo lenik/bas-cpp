@@ -192,10 +192,7 @@ std::unique_ptr<RandomInputStream> Fat32Volume::newRandomInputStream(std::string
 std::unique_ptr<Reader> Fat32Volume::newReader(std::string_view path,
                                                std::string_view /*encoding*/) {
     auto data = readFile(path);
-    if (!data.has_value()) {
-        throw IOException("newReader", std::string(path), "File is not readable");
-    }
-    std::vector<uint8_t> bytes = *data;
+    std::vector<uint8_t> bytes = data;
     std::string text(bytes.begin(), bytes.end());
     return std::make_unique<StringReader>(text);
 }
@@ -221,17 +218,15 @@ std::unique_ptr<Writer> Fat32Volume::newWriter(std::string_view path, bool appen
     return std::make_unique<PrintStream>(std::move(out), encoding);
 }
 
-std::optional<std::vector<uint8_t>> Fat32Volume::readFileUnchecked(std::string_view path,
-                                                                   int64_t off, size_t len) {
+std::vector<uint8_t> Fat32Volume::readFileUnchecked(std::string_view path, int64_t off,
+                                                    size_t len) {
     std::string resolved = resolvePath(path);
     if (resolved.empty()) {
-        // throw IOException("readFile", std::string(path), "File not found");
-        return std::nullopt;
+        throw IOException("readFile", std::string(path), "File not found");
     }
     auto it = m_dirents.find(resolved);
     if (it == m_dirents.end() || it->second.isDirectory) {
-        // throw IOException("readFile", std::string(path), "File not found or is a directory");
-        return std::nullopt;
+        throw IOException("readFile", std::string(path), "File not found or is a directory");
     }
 
     const Dirent& dirent = it->second;

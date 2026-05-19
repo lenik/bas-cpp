@@ -39,7 +39,7 @@ std::optional<boost::json::value> VolumeRegistry::readContainer(std::string_view
     }
 
     try {
-        auto json = vf.readFileUTF8();
+        auto json = vf.readFileUTF8Opt();
         if (!json.has_value()) {
             return std::nullopt;
         }
@@ -162,5 +162,9 @@ void VolumeRegistry::setOption(std::string_view path, reg::option_t value) {
     boost::json::value jv = optionToJson(value);
     cacheSaveFragment(rrl, jv);
 }
+
+void VolumeRegistry::flush() { flushCachedContainers(); }
+
+void VolumeRegistry::save() { flushCachedContainers(); }
 
 } // namespace bas::reg

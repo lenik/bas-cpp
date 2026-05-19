@@ -44,17 +44,18 @@ std::string volumeTypeToString(VolumeType t) {
     }
 }
 
-std::optional<std::string> Volume::readRCFile(std::string_view name) const {
-    std::unique_ptr<const VolumeFile> rcDir = resolve("/.rc");
+std::unique_ptr<VolumeFile> Volume::rcFile(std::string_view name) const {
+    auto rcDir = resolve("/.rc");
+    auto vf = rcDir->resolve(name);
+    return vf;
+}
+
+std::string Volume::readRCFile(std::string_view name) const {
+    auto vf = rcFile(name);
     try {
-        if (!rcDir->exists()) {
-            return std::nullopt;
-        }
-        auto content = rcDir->resolve(name)->readFileString();
-        if (!content)
-            return std::nullopt;
+        auto content = vf->readFileString();
         // get the first line
-        std::string line = content->substr(0, content->find('\n'));
+        std::string line = content.substr(0, content.find('\n'));
         // left trim (spaces and tabs)
         line = line.erase(0, line.find_first_not_of(' '));
         // right trim
@@ -62,6 +63,31 @@ std::optional<std::string> Volume::readRCFile(std::string_view name) const {
         return line;
     } catch (...) {
         return getDefaultLabel();
+    }
+}
+
+std::string Volume::readRCFile(std::string_view name, std::string default_data) const {
+    auto vf = rcFile(name);
+    if (!vf->exists() || !vf->isFile()) {
+        return default_data;
+    }
+    try {
+        return readRCFile(name);
+    } catch (...) {
+        return default_data;
+    }
+}
+
+std::optional<std::string> Volume::readRCFileOpt(std::string_view name,
+                                                 std::optional<std::string> default_data) const {
+    auto vf = rcFile(name);
+    if (!vf->exists() || !vf->isFile()) {
+        return default_data;
+    }
+    try {
+        return readRCFile(name);
+    } catch (...) {
+        return default_data;
     }
 }
 
@@ -82,7 +108,7 @@ std::string Volume::getTypeString() const { return volumeTypeToString(getType())
 std::string Volume::getUUID() const {
     if (c_uuid_valid)
         return c_uuid;
-    auto rc = readRCFile(m_uuidFile);
+    auto rc = readRCFileOpt(m_uuidFile);
     if (!rc.has_value()) {
         return "";
     }
@@ -100,7 +126,7 @@ void Volume::setUUIDForced(std::string_view u) {
 std::string Volume::getSerial() const {
     if (c_serial_valid)
         return c_serial;
-    auto rc = readRCFile(m_serialFile);
+    auto rc = readRCFileOpt(m_serialFile);
     if (!rc.has_value()) {
         return "";
     }
@@ -118,7 +144,7 @@ void Volume::setSerialForced(std::string_view s) {
 std::string Volume::getLabel() const {
     if (c_label_valid)
         return c_label;
-    auto rc = readRCFile(m_labelFile);
+    auto rc = readRCFileOpt(m_labelFile);
     if (!rc.has_value()) {
         return this->getDefaultLabel();
     }
@@ -614,78 +640,135 @@ std::unique_ptr<RandomReader> Volume::newRandomReader(std::string_view path,
     return std::make_unique<U32stringReader>(u32);
 }
 
-std::optional<std::vector<uint8_t>>
-Volume::readFile(std::string_view _path, int64_t off, size_t len,
-                 std::optional<std::vector<uint8_t>> default_data) {
+std::vector<uint8_t> Volume::readFile(std::string_view _path, int64_t off, size_t len) {
     if (!exists(_path)) {
-        if (default_data) {
-            return default_data;
-        }
         throw VolumeException(this, "readFile", std::string(_path), "Path does not exist");
     }
     if (!isFile(_path)) {
         throw VolumeException(this, "readFile", std::string(_path), "Path is not a regular file");
     }
-
     return readFileUnchecked(_path, off, len);
 }
 
-std::optional<std::string> Volume::readFileUTF8(std::string_view path,
-                                                std::optional<std::string> default_data) {
+std::vector<uint8_t> Volume::readFile(std::string_view path, std::vector<uint8_t> default_data,
+                                      int64_t off, size_t len) {
+    if (!exists(path) || !isFile(path))
+        return default_data;
+    try {
+        return this->readFile(path, off, len);
+    } catch (...) {
+        return default_data;
+    }
+}
+
+std::optional<std::vector<uint8_t>>
+Volume::readFileOpt(std::string_view path, int64_t off, size_t len,
+                    std::optional<std::vector<uint8_t>> default_data) {
+    if (!exists(path) || !isFile(path))
+        return default_data;
+    try {
+        return this->readFile(path, off, len);
+    } catch (...) {
+        return default_data;
+    }
+}
+
+std::string Volume::readFileUTF8(std::string_view path) {
     if (path.empty())
         throw std::invalid_argument("Volume::readFileUTF8: path is required");
 
     if (!exists(path)) {
-        if (default_data) {
-            return default_data;
-        }
+        throw VolumeException(this, "readFileUTF8", std::string(path), "Path does not exist");
+    }
+    if (!isFile(path)) {
+        throw VolumeException(this, "readFileUTF8", std::string(path),
+                              "Path is not a regular file");
     }
 
     auto data = readFile(path);
-    if (!data.has_value())
-        return default_data;
-    return std::string(data->begin(), data->end());
+    return std::string(data.begin(), data.end());
 }
 
-std::optional<std::string> Volume::readFileString(std::string_view path, std::string_view encoding,
-                                                  std::optional<std::string> default_data) {
+std::string Volume::readFileUTF8(std::string_view path, std::string default_data) {
+    if (!exists(path) || !isFile(path))
+        return default_data;
+    try {
+        return this->readFileUTF8(path);
+    } catch (...) {
+        return default_data;
+    }
+}
+
+std::optional<std::string> Volume::readFileUTF8Opt(std::string_view path,
+                                                   std::optional<std::string> default_data) {
+    if (!exists(path) || !isFile(path))
+        return default_data;
+    try {
+        return this->readFileUTF8(path);
+    } catch (...) {
+        return default_data;
+    }
+}
+
+std::string Volume::readFileString(std::string_view path, std::string_view encoding) {
     if (path.empty())
         throw std::invalid_argument("Volume::readFileString: path is required");
 
     if (!exists(path)) {
-        if (default_data) {
-            return default_data;
-        }
+        throw VolumeException(this, "readFileString", std::string(path), "Path does not exist");
+    }
+    if (!isFile(path)) {
+        throw VolumeException(this, "readFileString", std::string(path),
+                              "Path is not a regular file");
     }
 
     auto data = readFile(path);
-    if (!data.has_value())
-        return default_data;
-
-    if (data->empty()) {
+    if (data.empty())
         return "";
-    }
 
     // For UTF-8 encoding (default), convert bytes to string directly
     std::string encStr(encoding);
     if (encStr == "UTF-8" || encStr.empty()) {
-        return std::string(data->begin(), data->end());
+        return std::string(data.begin(), data.end());
     }
 
     // Convert from specified encoding to UTF-8
-    auto unicode = unicode::fromEncoding(*data, encStr);
+    auto unicode = unicode::fromEncoding(data, encStr);
     auto utf8 = unicode::convertToUTF8(unicode);
     return utf8;
+}
+
+std::string Volume::readFileString(std::string_view path, std::string default_data,
+                                   std::string_view encoding) {
+    if (!exists(path) || !isFile(path))
+        return default_data;
+    try {
+        return this->readFileString(path, encoding);
+    } catch (...) {
+        return default_data;
+    }
+}
+
+std::optional<std::string> Volume::readFileStringOpt(std::string_view path,
+                                                     std::optional<std::string> default_data,
+                                                     std::string_view encoding) {
+    if (!exists(path) || !isFile(path))
+        return default_data;
+    try {
+        return this->readFileString(path, encoding);
+    } catch (...) {
+        return default_data;
+    }
 }
 
 std::deque<std::string> Volume::readLines(std::string_view path, int maxLines,
                                           std::string_view encoding) {
     if (path.empty())
         throw std::invalid_argument("Volume::readLines: path is required");
+
     auto in = newReader(path, encoding);
-    assert(in);
-    if (!in)
-        return {};
+    if (in == nullptr)
+        throw VolumeException(this, "readLines", std::string(path), "Failed to create reader");
 
     std::deque<std::string> lines;
     std::string line;
@@ -699,6 +782,30 @@ std::deque<std::string> Volume::readLines(std::string_view path, int maxLines,
     }
 
     return lines;
+}
+
+std::deque<std::string> Volume::readLines(std::string_view path,
+                                          std::deque<std::string> default_data, int maxLines,
+                                          std::string_view encoding) {
+    if (!exists(path) || !isFile(path))
+        return default_data;
+    try {
+        return this->readLines(path, maxLines, encoding);
+    } catch (...) {
+        return default_data;
+    }
+}
+
+std::optional<std::deque<std::string>>
+Volume::readLinesOpt(std::string_view path, std::optional<std::deque<std::string>> default_data,
+                     int maxLines, std::string_view encoding) {
+    if (!exists(path) || !isFile(path))
+        return default_data;
+    try {
+        return this->readLines(path, maxLines, encoding);
+    } catch (...) {
+        return default_data;
+    }
 }
 
 std::deque<std::string> Volume::readLastLines(std::string_view path, int maxLines,
@@ -778,6 +885,17 @@ void Volume::writeFileString(std::string_view path, std::string_view data,
 
     // Write the converted bytes
     writeFile(path, converted);
+}
+
+void Volume::writeLines(std::string_view path, const std::deque<std::string>& lines,
+                        std::string_view encoding) {
+    if (path.empty())
+        throw std::invalid_argument("Volume::writeLines: path is required");
+    std::ostringstream content;
+    for (const auto& line : lines) {
+        content << line << "\n";
+    }
+    writeFileString(path, content.str(), encoding);
 }
 
 void Volume::writeLines(std::string_view path, const std::vector<std::string>& lines,

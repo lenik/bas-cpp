@@ -33,52 +33,52 @@ void IRegistry::set(std::string_view path, float v) { setOption(path, v); }
 void IRegistry::set(std::string_view path, double v) { setOption(path, v); }
 void IRegistry::set(std::string_view path, const std::string& value) { setOption(path, value); }
 
-std::optional<bool> IRegistry::getBool(std::string_view path, std::optional<bool> fallback) const {
+std::optional<bool> IRegistry::optBool(std::string_view path, std::optional<bool> fallback) const {
     if (!has(path))
         return fallback;
     return reg::tryBool(getOption(path));
 }
 
-bool IRegistry::getBool(std::string_view path, bool default_value) const {
-    return reg::optionalBool(getOption(path), default_value);
-}
-
-std::optional<int> IRegistry::getInt(std::string_view path, std::optional<int> fallback) const {
+std::optional<int> IRegistry::optInt(std::string_view path, std::optional<int> fallback) const {
     if (!has(path))
         return fallback;
     return reg::tryInt(getOption(path));
 }
 
-int IRegistry::getInt(std::string_view path, int default_value) const {
-    return reg::optionalInt(getOption(path), default_value);
-}
-
-std::optional<long> IRegistry::getLong(std::string_view path, std::optional<long> fallback) const {
+std::optional<long> IRegistry::optLong(std::string_view path, std::optional<long> fallback) const {
     if (!has(path))
         return fallback;
     return reg::tryLong(getOption(path));
 }
 
-long IRegistry::getLong(std::string_view path, long default_value) const {
-    return reg::optionalLong(getOption(path), default_value);
-}
-
-std::optional<float> IRegistry::getFloat(std::string_view path,
+std::optional<float> IRegistry::optFloat(std::string_view path,
                                          std::optional<float> fallback) const {
     if (!has(path))
         return fallback;
     return reg::tryFloat(getOption(path));
 }
 
-float IRegistry::getFloat(std::string_view path, float default_value) const {
-    return reg::optionalFloat(getOption(path), default_value);
-}
-
-std::optional<double> IRegistry::getDouble(std::string_view path,
+std::optional<double> IRegistry::optDouble(std::string_view path,
                                            std::optional<double> fallback) const {
     if (!has(path))
         return fallback;
     return reg::tryDouble(getOption(path));
+}
+
+bool IRegistry::getBool(std::string_view path, bool default_value) const {
+    return reg::optionalBool(getOption(path), default_value);
+}
+
+int IRegistry::getInt(std::string_view path, int default_value) const {
+    return reg::optionalInt(getOption(path), default_value);
+}
+
+long IRegistry::getLong(std::string_view path, long default_value) const {
+    return reg::optionalLong(getOption(path), default_value);
+}
+
+float IRegistry::getFloat(std::string_view path, float default_value) const {
+    return reg::optionalFloat(getOption(path), default_value);
 }
 
 double IRegistry::getDouble(std::string_view path, double default_value) const {
@@ -95,11 +95,40 @@ void IRegistry::set(std::string_view path, const reg::zoned_time& v) { setOption
 void IRegistry::set(std::string_view path, const reg::year_month_day& v) { setOption(path, v); }
 void IRegistry::set(std::string_view path, const reg::time_of_day& v) { setOption(path, v); }
 
-std::optional<reg::sys_time> IRegistry::getSysTime(std::string_view path,
-                                                   std::optional<reg::sys_time> fallback) const {
+std::optional<reg::sys_time> //
+IRegistry::optSysTime(std::string_view path, std::optional<reg::sys_time> fallback) const {
     if (!has(path))
         return fallback;
     return reg::trySysTime(getOption(path));
+}
+
+std::optional<reg::local_time>
+IRegistry::optLocalTime(std::string_view path, std::optional<reg::local_time> fallback) const {
+    if (!has(path))
+        return fallback;
+    return reg::tryLocalTime(getOption(path));
+}
+
+std::optional<reg::zoned_time>
+IRegistry::optZonedTime(std::string_view path, std::optional<reg::zoned_time> fallback) const {
+    if (!has(path))
+        return fallback;
+    return reg::tryZonedTime(getOption(path));
+}
+
+std::optional<reg::year_month_day>
+IRegistry::optYearMonthDay(std::string_view path,
+                           std::optional<reg::year_month_day> fallback) const {
+    if (!has(path))
+        return fallback;
+    return reg::tryYearMonthDay(getOption(path));
+}
+
+std::optional<reg::time_of_day>
+IRegistry::optTimeOfDay(std::string_view path, std::optional<reg::time_of_day> fallback) const {
+    if (!has(path))
+        return fallback;
+    return reg::tryTimeOfDay(getOption(path));
 }
 
 reg::sys_time IRegistry::getSysTime(std::string_view path, reg::sys_time default_value) const {
@@ -108,25 +137,11 @@ reg::sys_time IRegistry::getSysTime(std::string_view path, reg::sys_time default
     return reg::trySysTime(getOption(path)).value_or(default_value);
 }
 
-std::optional<reg::local_time>
-IRegistry::getLocalTime(std::string_view path, std::optional<reg::local_time> fallback) const {
-    if (!has(path))
-        return fallback;
-    return reg::tryLocalTime(getOption(path));
-}
-
 reg::local_time IRegistry::getLocalTime(std::string_view path,
                                         reg::local_time default_value) const {
     if (!has(path))
         return default_value;
     return reg::tryLocalTime(getOption(path)).value_or(default_value);
-}
-
-std::optional<reg::zoned_time>
-IRegistry::getZonedTime(std::string_view path, std::optional<reg::zoned_time> fallback) const {
-    if (!has(path))
-        return fallback;
-    return reg::tryZonedTime(getOption(path));
 }
 
 reg::zoned_time IRegistry::getZonedTime(std::string_view path,
@@ -137,26 +152,11 @@ reg::zoned_time IRegistry::getZonedTime(std::string_view path,
     return t.value_or(default_value);
 }
 
-std::optional<reg::year_month_day>
-IRegistry::getYearMonthDay(std::string_view path,
-                           std::optional<reg::year_month_day> fallback) const {
-    if (!has(path))
-        return fallback;
-    return reg::tryYearMonthDay(getOption(path));
-}
-
 reg::year_month_day IRegistry::getYearMonthDay(std::string_view path,
                                                reg::year_month_day default_value) const {
     if (!has(path))
         return default_value;
     return reg::tryYearMonthDay(getOption(path)).value_or(default_value);
-}
-
-std::optional<reg::time_of_day>
-IRegistry::getTimeOfDay(std::string_view path, std::optional<reg::time_of_day> fallback) const {
-    if (!has(path))
-        return fallback;
-    return reg::tryTimeOfDay(getOption(path));
 }
 
 reg::time_of_day IRegistry::getTimeOfDay(std::string_view path,

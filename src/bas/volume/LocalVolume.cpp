@@ -328,12 +328,12 @@ std::unique_ptr<Writer> LocalVolume::newWriter(std::string_view _path, bool appe
     return writer;
 }
 
-std::optional<std::vector<uint8_t>> LocalVolume::readFileUnchecked(std::string_view _path,
-                                                                   int64_t off, size_t len) {
+std::vector<uint8_t> LocalVolume::readFileUnchecked(std::string_view _path, int64_t off,
+                                                    size_t len) {
     std::string localPath = resolveLocal(_path);
     std::ifstream file(localPath, std::ios::binary);
     if (!file)
-        return std::nullopt;
+        throw IOException("readFile", _path, "Failed to open file for reading");
 
     file.seekg(0, std::ios::end);
     size_t size = file.tellg();

@@ -61,46 +61,102 @@ size_t VolumeFile::cWriteFile(const uint8_t* buf, size_t off, size_t len, bool a
     return stream->write(buf, off, len);
 }
 
-std::optional<std::vector<uint8_t>>
-VolumeFile::readFile(int64_t off, size_t len,
-                     std::optional<std::vector<uint8_t>> default_data) const {
+std::vector<uint8_t> VolumeFile::readFile(int64_t off, size_t len) const {
     if (!m_volume) {
-        return std::nullopt;
+        throw IOException("readFile", m_path, "Volume or path is null/empty");
     }
-    if (m_path.empty()) {
-        return std::nullopt;
-    }
-    return m_volume->readFile(m_path, off, len, default_data);
+    return m_volume->readFile(m_path, off, len);
 }
 
-std::optional<std::string> VolumeFile::readFileUTF8(std::optional<std::string> default_data) const {
+std::vector<uint8_t> VolumeFile::readFile(std::vector<uint8_t> default_data, int64_t off,
+                                          size_t len) const {
     if (!m_volume || m_path.empty()) {
-        return default_data;
+        throw IOException("readFile", m_path, "Volume or path is null/empty");
+    }
+    return m_volume->readFile(m_path, default_data, off, len);
+}
+
+std::optional<std::vector<uint8_t>>
+VolumeFile::readFileOpt(int64_t off, size_t len,
+                        std::optional<std::vector<uint8_t>> default_data) const {
+    if (!m_volume || m_path.empty()) {
+        throw IOException("readFileOpt", m_path, "Volume or path is null/empty");
+    }
+    return m_volume->readFileOpt(m_path, off, len, default_data);
+}
+
+std::string VolumeFile::readFileUTF8() const {
+    if (!m_volume || m_path.empty()) {
+        throw IOException("readFileUTF8", m_path, "Volume or path is null/empty");
+    }
+    return m_volume->readFileUTF8(m_path);
+}
+
+std::string VolumeFile::readFileUTF8(std::string default_data) const {
+    if (!m_volume || m_path.empty()) {
+        throw IOException("readFileUTF8", m_path, "Volume or path is null/empty");
     }
     return m_volume->readFileUTF8(m_path, default_data);
 }
 
 std::optional<std::string>
-VolumeFile::readFileString(std::string_view encoding,
-                           std::optional<std::string> default_data) const {
+VolumeFile::readFileUTF8Opt(std::optional<std::string> default_data) const {
     if (!m_volume || m_path.empty()) {
-        return default_data;
+        throw IOException("readFileUTF8Opt", m_path, "Volume or path is null/empty");
     }
-    return m_volume->readFileString(m_path, encoding, default_data);
+    return m_volume->readFileUTF8Opt(m_path, default_data);
 }
 
-std::vector<std::string> VolumeFile::readFileLines(std::string_view encoding) const {
-    auto data = readFileString(encoding);
-    if (!data.has_value())
-        return {};
-
-    std::vector<std::string> lines;
-    std::istringstream stream(*data);
-    std::string line;
-    while (std::getline(stream, line)) {
-        lines.push_back(line);
+std::string VolumeFile::readFileString(std::string_view encoding) const {
+    if (!m_volume || m_path.empty()) {
+        throw IOException("readFileString", m_path, "Volume or path is null/empty");
     }
-    return lines;
+    return m_volume->readFileString(m_path, encoding);
+}
+
+std::string VolumeFile::readFileString(std::string default_data, std::string_view encoding) const {
+    if (!m_volume || m_path.empty()) {
+        throw IOException("readFileString", m_path, "Volume or path is null/empty");
+    }
+    return m_volume->readFileString(m_path, default_data, encoding);
+}
+
+std::optional<std::string> VolumeFile::readFileStringOpt(std::optional<std::string> default_data,
+                                                         std::string_view encoding) const {
+    if (!m_volume || m_path.empty()) {
+        throw IOException("readFileStringOpt", m_path, "Volume or path is null/empty");
+    }
+    return m_volume->readFileStringOpt(m_path, default_data, encoding);
+}
+
+std::deque<std::string> VolumeFile::readLines(int maxLines, std::string_view encoding) const {
+    if (!m_volume || m_path.empty()) {
+        throw IOException("readFileLines", m_path, "Volume or path is null/empty");
+    }
+    return m_volume->readLines(m_path, maxLines, encoding);
+}
+
+std::deque<std::string> VolumeFile::readLines(std::deque<std::string> default_data, int maxLines,
+                                              std::string_view encoding) const {
+    if (!m_volume || m_path.empty())
+        return default_data;
+    try {
+        return m_volume->readLines(m_path, default_data, maxLines, encoding);
+    } catch (...) {
+        return default_data;
+    }
+}
+
+std::optional<std::deque<std::string>>
+VolumeFile::readLinesOpt(std::optional<std::deque<std::string>> default_data, int maxLines,
+                         std::string_view encoding) const {
+    if (!m_volume || m_path.empty())
+        return default_data;
+    try {
+        return m_volume->readLinesOpt(m_path, default_data, maxLines, encoding);
+    } catch (...) {
+        return default_data;
+    }
 }
 
 void VolumeFile::writeFile(const std::vector<uint8_t>& data) const {
@@ -129,8 +185,8 @@ void VolumeFile::writeFileString(std::string_view data, std::string_view encodin
     m_volume->writeFile(m_path, bytes);
 }
 
-void VolumeFile::writeFileLines(const std::vector<std::string>& lines,
-                                std::string_view encoding) const {
+void VolumeFile::writeLines(const std::vector<std::string>& lines,
+                            std::string_view encoding) const {
     // join lines with newline
     std::string content;
     for (const auto& line : lines) {
@@ -324,7 +380,7 @@ std::string VolumeFile::exportToTempFile() const {
     }
 
     // Read file from virtual filesystem
-    auto data = readFile();
+    auto data = readFileOpt();
     if (!data.has_value()) {
         return "";
     }

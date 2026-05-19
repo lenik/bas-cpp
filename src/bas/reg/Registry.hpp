@@ -45,58 +45,58 @@ class IRegistry {
     /** Remove leaf key. @return true if existed. */
     bool remove(std::string_view path);
 
-    void set(std::string_view key, bool v);
-    void set(std::string_view key, int v);
-    void set(std::string_view key, long v);
-    void set(std::string_view key, float v);
-    void set(std::string_view key, double v);
-    void set(std::string_view key, const std::string& value);
+    void set(std::string_view path, bool v);
+    void set(std::string_view path, int v);
+    void set(std::string_view path, long v);
+    void set(std::string_view path, float v);
+    void set(std::string_view path, double v);
+    void set(std::string_view path, const std::string& value);
 
-    std::optional<bool> getBool(std::string_view key,
+    std::optional<bool> optBool(std::string_view path,
                                 std::optional<bool> fallback = std::nullopt) const;
-    bool getBool(std::string_view key, bool default_value) const;
-    std::optional<int> getInt(std::string_view key,
+    bool getBool(std::string_view path, bool default_value) const;
+    std::optional<int> optInt(std::string_view path,
                               std::optional<int> fallback = std::nullopt) const;
-    int getInt(std::string_view key, int default_value) const;
-    std::optional<long> getLong(std::string_view key,
+    int getInt(std::string_view path, int default_value) const;
+    std::optional<long> optLong(std::string_view path,
                                 std::optional<long> fallback = std::nullopt) const;
-    long getLong(std::string_view key, long default_value) const;
-    std::optional<float> getFloat(std::string_view key,
+    long getLong(std::string_view path, long default_value) const;
+    std::optional<float> optFloat(std::string_view path,
                                   std::optional<float> fallback = std::nullopt) const;
-    float getFloat(std::string_view key, float default_value) const;
-    std::optional<double> getDouble(std::string_view key,
+    float getFloat(std::string_view path, float default_value) const;
+    std::optional<double> optDouble(std::string_view path,
                                     std::optional<double> fallback = std::nullopt) const;
-    double getDouble(std::string_view key, double default_value) const;
-    std::optional<std::string> getString(std::string_view key,
+    double getDouble(std::string_view path, double default_value) const;
+    std::optional<std::string> optString(std::string_view path,
                                          std::optional<std::string> fallback = std::nullopt) const;
-    std::string getString(std::string_view key, const std::string& default_value) const;
+    std::string getString(std::string_view path, const std::string& default_value) const;
 
-    void set(std::string_view key, const reg::sys_time& v);
-    void set(std::string_view key, const reg::local_time& v);
-    void set(std::string_view key, const reg::zoned_time& v);
-    void set(std::string_view key, const reg::year_month_day& v);
-    void set(std::string_view key, const reg::time_of_day& v);
+    void set(std::string_view path, const reg::sys_time& v);
+    void set(std::string_view path, const reg::local_time& v);
+    void set(std::string_view path, const reg::zoned_time& v);
+    void set(std::string_view path, const reg::year_month_day& v);
+    void set(std::string_view path, const reg::time_of_day& v);
 
     std::optional<reg::sys_time>
-    getSysTime(std::string_view key, std::optional<reg::sys_time> fallback = std::nullopt) const;
-    reg::sys_time getSysTime(std::string_view key, reg::sys_time default_value) const;
+    optSysTime(std::string_view path, std::optional<reg::sys_time> fallback = std::nullopt) const;
+    reg::sys_time getSysTime(std::string_view path, reg::sys_time default_value) const;
     std::optional<reg::local_time>
-    getLocalTime(std::string_view key,
+    optLocalTime(std::string_view path,
                  std::optional<reg::local_time> fallback = std::nullopt) const;
-    reg::local_time getLocalTime(std::string_view key, reg::local_time default_value) const;
+    reg::local_time getLocalTime(std::string_view path, reg::local_time default_value) const;
     std::optional<reg::zoned_time>
-    getZonedTime(std::string_view key,
+    optZonedTime(std::string_view path,
                  std::optional<reg::zoned_time> fallback = std::nullopt) const;
-    reg::zoned_time getZonedTime(std::string_view key, const reg::zoned_time& default_value) const;
+    reg::zoned_time getZonedTime(std::string_view path, const reg::zoned_time& default_value) const;
     std::optional<reg::year_month_day>
-    getYearMonthDay(std::string_view key,
+    optYearMonthDay(std::string_view path,
                     std::optional<reg::year_month_day> fallback = std::nullopt) const;
-    reg::year_month_day getYearMonthDay(std::string_view key,
+    reg::year_month_day getYearMonthDay(std::string_view path,
                                         reg::year_month_day default_value) const;
     std::optional<reg::time_of_day>
-    getTimeOfDay(std::string_view key,
+    optTimeOfDay(std::string_view path,
                  std::optional<reg::time_of_day> fallback = std::nullopt) const;
-    reg::time_of_day getTimeOfDay(std::string_view key, reg::time_of_day default_value) const;
+    reg::time_of_day getTimeOfDay(std::string_view path, reg::time_of_day default_value) const;
 
     /** Subscribe; slot runs when key matches prefix (empty = all keys). */
     watch_handle watch(std::string_view prefix, changed_slot slot);

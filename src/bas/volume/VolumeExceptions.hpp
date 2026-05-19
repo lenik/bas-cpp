@@ -15,7 +15,7 @@ class VolumeException : public IOException {
         : IOException("Volume Error: " + std::string(message)) {}
 
     // Error from volume <source>: <message>
-    VolumeException(Volume* vol, std::string_view message)
+    VolumeException(const Volume* vol, std::string_view message)
         : IOException("Error from volume " + vol->getDeviceUrl() + ": " + std::string(message)) {}
 
     //  Volume Error: <operation> failed for '<path>': <details>
@@ -26,7 +26,7 @@ class VolumeException : public IOException {
                       + (details.empty() ? "" : ": " + std::string(details))) {}
 
     //  Error from volume <source>: <operation> failed for '<path>': <details>
-    VolumeException(Volume* vol, std::string_view operation, std::string_view path,
+    VolumeException(const Volume* vol, std::string_view operation, std::string_view path,
                     std::string_view details = "")
         : IOException("Error from volume " + vol->getDeviceUrl()  //
                       + ": " + std::string(operation)             //

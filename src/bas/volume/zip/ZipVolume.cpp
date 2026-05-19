@@ -353,19 +353,13 @@ bool ZipVolume::stat(std::string_view path, DirNode* status) const {
 std::unique_ptr<InputStream> ZipVolume::newInputStream(std::string_view path) {
     std::string file_path = to_file_path(path);
     auto data = readFile(file_path);
-    if (!data.has_value()) {
-        throw IOException("newInputStream", std::string(file_path), "File is not readable");
-    }
-    return std::make_unique<Uint8ArrayInputStream>(std::move(*data));
+    return std::make_unique<Uint8ArrayInputStream>(std::move(data));
 }
 
 std::unique_ptr<RandomInputStream> ZipVolume::newRandomInputStream(std::string_view path) {
     std::string file_path = to_file_path(path);
     auto data = readFile(file_path);
-    if (!data.has_value()) {
-        throw IOException("newRandomInputStream", std::string(file_path), "File is not readable");
-    }
-    return std::make_unique<Uint8ArrayInputStream>(std::move(*data));
+    return std::make_unique<Uint8ArrayInputStream>(std::move(data));
 }
 
 std::unique_ptr<RandomReader> ZipVolume::newRandomReader(std::string_view path,
@@ -380,12 +374,9 @@ std::unique_ptr<OutputStream> ZipVolume::newOutputStream(std::string_view path, 
 std::unique_ptr<Reader> ZipVolume::newReader(std::string_view path, std::string_view encoding) {
     std::string file_path = to_file_path(path);
     auto data = readFile(file_path);
-    if (!data.has_value()) {
-        throw IOException("newReader", std::string(file_path), "File is not readable");
-    }
     // icu decode the data
     icu::UnicodeString unicodeString = icu::UnicodeString::fromUTF8(
-        icu::StringPiece(reinterpret_cast<const char*>(data->data()), data->size()));
+        icu::StringPiece(reinterpret_cast<const char*>(data.data()), data.size()));
     std::string text;
     unicodeString.toUTF8String(text);
     return std::make_unique<StringReader>(text);
@@ -396,13 +387,11 @@ std::unique_ptr<Writer> ZipVolume::newWriter(std::string_view path, bool append,
     throw IOException("newWriter", std::string(path), "ZipVolume is read-only");
 }
 
-std::optional<std::vector<uint8_t>> ZipVolume::readFileUnchecked(std::string_view path, int64_t off,
-                                                                 size_t len) {
+std::vector<uint8_t> ZipVolume::readFileUnchecked(std::string_view path, int64_t off, size_t len) {
     std::string file_path = to_file_path(path);
     const ZipEntry* entry = findEntry(file_path);
     if (!entry || entry->isDirectory) {
-        // throw IOException("readFile", file_path, "File not found or is directory");
-        return std::nullopt;
+        throw IOException("readFileUnchecked", file_path, "File not found or is directory");
     }
     auto data = decompressEntry(*entry);
 

@@ -91,8 +91,8 @@ class ZipVolume : public Volume {
   protected:
     std::string getDefaultLabel() const override;
 
-    std::optional<std::vector<uint8_t>> readFileUnchecked(std::string_view path, int64_t off = 0,
-                                                          size_t len = 0) override;
+    std::vector<uint8_t> readFileUnchecked(std::string_view path, int64_t off = 0,
+                                           size_t len = 0) override;
     void writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) override;
 
     void createDirectoryThrowsUnchecked(std::string_view path) override;

@@ -63,7 +63,7 @@ class IContainerManager {
     bool cacheSaveFragment(const RRL& rrl, const boost::json::value& value);
     bool cacheRemoveFragment(const RRL& rrl);
 
-    /** Write all in-memory JSON files marked dirty since last save. */
+    /** Write all in-memory containers marked dirty since last save. */
     void flushCachedContainers();
 
   protected:

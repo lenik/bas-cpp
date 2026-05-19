@@ -212,10 +212,10 @@ int main() {
                     }
                     
                     auto content = vol.readFile(node.path);
-                    if (!content || *content != node.content) {
+                    if (content != node.content) {
                         std::cerr << "  CONTENT MISMATCH: " << node.path 
                                   << " (expected " << node.content.size() 
-                                  << " bytes, got " << (content ? content->size() : 0) << ")\n";
+                                  << " bytes, got " << content.size() << " bytes)\n";
                         errors++;
                     }
                 }
@@ -268,7 +268,7 @@ int main() {
             std::vector<uint8_t> testData = {1, 2, 3, 4, 5};
             vol.writeFile(testPath, testData);
             auto readData = vol.readFile(testPath);
-            assert(readData && *readData == testData);
+            assert(readData == testData);
             vol.removeFile(testPath);
             std::cout << "  Basic file operations: OK\n";
         } catch (const std::exception& e) {

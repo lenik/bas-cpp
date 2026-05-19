@@ -192,12 +192,9 @@ void ExfatVolume::copyFileThrowsUnchecked(std::string_view src, std::string_view
 
     // Read source file data
     auto data = readFile(src);
-    if (!data.has_value()) {
-        throw IOException("copyFile", src, "Source file is not readable");
-    }
 
     // Write to destination
-    writeFileUnchecked(destNormalized, *data);
+    writeFileUnchecked(destNormalized, data);
 }
 
 void ExfatVolume::moveFileThrowsUnchecked(std::string_view src, std::string_view dest) {
@@ -268,12 +265,9 @@ void ExfatVolume::renameFileThrowsUnchecked(std::string_view oldPath, std::strin
 
     // Read file data
     auto data = readFile(oldPath);
-    if (!data.has_value()) {
-        throw IOException("renameFile", std::string(oldPath), "Source file is not readable");
-    }
 
     // Write to new location
-    writeFileUnchecked(newNormalized, *data);
+    writeFileUnchecked(newNormalized, data);
 
     // Remove old entry
     removeFileThrowsUnchecked(oldPath);

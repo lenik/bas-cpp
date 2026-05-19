@@ -33,6 +33,9 @@ class VolumeRegistry : public IRegistry, public IContainerManager {
     reg::option_t getOption(std::string_view path) const override;
     void setOption(std::string_view path, reg::option_t value) override;
 
+    void flush();
+    void save();
+
   protected:
     RRL parseRRL(std::string_view path) const;
 

@@ -42,6 +42,20 @@ std::vector<std::string> split(const std::string& s, char delimiter) {
     return tokens;
 }
 
+std::vector<std::string_view> split(std::string_view str, char delimiter) {
+    std::vector<std::string_view> tokens;
+    size_t start = 0;
+    size_t end = str.find(delimiter);
+
+    while (end != std::string_view::npos) {
+        tokens.emplace_back(str.substr(start, end - start));
+        start = end + 1;
+        end = str.find(delimiter, start);
+    }
+    tokens.emplace_back(str.substr(start)); // Grab the final piece
+    return tokens;
+}
+
 std::string join(const std::vector<std::string>& strings, std::string_view delimiter) {
     std::string result;
     for (size_t i = 0; i < strings.size(); ++i) {

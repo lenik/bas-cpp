@@ -46,17 +46,15 @@ std::string ExfatVolume::createTempFile(std::string_view /*prefix*/, std::string
     throw IOException("createTempFile", "", "exFAT does not support temp file");
 }
 
-std::optional<std::vector<uint8_t>> ExfatVolume::readFileUnchecked(std::string_view path,
-                                                                   int64_t off, size_t len) {
+std::vector<uint8_t> ExfatVolume::readFileUnchecked(std::string_view path, int64_t off,
+                                                    size_t len) {
     const std::string normalized = normalizeArg(path);
     if (!ensurePathIndexed(normalized)) {
-        // throw IOException("readFile", std::string(path), "Path not found");
-        return std::nullopt;
+        throw IOException("readFile", std::string(path), "Path not found");
     }
     auto it = m_dirents.find(normalized);
     if (it == m_dirents.end() || it->second.isDirectory) {
-        // throw IOException("readFile", std::string(path), "Not a regular file");
-        return std::nullopt;
+        throw IOException("readFile", std::string(path), "Not a regular file");
     }
 
     std::vector<uint8_t> out;

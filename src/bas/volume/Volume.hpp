@@ -204,19 +204,42 @@ class Volume {
      * @param default_data if file does not exist
      * @return data read from the file
      */
-    std::optional<std::vector<uint8_t>>
-    readFile(std::string_view path, int64_t off = 0, size_t len = 0,
-             std::optional<std::vector<uint8_t>> default_data = std::nullopt);
+    std::vector<uint8_t> readFile(std::string_view path, int64_t off = 0, size_t len = 0);
 
-    std::optional<std::string> readFileUTF8(std::string_view path,
-                                            std::optional<std::string> default_data = std::nullopt);
+    std::vector<uint8_t> readFile(std::string_view path, std::vector<uint8_t> default_data,
+                                  int64_t off = 0, size_t len = 0);
+
+    std::optional<std::vector<uint8_t>>
+    readFileOpt(std::string_view path, int64_t off = 0, size_t len = 0,
+                std::optional<std::vector<uint8_t>> default_data = std::nullopt);
+
+    std::string readFileUTF8(std::string_view path);
+
+    std::string readFileUTF8(std::string_view path, std::string default_data);
 
     std::optional<std::string>
-    readFileString(std::string_view path, std::string_view encoding = "UTF-8",
-                   std::optional<std::string> default_data = std::nullopt);
+    readFileUTF8Opt(std::string_view path, std::optional<std::string> default_data = std::nullopt);
+
+    std::string readFileString(std::string_view path, std::string_view encoding = "UTF-8");
+
+    std::string readFileString(std::string_view path, std::string default_data,
+                               std::string_view encoding = "UTF-8");
+
+    std::optional<std::string>
+    readFileStringOpt(std::string_view path, std::optional<std::string> default_data = std::nullopt,
+                      std::string_view encoding = "UTF-8");
 
     std::deque<std::string> readLines(std::string_view path, int maxLines = -1,
                                       std::string_view encoding = "UTF-8");
+
+    std::deque<std::string> readLines(std::string_view path, std::deque<std::string> default_data,
+                                      int maxLines = -1, std::string_view encoding = "UTF-8");
+
+    std::optional<std::deque<std::string>>
+    readLinesOpt(std::string_view path,
+                 std::optional<std::deque<std::string>> default_data = std::nullopt,
+                 int maxLines = -1, std::string_view encoding = "UTF-8");
+
     std::deque<std::string> readLastLines(std::string_view path, int maxLines = -1,
                                           std::string_view encoding = "UTF-8");
 
@@ -225,6 +248,8 @@ class Volume {
     void writeFileUTF8(std::string_view path, std::string_view data);
     void writeFileString(std::string_view path, std::string_view data,
                          std::string_view encoding = "UTF-8");
+    void writeLines(std::string_view path, const std::deque<std::string>& lines,
+                    std::string_view encoding = "UTF-8");
     void writeLines(std::string_view path, const std::vector<std::string>& lines,
                     std::string_view encoding = "UTF-8");
 
@@ -253,8 +278,8 @@ class Volume {
      * @param len maximum size in bytes of the data to read (0 means read all)
      * @return data read from the file
      */
-    virtual std::optional<std::vector<uint8_t>>
-    readFileUnchecked(std::string_view path, int64_t off = 0, size_t len = 0) = 0;
+    virtual std::vector<uint8_t> readFileUnchecked(std::string_view path, int64_t off = 0,
+                                                   size_t len = 0) = 0;
     virtual void writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) = 0;
 
     virtual void createDirectoryThrowsUnchecked(std::string_view path) = 0;
@@ -265,7 +290,12 @@ class Volume {
     virtual void renameFileThrowsUnchecked(std::string_view src, std::string_view dest) = 0;
 
   private:
-    std::optional<std::string> readRCFile(std::string_view name) const;
+    std::unique_ptr<VolumeFile> rcFile(std::string_view name) const;
+    std::string readRCFile(std::string_view name) const;
+    std::string readRCFile(std::string_view name, std::string default_data) const;
+    std::optional<std::string>
+    readRCFileOpt(std::string_view name,
+                  std::optional<std::string> default_data = std::nullopt) const;
     bool writeRCFile(std::string_view name, std::string_view data);
 
   private:

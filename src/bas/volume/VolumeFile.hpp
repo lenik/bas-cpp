@@ -8,6 +8,7 @@
 #include "../io/Reader.hpp"
 #include "../io/Writer.hpp"
 
+#include <deque>
 #include <memory>
 #include <optional>
 #include <string>
@@ -49,23 +50,40 @@ struct VolumeFile {
                      int64_t file_offset = 0, std::ios::seekdir seek_dir = std::ios::beg) const;
     size_t cWriteFile(const uint8_t* buf, size_t off, size_t len, bool append = false) const;
 
+    std::vector<uint8_t> readFile(int64_t off = 0, size_t len = 0) const;
+
+    std::vector<uint8_t> readFile(std::vector<uint8_t> default_data, int64_t off = 0,
+                                  size_t len = 0) const;
+
     std::optional<std::vector<uint8_t>>
-    readFile(int64_t off = 0, size_t len = 0,
-             std::optional<std::vector<uint8_t>> default_data = std::nullopt) const;
+    readFileOpt(int64_t off = 0, size_t len = 0,
+                std::optional<std::vector<uint8_t>> default_data = std::nullopt) const;
 
+    std::string readFileUTF8() const;
+    std::string readFileUTF8(std::string default_data) const;
     std::optional<std::string>
-    readFileUTF8(std::optional<std::string> default_data = std::nullopt) const;
-    
-    std::optional<std::string>
-    readFileString(std::string_view encoding = "UTF-8",
-                   std::optional<std::string> default_data = std::nullopt) const;
+    readFileUTF8Opt(std::optional<std::string> default_data = std::nullopt) const;
 
-    std::vector<std::string> readFileLines(std::string_view encoding = "UTF-8") const;
+    std::string readFileString(std::string_view encoding = "UTF-8") const;
+    std::string readFileString(std::string default_data, std::string_view encoding = "UTF-8") const;
+    std::optional<std::string>
+    readFileStringOpt(std::optional<std::string> default_data = std::nullopt,
+                      std::string_view encoding = "UTF-8") const;
 
     void writeFile(const std::vector<uint8_t>& data) const;
     void writeFileString(std::string_view data, std::string_view encoding = "UTF-8") const;
-    void writeFileLines(const std::vector<std::string>& lines,
-                        std::string_view encoding = "UTF-8") const;
+
+    std::deque<std::string> readLines(int maxLines = -1, std::string_view encoding = "UTF-8") const;
+    std::deque<std::string> readLines(std::deque<std::string> default_data, int maxLines = -1,
+                                      std::string_view encoding = "UTF-8") const;
+    std::optional<std::deque<std::string>>
+    readLinesOpt(std::optional<std::deque<std::string>> default_data = std::nullopt,
+                 int maxLines = -1, std::string_view encoding = "UTF-8") const;
+
+    void writeLines(const std::deque<std::string>& lines,
+                    std::string_view encoding = "UTF-8") const;
+    void writeLines(const std::vector<std::string>& lines,
+                    std::string_view encoding = "UTF-8") const;
 
     // Export virtual file to temporary local file (for media playback, etc.)
     // Returns the temporary file path, or empty string on failure

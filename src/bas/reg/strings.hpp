@@ -13,6 +13,7 @@ std::string trimTrailingSlash(std::string_view path);
 bool iequals(const std::string& a, const std::string& b);
 
 std::vector<std::string> split(const std::string& s, char delimiter);
+std::vector<std::string_view> split(std::string_view str, char delimiter);
 
 std::string join(const std::vector<std::string>& strings, std::string_view delimiter);
 std::string join(const std::vector<std::string>& strings, char delimiter);
