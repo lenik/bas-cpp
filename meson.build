@@ -169,6 +169,7 @@ cpp_sources = files(
     './src/bas/util/Path.cpp',
     './src/bas/util/PathHelper.cpp',
     './src/bas/util/encoding.cpp',
+    './src/bas/util/unicode.cpp',
     './src/bas/util/urls.cpp',
     './src/bas/util/uuid.cpp',
     './src/bas/volume/BlockDevice.cpp',
