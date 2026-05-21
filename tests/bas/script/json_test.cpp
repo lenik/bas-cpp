@@ -40,11 +40,31 @@ static void test_get_int64_get_double() {
     assert(boost::json::get_double(obj, "d", 0) >= 3.13 && boost::json::get_double(obj, "d", 0) <= 3.15);
 }
 
+static void test_locate_missing_segment_no_crash() {
+    boost::json::value root = boost::json::parse(R"({
+        "mime-type.text_html": {"openwith": {"Browser": "omnishell.Browser"}}
+    })");
+    // Registry maps dots to slashes; a flat dotted key must not crash traversal.
+    auto loc = bas::json::locate_const(root, "mime-type/text_html");
+    assert(loc.node == nullptr);
+    assert(loc.is_null());
+}
+
+static void test_locate_nested_path() {
+    boost::json::value root = boost::json::parse(R"({"mime-type": {"text_html": {"x": 1}}})");
+    auto loc = bas::json::locate_const(root, "mime-type/text_html");
+    assert(loc.node != nullptr);
+    assert(loc.node->is_object());
+    assert(loc.node->as_object().at("x").as_int64() == 1);
+}
+
 int main() {
     test_get_bool();
     test_get_int();
     test_get_string();
     test_get_int64_get_double();
+    test_locate_missing_segment_no_crash();
+    test_locate_nested_path();
     std::cout << "All json tests passed.\n";
     return 0;
 }

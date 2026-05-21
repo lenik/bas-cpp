@@ -191,7 +191,7 @@ std::vector<std::string> tokenize(std::string_view path, char separator) {
 // Free standing pointer finder matching your requested signature
 template <typename value_type> //
 Location<value_type> locate_impl(value_type& root, std::string_view path, char separator,
-                                 bool create) {
+                                 bool _create) {
     if (path.empty() || (path.size() == 1 && path[0] == separator)) {
         return Location<value_type>(&root);
     }
@@ -201,59 +201,48 @@ Location<value_type> locate_impl(value_type& root, std::string_view path, char s
     std::string key;
     size_t index = 0;
     value_type* current = &root;
+    bool create = std::is_const_v<value_type> ? false : _create;
 
     for (const auto& token : tokens) {
+        if (current == nullptr)
+            break;
         parent = current;
-        key = "";
+        current = nullptr;
+        key = token;
         index = 0;
-        if (current->is_object()) {
-            auto& obj = const_cast<boost::json::object&>(current->as_object());
+        if (parent->is_object()) {
+            auto& obj = const_cast<boost::json::object&>(parent->as_object());
             auto it = obj.find(token);
             if (it == obj.end()) {
-                if (!create) {
-                    current = nullptr;
-                } else {
+                if (create) {
                     it = obj.emplace(token, boost::json::object{}).first;
                     current = &it->value();
                 }
             } else {
                 current = &it->value();
             }
-            key = token;
-        } else if (current->is_array()) {
-            auto& arr = current->as_array();
-            if (token == "-")
-                return Location<value_type>{};
-
-            size_t target_index = 0;
-            auto [ptr, ec] =
-                std::from_chars(token.data(), token.data() + token.size(), target_index);
+        } else if (parent->is_array()) {
+            boost::json::array& arr = const_cast<boost::json::array&>(parent->as_array());
+            auto [ptr, ec] = std::from_chars(token.data(), token.data() + token.size(), index);
 
             if (ec != std::errc{} || ptr != token.data() + token.size())
-                return Location<value_type>{};
+                break;
             if (token.size() > 1 && token[0] == '0')
-                return Location<value_type>{};
-            if (target_index >= arr.size()) {
-                if (create) {
-                    boost::json::array& ja = const_cast<boost::json::array&>(arr);
-                    for (size_t size = arr.size(); !(target_index < size); size++) {
-                        ja.emplace_back(value_type{});
-                    }
-                } else {
-                    return Location<value_type>{};
-                }
+                break;
+            if (index >= arr.size()) {
+                if (create)
+                    for (size_t size = arr.size(); !(index < size); size++)
+                        arr.emplace_back(value_type{});
+                else
+                    break;
             }
-            current = &arr[target_index];
-            index = target_index;
-        } else if constexpr (!std::is_const_v<value_type>) {
-            if (create && current->is_null()) {
-                *current = boost::json::object{};
-                key = token;
-            } else {
-                return Location<value_type>{};
-            }
-        } else {
-            return Location<value_type>{};
+            current = &arr[index];
+        } else if (create && !std::is_const_v<value_type>) {
+            auto* pv = const_cast<boost::json::value*>(parent);
+            *pv = boost::json::object{};
+            auto& obj = pv->as_object();
+            auto it = obj.emplace(token, boost::json::object{}).first;
+            current = &it->value();
         }
     }
 
