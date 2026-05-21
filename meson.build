@@ -149,12 +149,12 @@ cpp_sources = files(
     './src/bas/proc/env.cpp',
     './src/bas/reg/JsonRegistry.cpp',
     './src/bas/reg/LocalRegistry.cpp',
+    './src/bas/reg/Registry.cpp',
     './src/bas/reg/Sub.cpp',
     './src/bas/reg/VolumeRegistry.cpp',
-    './src/bas/reg/variant.cpp',
-    './src/bas/reg/strings.cpp',
-    './src/bas/reg/Registry.cpp',
     './src/bas/reg/path.cpp',
+    './src/bas/reg/strings.cpp',
+    './src/bas/reg/variant.cpp',
     './src/bas/script/boost_json.cpp',
     './src/bas/script/json.cpp',
     './src/bas/script/scriptable.cpp',
@@ -367,7 +367,7 @@ find_other_cmd = run_command(
 )
 other_files = find_other_cmd.stdout().strip().split('\n')
 
-other_list = [ 'bulk.h', 'bulk.hpp' ]
+other_list = ['bulk.h', 'bulk.hpp']
 foreach f : other_files
     other_list += f.substring(4)
 endforeach

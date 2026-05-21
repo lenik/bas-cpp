@@ -12,8 +12,9 @@ namespace bas::reg {
 struct RRL {
     char separator{'/'};
     std::string container; // can be empty if not specified.
-    std::string fragment;
+    std::string fragment;  // can be empty if not specified.
 
+  public:
     /**
      * @param separator the separator to use between the container and the fragment
      * @param container the container path, can contain the separator
@@ -25,7 +26,13 @@ struct RRL {
 
     ~RRL() = default;
 
-    static RRL _parse(std::string_view rrl, char separator = '/');
+    static std::vector<RRL> parse(std::string_view rrl, char separator = '/');
+
+    inline bool hasContainer() const { return !container.empty(); }
+    inline bool hasFragment() const { return !fragment.empty(); }
+    // inline bool hasKey() const { return hasFragment(); }
+    // inline bool isSimpleKey() const { return hasKey() && fragment.find('.') == std::string::npos;
+    // } inline bool isDotKey() const { return fragment.find('.') != std::string::npos; }
 
     RRL& operator=(const RRL& other);
     RRL& operator=(RRL&& other) noexcept;
@@ -53,7 +60,7 @@ class IContainerManager {
      * @return the cached container value, or nullptr if not found.
      */
     boost::json::value* cacheLoadContainer(std::string_view container);
-    const boost::json::value* cacheLoadContainerForQuery(std::string_view container) const {
+    const boost::json::value* cacheLoadContainer(std::string_view container) const {
         return const_cast<IContainerManager*>(this)->cacheLoadContainer(container);
     }
     void cacheSaveContainer(std::string_view container, const boost::json::value& value);

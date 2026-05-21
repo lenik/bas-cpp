@@ -55,18 +55,29 @@ std::string RRL::str() const {
     return container + separator + fragment;
 }
 
-RRL RRL::_parse(std::string_view rrl, char separator) {
+std::vector<RRL> RRL::parse(std::string_view rrl, char separator) {
+    if (rrl.back() == separator)
+        rrl = rrl.substr(0, rrl.size() - 1);
+
     const size_t lastSlash = rrl.find_last_of(separator);
-    if (lastSlash == std::string::npos)
-        return RRL(separator, "", rrl);
+    std::string dir;
+    std::string base;
+    if (lastSlash == std::string::npos) {
+        dir = "";
+        base = rrl;
+    } else {
+        dir = rrl.substr(0, lastSlash);
+        base = rrl.substr(lastSlash + 1);
+    }
 
-    auto container = rrl.substr(0, lastSlash);
-    auto fragment = rrl.substr(lastSlash + 1);
+    std::vector<RRL> rrls;
+    rrls.emplace_back(separator, dir, base);
 
-    if (container.empty())
-        return RRL(separator, "", fragment);
+    // bool dot_key = base.find('.') != std::string::npos;
+    // if (!dot_key) // no dot in key, so it's a simple key
+    rrls.emplace_back(separator, rrl, "");
 
-    return RRL(separator, container, fragment);
+    return rrls;
 }
 
 boost::json::value* IContainerManager::cacheLoadContainer(std::string_view _container) {
@@ -102,17 +113,19 @@ bool IContainerManager::cacheRemoveContainer(std::string_view _container) {
 }
 
 const boost::json::value* IContainerManager::cacheLoadFragment(const RRL& rrl) const {
-    auto* json = cacheLoadContainerForQuery(rrl.container);
+    const auto* json = cacheLoadContainer(rrl.container);
     if (!json)
         return nullptr;
     if (rrl.fragment.empty())
         return json;
-    if (!json->is_object())
+    if (json->is_object() || json->is_array()) {
+        auto loc = json::locate_const(*json, rrl.fragment);
+        if (loc.node == nullptr)
+            return nullptr;
+        return loc.node;
+    } else {
         return nullptr;
-    auto loc = json::locate_const(*json, rrl.fragment);
-    if (loc.node == nullptr)
-        return nullptr;
-    return loc.node;
+    }
 }
 
 bool IContainerManager::cacheSaveFragment(const RRL& rrl, const boost::json::value& value) {

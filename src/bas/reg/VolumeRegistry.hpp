@@ -7,9 +7,6 @@
 
 #include "../volume/VolumeFile.hpp"
 
-#include <string>
-#include <vector>
-
 namespace bas::reg {
 
 constexpr std::string_view kDataJson = "DATA.json";
@@ -25,19 +22,23 @@ class VolumeRegistry : public IRegistry, public IContainerManager {
     std::optional<boost::json::value> readContainer(std::string_view container) const override;
     void writeContainer(std::string_view container, const boost::json::value& value) override;
 
-    std::vector<std::string> list(std::string_view path) const override;
-    std::vector<std::string> listDir(std::string_view path) const override;
-    std::vector<std::string> listDomain(std::string_view path) const override;
+    std::optional<NodeInfo> stat(std::string_view path) const override;
+
+    std::map<regkey_t, NodeInfo> list(std::string_view path) const override;
+    std::map<regkey_t, NodeInfo> listDir(std::string_view path) const override;
+    std::map<regkey_t, NodeInfo> listKeys(std::string_view path) const override;
+
     bool delTree(std::string_view path) override;
 
     reg::option_t getOption(std::string_view path) const override;
+    // set simple option (no nested objects or arrays)
     void setOption(std::string_view path, reg::option_t value) override;
 
     void flush();
     void save();
 
   protected:
-    RRL parseRRL(std::string_view path) const;
+    std::vector<RRL> parseRRL(std::string_view path) const;
 
     /** trim(container) + "/DATA.json" at registry root, or DATA.json when container is empty. */
     VolumeFile resolveJsonFile(std::string_view container) const;

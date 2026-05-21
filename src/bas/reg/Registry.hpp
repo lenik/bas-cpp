@@ -6,11 +6,41 @@
 #include <boost/signals2/signal.hpp>
 
 #include <functional>
+#include <map>
 #include <optional>
 #include <string>
-#include <vector>
 
 namespace bas::reg {
+
+struct NodeInfo {
+    bool directory{false};
+    bool domain{false};
+    bool value{false};
+
+    size_t fileCount{0};
+    size_t entryCount{0};
+
+    NodeInfo(bool directory = false, bool domain = false, bool value = false)
+        : directory(directory), domain(domain), value(value) {}
+
+    bool empty() const { return !directory && !domain && !value; }
+
+    static NodeInfo dir(size_t fileCount = 0) {
+        NodeInfo a(true, false);
+        a.fileCount = fileCount;
+        return a;
+    }
+    static NodeInfo dom(size_t entryCount = 0) {
+        NodeInfo a(false, true);
+        a.entryCount = entryCount;
+        return a;
+    }
+    static NodeInfo val(bool value = false) {
+        NodeInfo a(false, false);
+        a.value = true;
+        return a;
+    }
+};
 
 /**
  * Abstract registry: typed values, tree listing, persistence hooks, change notifications.
@@ -23,11 +53,13 @@ class IRegistry {
 
     virtual ~IRegistry();
 
-    virtual std::vector<std::string> listDir(std::string_view path) const = 0;
-    virtual std::vector<std::string> listDomain(std::string_view path) const = 0;
+    virtual std::optional<NodeInfo> stat(std::string_view path) const = 0;
+
+    virtual std::map<regkey_t, NodeInfo> listDir(std::string_view path) const = 0;
+    virtual std::map<regkey_t, NodeInfo> listKeys(std::string_view path) const = 0;
 
     /** List all keys in the registry. (exactly union(listDir, listDomain)) */
-    virtual std::vector<std::string> list(std::string_view path) const = 0;
+    virtual std::map<regkey_t, NodeInfo> list(std::string_view path) const = 0;
 
     /** Remove key and all descendants (prefix tree). @return true if anything removed. */
     virtual bool delTree(std::string_view path) = 0;
@@ -97,6 +129,10 @@ class IRegistry {
     optTimeOfDay(std::string_view path,
                  std::optional<reg::time_of_day> fallback = std::nullopt) const;
     reg::time_of_day getTimeOfDay(std::string_view path, reg::time_of_day default_value) const;
+
+    virtual void reset();
+    virtual void load();
+    virtual void save();
 
     /** Subscribe; slot runs when key matches prefix (empty = all keys). */
     watch_handle watch(std::string_view prefix, changed_slot slot);

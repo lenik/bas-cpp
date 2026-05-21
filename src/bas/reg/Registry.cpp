@@ -186,4 +186,10 @@ void IRegistry::emitChanged(const std::string& path, const reg::option_t& new_va
     m_changed(path, new_value, old_value);
 }
 
+void IRegistry::reset() {}
+
+void IRegistry::load() {}
+
+void IRegistry::save() {}
+
 } // namespace bas::reg

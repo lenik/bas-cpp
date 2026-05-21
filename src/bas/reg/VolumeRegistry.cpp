@@ -8,18 +8,18 @@
 
 #include <boost/json.hpp>
 
-#include <algorithm>
-
 namespace bas::reg {
 
 VolumeRegistry::VolumeRegistry(VolumeFile root, bool autoSave)
     : m_root(root), m_autoSave(autoSave) {}
 
-RRL VolumeRegistry::parseRRL(std::string_view path) const {
-    auto rrl = RRL::_parse(path, '/');
-    // rrl.container = jsonFilePath(rrl.container);
-    rrl.fragment = util::replace(rrl.fragment, '.', '/');
-    return rrl;
+std::vector<RRL> VolumeRegistry::parseRRL(std::string_view path) const {
+    auto rrls = RRL::parse(path, '/');
+    for (auto& rrl : rrls) {
+        // rrl.container = jsonFilePath(rrl.container);
+        rrl.fragment = util::replace(rrl.fragment, '.', '/');
+    }
+    return rrls;
 }
 
 VolumeFile VolumeRegistry::resolveJsonFile(std::string_view container) const {
@@ -63,104 +63,211 @@ void VolumeRegistry::writeContainer(std::string_view container, const boost::jso
     vf.writeFileString(json);
 }
 
-std::vector<std::string> VolumeRegistry::list(std::string_view path) const {
-    auto dirs = listDir(path);
-    auto domains = listDomain(path);
-    dirs.reserve(dirs.size() + domains.size());
-    for (const auto& key : domains) {
-        if (std::find(dirs.begin(), dirs.end(), key) == dirs.end()) {
-            dirs.push_back(key);
+std::optional<NodeInfo> VolumeRegistry::stat(std::string_view path) const {
+    const auto rrls = parseRRL(path);
+    NodeInfo info;
+    for (std::size_t i = 0; i < rrls.size(); ++i) {
+        const RRL& rrl = rrls[i];
+        if (!rrl.hasFragment()) {
+            auto vdir = m_root.resolve(rrl.container);
+            if (vdir && vdir->isDirectory()) {
+                info.directory = true;
+
+                DirNode dirNode;
+                vdir->readDir(dirNode, false);
+                info.fileCount += dirNode.children.size();
+            }
+        }
+
+        const auto* json = cacheLoadContainer(rrl.container);
+        if (json) {
+            const auto* node = json;
+            if (rrl.hasFragment()) {
+                node = json::locate_const(*json, rrl.fragment).node;
+                if (node == nullptr)
+                    continue;
+            }
+            if (node->is_object()) {
+                info.domain = true;
+                info.entryCount += node->as_object().size();
+            } else if (node->is_array()) {
+                info.domain = true;
+                info.entryCount += node->as_array().size();
+            } else {
+                info.value = true;
+            }
         }
     }
-    return dirs;
+    return info.empty() ? std::nullopt : std::optional<NodeInfo>(info);
 }
 
-std::vector<std::string> VolumeRegistry::listDir(std::string_view path) const {
-    const auto rrl = parseRRL(path);
-    if (!rrl.fragment.empty()) {
-        return {};
-    }
-    auto vdir = m_root.resolve(rrl.container);
-    if (!vdir || !vdir->exists() || !vdir->isDirectory()) {
-        return {};
-    }
-    DirNode context;
-    vdir->readDir(context, false);
-    std::vector<std::string> result;
-    for (const auto& [name, child] : context.children) {
-        if (child && child->isDirectory()) {
-            result.push_back(name);
+std::map<regkey_t, NodeInfo> VolumeRegistry::list(std::string_view path) const {
+    std::map<regkey_t, NodeInfo> map;
+
+    const auto rrls = parseRRL(path);
+    for (std::size_t i = 0; i < rrls.size(); ++i) {
+        const RRL& rrl = rrls[i];
+        if (rrl.hasFragment())
+            continue;
+
+        auto dir = m_root.resolve(rrl.container);
+        if (!dir || !dir->exists() || !dir->isDirectory())
+            continue;
+
+        DirNode dirNode;
+        dir->readDir(dirNode, false);
+
+        for (const auto& [name, child] : dirNode.children) {
+            if (!child->isDirectory())
+                continue;
+            map[name] = NodeInfo(true, false);
         }
     }
-    return result;
+
+    auto keyMap = listKeys(path);
+    for (const auto& [key, value] : keyMap) {
+        bool iterable = value.domain;
+        auto old = map.find(key);
+        if (old != map.end()) {
+            old->second.domain |= iterable;
+        } else {
+            map[key] = NodeInfo(false, iterable, !iterable);
+        }
+    }
+    return map;
 }
 
-std::vector<std::string> VolumeRegistry::listDomain(std::string_view path) const {
-    const auto rrl = parseRRL(path);
-    auto* json = cacheLoadContainerForQuery(rrl.container);
-    if (!json) {
-        return {};
-    }
-    const boost::json::value* node = json;
-    if (!rrl.fragment.empty()) {
-        node = json::locate_const(*json, rrl.fragment).node;
-        if (node == nullptr) {
-            return {};
+std::map<regkey_t, NodeInfo> VolumeRegistry::listDir(std::string_view path) const {
+    const auto rrls = parseRRL(path);
+
+    std::map<regkey_t, NodeInfo> map;
+    for (std::size_t i = 0; i < rrls.size(); ++i) {
+        const RRL& rrl = rrls[i];
+        if (rrl.hasFragment())
+            continue;
+
+        auto vdir = m_root.resolve(rrl.container);
+        if (!vdir || !vdir->exists() || !vdir->isDirectory())
+            continue;
+
+        DirNode context;
+        vdir->readDir(context, false);
+
+        for (const auto& [name, child] : context.children) {
+            bool iterable = (child && child->isDirectory());
+            auto old = map.find(name);
+            if (old != map.end()) {
+                old->second.directory |= iterable;
+            } else {
+                map[name] = NodeInfo(iterable, false);
+            }
         }
     }
-    if (node->is_object()) {
-        const auto& obj = node->as_object();
-        std::vector<std::string> keys;
-        for (const auto& [key, value] : obj) {
-            keys.emplace_back(key);
+    return map;
+}
+
+std::map<regkey_t, NodeInfo> VolumeRegistry::listKeys(std::string_view path) const {
+    const auto rrls = parseRRL(path);
+
+    std::map<regkey_t, NodeInfo> map;
+
+    for (std::size_t i = 0; i < rrls.size(); ++i) {
+        const RRL& rrl = rrls[i];
+        const auto* json = cacheLoadContainer(rrl.container);
+        if (!json) {
+            continue;
         }
-        return keys;
-    }
-    if (node->is_array()) {
-        std::vector<std::string> keys;
-        for (size_t i = 0; i < node->as_array().size(); i++) {
-            keys.emplace_back(std::to_string(i));
+        const auto* node = json;
+        if (rrl.hasFragment()) {
+            node = json::locate_const(*json, rrl.fragment).node;
+            if (node == nullptr) {
+                continue;
+            }
         }
-        return keys;
+        if (node->is_object()) {
+            const auto& obj = node->as_object();
+            for (const auto& [_key, value] : obj) {
+                auto key = std::string(_key);
+                bool iterable = value.is_object() || value.is_array();
+                auto old = map.find(key);
+                if (old != map.end()) {
+                    old->second.domain = iterable;
+                } else {
+                    map[key] = NodeInfo(false, iterable, !iterable);
+                }
+            }
+        } else if (node->is_array()) {
+            for (size_t i = 0; i < node->as_array().size(); i++) {
+                auto key = std::to_string(i);
+                bool iterable = node->as_array()[i].is_object() || node->as_array()[i].is_array();
+                auto old = map.find(key);
+                if (old != map.end()) {
+                    old->second.domain = iterable;
+                } else {
+                    map[key] = NodeInfo(false, iterable, !iterable);
+                }
+            }
+        }
     }
-    return {};
+    return map;
 }
 
 bool VolumeRegistry::delTree(std::string_view path) {
-    const auto rrl = parseRRL(path);
-    if (rrl.fragment.empty()) {
-        return cacheRemoveContainer(rrl.container);
+    const auto rrls = parseRRL(path);
+    bool dirty = false;
+
+    for (std::size_t i = 0; i < rrls.size(); ++i) {
+        const RRL& rrl = rrls[i];
+        if (!rrl.hasFragment()) {
+            dirty |= cacheRemoveContainer(rrl.container);
+            continue;
+        }
+
+        auto vf = m_root.resolve(rrl.container);
+        if (!vf->isFile()) {
+            continue;
+        }
+
+        auto* json = cacheLoadContainer(rrl.container);
+        if (!json) {
+            continue;
+        }
+
+        auto target = json::locate_const(*json, rrl.fragment);
+        if (target.is_null()) {
+            continue;
+        }
+
+        auto old = target.erase();
+        m_containerDirty[rrl.container] = true;
+        dirty |= old.has_value();
     }
-    auto vf = m_root.resolve(rrl.container);
-    if (!vf->isFile()) {
-        return false;
-    }
-    auto* json = cacheLoadContainer(rrl.container);
-    if (!json) {
-        return false;
-    }
-    auto target = json::locate_const(*json, rrl.fragment);
-    if (target.is_null()) {
-        return false;
-    }
-    auto old = target.erase();
-    m_containerDirty[rrl.container] = true;
-    return old.has_value();
+    return dirty;
 }
 
 reg::option_t VolumeRegistry::getOption(std::string_view path) const {
-    const auto rrl = parseRRL(path);
-    const auto* jv = cacheLoadFragment(rrl);
-    if (jv == nullptr) {
-        return std::nullopt;
+    const auto rrls = parseRRL(path);
+    for (std::size_t i = 0; i < rrls.size(); ++i) {
+        const RRL& rrl = rrls[i];
+        const auto* jv = cacheLoadFragment(rrl);
+        if (jv == nullptr)
+            continue;
+        else
+            return jsonToOption(*jv);
     }
-    return jsonToOption(*jv);
+    return std::nullopt;
 }
 
 void VolumeRegistry::setOption(std::string_view path, reg::option_t value) {
-    const auto rrl = parseRRL(path);
-    boost::json::value jv = optionToJson(value);
-    cacheSaveFragment(rrl, jv);
+    const auto rrls = parseRRL(path);
+    for (std::size_t i = 0; i < rrls.size(); ++i) {
+        const RRL& rrl = rrls[i];
+        if (!rrl.hasFragment()) {
+            continue;
+        }
+        boost::json::value jv = optionToJson(value);
+        cacheSaveFragment(rrl, jv);
+    }
 }
 
 void VolumeRegistry::flush() { flushCachedContainers(); }
