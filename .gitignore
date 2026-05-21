@@ -24,6 +24,8 @@ t/tmp*
 *.swo
 *~
 .vscode/
+codeblocks/*.cbp
+codeblocks/bas-cpp.workspace
 
 # OS
 .DS_Store
@@ -35,4 +37,7 @@ Thumbs.db
 *.Tpo
 *.gz
 *.tmp
+
+/a.json
+/testdir
 
