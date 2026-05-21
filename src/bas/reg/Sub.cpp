@@ -56,8 +56,10 @@ std::string RRL::str() const {
 }
 
 std::vector<RRL> RRL::parse(std::string_view rrl, char separator) {
-    if (rrl.back() == separator)
+    if (!rrl.empty() && rrl.back() == separator)
         rrl = rrl.substr(0, rrl.size() - 1);
+    if (rrl.empty())
+        return {RRL(separator, "", "")};
 
     const size_t lastSlash = rrl.find_last_of(separator);
     std::string dir;
