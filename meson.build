@@ -13,6 +13,16 @@ pkgdatadir = get_option('datadir') / meson.project_name()
 fs = import('fs')
 
 cpp = meson.get_compiler('cpp')
+if cpp.get_id() == 'clang'
+    add_project_arguments('-fstandalone-debug', '-fno-limit-debug-info', language: 'cpp')
+elif cpp.get_id() == 'gcc'
+    add_project_arguments(
+        '-gdwarf-4', # Forces LLDB-friendly DWARF 4 format
+        '-fno-eliminate-unused-debug-types', # GCC alternative to force full type definitions
+        '-g3', # Emits maximum macro/type detail level
+        language: 'cpp',
+    )
+endif
 
 # `std::filesystem` may require linking `stdc++fs` on older libstdc++ toolchains.
 stdcxxfs_deps = []
