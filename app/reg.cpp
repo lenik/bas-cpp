@@ -1,3 +1,4 @@
+#include "bas/reg/Registry.hpp"
 #include <bas/fmt/JsonForm.hpp>
 #include <bas/log/logger.h>
 #include <bas/log/uselog.h>
@@ -22,9 +23,8 @@
 #include <sstream>
 #include <string>
 #include <string_view>
-#include <vector>
 
-namespace {
+namespace bas::reg {
 
 constexpr const char* kVersion = "1.0.1";
 
@@ -43,8 +43,8 @@ void printUsage(std::ostream& out) {
            "  -h, --help            show this help and exit\n";
 }
 
-std::string joinPath(std::string_view base, std::string_view name) {
-    if (base.empty())
+std::string joinDir(std::string_view base, std::string_view name) {
+    if (base.empty() || base == "/")
         return std::string(name);
     std::string out(base);
     if (out.back() != '/')
@@ -53,92 +53,102 @@ std::string joinPath(std::string_view base, std::string_view name) {
     return out;
 }
 
-void dumpTree(const bas::reg::IRegistry& reg, std::string_view path, std::ostream& out) {
-    const auto children = reg.list(path);
-    if (children.empty()) {
-        auto opt = reg.getOption(path);
-        if (!opt.has_value())
-            return;
-        out << path << '=' << bas::reg::optionToString(opt) << '\n';
-        return;
+std::string joinKey(std::string_view base, const std::string_view name) {
+    if (base.empty() || base == "/" || base == ".")
+        return std::string(name);
+    std::string out(base);
+    if (out.back() != '.' && out.back() != '/') {
+        out.push_back('.');
     }
-    for (const auto& child : children) {
-        dumpTree(reg, joinPath(path, child), out);
+    out.append(name);
+    return out;
+}
+
+void dumpTree(const IRegistry& reg, std::string_view path, NodeInfo info, std::ostream& out,
+              std::string_view prefix) {
+    auto children = reg.list(path);
+    // if (children.empty()) {
+    auto opt = reg.getOption(path);
+    if (info.value) {
+        out << " => " << optionToString(opt);
+    } else {
+        // out << "(none)";
+    }
+
+    std::vector<const regkey_t*> keys;
+    keys.reserve(children.size());
+    for (const auto& [key, info] : children) {
+        keys.push_back(&key);
+    }
+
+    for (size_t i = 0; i < keys.size(); ++i) {
+        const regkey_t& key = *keys[i];
+        const auto& childInfo = children.at(key);
+
+        bool last = i == keys.size() - 1;
+
+        auto name = keyToString(key);
+        auto j = info.directory ? joinDir(path, name) : joinKey(path, name);
+        out << std::endl << prefix;
+
+        if (last)
+            out << " `- ";
+        else
+            out << " |- ";
+
+        out << name;
+        if (childInfo.directory)
+            out << (childInfo.domain ? "▷" : "/");
+        else if (childInfo.domain)
+            out << ".";
+
+        // out << " => ";
+        auto next_prefix = std::string(prefix) + (last ? "    " : " |  ");
+        dumpTree(reg, j, childInfo, out, next_prefix);
     }
 }
 
-boost::json::value exportNode(const bas::reg::IRegistry& reg, std::string_view path) {
+boost::json::value exportNode(const IRegistry& reg, std::string_view path) {
     const auto children = reg.list(path);
     if (children.empty()) {
         auto opt = reg.getOption(path);
         if (!opt.has_value())
             return boost::json::value(nullptr);
-        return bas::reg::optionToJson(opt);
+        return optionToJson(opt);
     }
 
     boost::json::object obj;
-    for (const auto& child : children) {
-        const std::string childPath = joinPath(path, child);
-        obj.emplace(child, exportNode(reg, childPath));
+    for (const auto& [child, info] : children) {
+        auto name = keyToString(child);
+        const std::string childPath = info.directory ? joinDir(path, name) : joinKey(path, name);
+        obj.emplace(name, exportNode(reg, childPath));
     }
     return obj;
 }
 
-void importJson(bas::reg::IRegistry& reg, std::string_view path, const boost::json::value& jv) {
+void importJson(IRegistry& reg, std::string_view path, const boost::json::value& jv) {
     if (jv.is_object()) {
         for (const auto& [key, value] : jv.as_object()) {
-            importJson(reg, joinPath(path, std::string(key)), value);
+            importJson(reg, joinKey(path, std::string(key)), value);
         }
         return;
     }
     if (jv.is_array()) {
         const auto& arr = jv.as_array();
         for (size_t i = 0; i < arr.size(); ++i) {
-            importJson(reg, joinPath(path, std::to_string(i)), arr[i]);
+            importJson(reg, joinKey(path, std::to_string(i)), arr[i]);
         }
         return;
     }
-    reg.setOption(path, bas::reg::jsonToOption(jv));
-}
-
-void loadJsonRegistryFile(bas::reg::JsonRegistry& reg, const std::filesystem::path& path) {
-    std::ifstream in(path);
-    if (!in) {
-        throw std::runtime_error("failed to open " + path.string());
-    }
-    std::ostringstream content;
-    content << in.rdbuf();
-    const std::string text = content.str();
-    if (text.empty()) {
-        boost::json::object empty;
-        reg.jsonIn(empty, JsonFormOptions::DEFAULT);
-        return;
-    }
-    const auto jv = boost::json::parse(text);
-    if (!jv.is_object()) {
-        throw std::runtime_error("JSON registry file root must be an object: " + path.string());
-    }
-    auto obj = jv.as_object();
-    reg.jsonIn(obj, JsonFormOptions::DEFAULT);
-}
-
-void saveJsonRegistryFile(bas::reg::JsonRegistry& reg, const std::filesystem::path& path) {
-    boost::json::object obj;
-    reg.jsonOut(obj, JsonFormOptions::DEFAULT);
-    std::ofstream out(path);
-    if (!out) {
-        throw std::runtime_error("failed to write " + path.string());
-    }
-    out << boost::json::serialize(obj);
+    reg.setOption(path, jsonToOption(jv));
 }
 
 struct RegistryContext {
     std::unique_ptr<LocalVolume> localVolume;
-    std::unique_ptr<bas::reg::VolumeRegistry> volume;
-    std::optional<bas::reg::JsonRegistry> json;
-    bas::reg::IRegistry* reg = nullptr;
-    bas::reg::IContainerManager* containers = nullptr;
-    std::filesystem::path jsonFile;
+    std::unique_ptr<VolumeRegistry> volume;
+    std::unique_ptr<JsonRegistry> json;
+    IRegistry* reg = nullptr;
+    IContainerManager* containers = nullptr;
     bool jsonDirty = false;
 
     void markDirty() { jsonDirty = true; }
@@ -146,16 +156,16 @@ struct RegistryContext {
     void flush() {
         if (containers) {
             containers->flushCachedContainers();
-        } else if (!jsonFile.empty() && jsonDirty && json) {
-            saveJsonRegistryFile(*json, jsonFile);
+        } else if (jsonDirty && json) {
+            json->save();
         }
     }
 };
 
 bool openRegistry(const std::string& rootOpt, RegistryContext& ctx) {
     if (rootOpt.empty()) {
-        ctx.reg = &bas::reg::LocalRegistry::userDefault();
-        ctx.containers = dynamic_cast<bas::reg::IContainerManager*>(ctx.reg);
+        ctx.reg = &LocalRegistry::userDefault();
+        ctx.containers = dynamic_cast<IContainerManager*>(ctx.reg);
         return true;
     }
 
@@ -177,30 +187,26 @@ bool openRegistry(const std::string& rootOpt, RegistryContext& ctx) {
     }
     if (fs::is_directory(rootPath, ec)) {
         ctx.localVolume = std::make_unique<LocalVolume>(rootPath.string());
-        ctx.volume = std::make_unique<bas::reg::VolumeRegistry>(
-            VolumeFile(ctx.localVolume.get(), std::string()));
+        ctx.volume =
+            std::make_unique<VolumeRegistry>(VolumeFile(ctx.localVolume.get(), std::string("/")));
         ctx.reg = ctx.volume.get();
-        ctx.containers = dynamic_cast<bas::reg::IContainerManager*>(ctx.reg);
+        ctx.containers = dynamic_cast<IContainerManager*>(ctx.reg);
         return true;
     }
     if (fs::is_regular_file(rootPath, ec)) {
-        ctx.json.emplace();
         try {
-            loadJsonRegistryFile(*ctx.json, rootPath);
+            ctx.json = JsonRegistry::load(rootPath);
         } catch (const std::exception& e) {
             std::cerr << "reg: " << e.what() << '\n';
             return false;
         }
-        ctx.reg = &*ctx.json;
-        ctx.jsonFile = rootPath;
+        ctx.reg = ctx.json.get();
         return true;
     }
 
     std::cerr << "reg: root is neither a directory nor a regular file: " << rootOpt << '\n';
     return false;
 }
-
-} // namespace
 
 int main(int argc, char** argv) {
     bool wantHelp = false;
@@ -330,22 +336,28 @@ int main(int argc, char** argv) {
     if (!openRegistry(rootPath, ctx)) {
         return 2;
     }
-    bas::reg::IRegistry& registry = *ctx.reg;
+    IRegistry& registry = *ctx.reg;
 
     int rc = 0;
     try {
         if (dumpPath.has_value()) {
-            dumpTree(registry, *dumpPath, std::cout);
+            auto info = registry.stat(*dumpPath);
+            if (!info.has_value()) {
+                std::cerr << "reg: invalid path " << *dumpPath << '\n';
+                rc = 1;
+            } else {
+                dumpTree(registry, *dumpPath, *info, std::cout, "");
+            }
         } else if (!getPath.empty()) {
             auto opt = registry.getOption(getPath);
             if (!opt.has_value()) {
                 std::cerr << "reg: no value at " << getPath << '\n';
                 rc = 1;
             } else {
-                std::cout << bas::reg::valueToString(*opt) << '\n';
+                std::cout << valueToString(*opt) << '\n';
             }
         } else if (!setPath.empty()) {
-            auto parsed = bas::reg::parseOption(setValue);
+            auto parsed = parseOption(setValue);
             registry.setOption(setPath, parsed);
             if (!registry.has(setPath)) {
                 std::cerr << "reg: failed to set " << setPath << '\n';
@@ -377,3 +389,7 @@ int main(int argc, char** argv) {
 
     return rc;
 }
+
+} // namespace bas::reg
+
+int main(int argc, char** argv) { return bas::reg::main(argc, argv); }
