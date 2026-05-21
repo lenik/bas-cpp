@@ -12,6 +12,16 @@
 
 namespace bas::reg {
 
+enum regkey_kind {
+    STRING_KEY = 0,
+    INDEX_KEY,
+};
+
+using regkey_t = std::variant<std::string, size_t>;
+
+std::string keyToString(const regkey_t& key);
+regkey_t keyFromString(const std::string& s);
+
 /** UTC instant (epoch seconds). */
 using sys_time = date::sys_seconds;
 /** Local-time-line instant (see Howard Hinnant date / local_t). */
@@ -22,17 +32,17 @@ using year_month_day = date::year_month_day;
 using time_of_day = date::hh_mm_ss<std::chrono::seconds>;
 
 enum value_kind {
-    bool_kind = 0,
-    int_kind,
-    long_kind,
-    float_kind,
-    double_kind,
-    string_kind,
-    sys_time_kind,
-    local_time_kind,
-    zoned_time_kind,
-    year_month_day_kind,
-    time_of_day_kind,
+    BOOL_VALUE = 0,
+    INT_VALUE,
+    LONG_VALUE,
+    FLOAT_VALUE,
+    DOUBLE_VALUE,
+    STRING_VALUE,
+    SYS_TIME_VALUE,
+    LOCAL_TIME_VALUE,
+    ZONED_TIME_VALUE,
+    YEAR_MONTH_DAY_VALUE,
+    TIME_OF_DAY_VALUE,
 };
 
 using value_t = std::variant<bool, int, long, float, double, std::string, sys_time, local_time,

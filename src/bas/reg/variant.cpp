@@ -8,6 +8,27 @@
 
 namespace bas::reg {
 
+std::string keyToString(const regkey_t& key) {
+    switch (key.index()) {
+    case INDEX_KEY:
+        return std::to_string(std::get<size_t>(key));
+    default:
+    case STRING_KEY:
+        return std::get<std::string>(key);
+    }
+}
+
+regkey_t keyFromString(const std::string& s) {
+    if (s.empty())
+        return "";
+    for (char c : s) {
+        if (c < '0' || c > '9')
+            return s;
+    }
+    auto num = std::stoul(s);
+    return regkey_t{num};
+}
+
 option_t jsonToOption(const boost::json::value& v) {
     if (v.is_null()) {
         return std::nullopt;
@@ -54,23 +75,23 @@ boost::json::value optionToJson(const option_t& v) {
         return boost::json::value(nullptr);
     auto val = v.value();
     switch (val.index()) {
-    case bool_kind:
+    case BOOL_VALUE:
         return boost::json::value(std::get<bool>(v.value()));
-    case int_kind:
+    case INT_VALUE:
         return boost::json::value(std::get<int>(v.value()));
-    case long_kind:
+    case LONG_VALUE:
         return boost::json::value(std::get<long>(v.value()));
-    case float_kind:
+    case FLOAT_VALUE:
         return boost::json::value(std::get<float>(v.value()));
-    case double_kind:
+    case DOUBLE_VALUE:
         return boost::json::value(std::get<double>(v.value()));
-    case string_kind:
+    case STRING_VALUE:
         return boost::json::value(std::get<std::string>(v.value()));
-    case sys_time_kind:
-    case local_time_kind:
-    case zoned_time_kind:
-    case year_month_day_kind:
-    case time_of_day_kind:
+    case SYS_TIME_VALUE:
+    case LOCAL_TIME_VALUE:
+    case ZONED_TIME_VALUE:
+    case YEAR_MONTH_DAY_VALUE:
+    case TIME_OF_DAY_VALUE:
         auto s = valueToString(val);
         return boost::json::value(s);
     }
