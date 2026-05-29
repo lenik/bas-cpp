@@ -16,9 +16,13 @@ public:
     int malformReplacement() const override { return m_malformReplacement; }
     void setMalformReplacement(int codePoint) override { m_malformReplacement = codePoint; }
 
+    using IWriteStream::write;
+
     bool write(int byte) override;
     bool writeChar(char32_t codePoint) override;
+
     size_t write(const uint8_t* buf, size_t off, size_t len) override;
+    
     bool write(std::string_view data) override;
     bool writeln(std::string_view data) override;
     void flush() override = 0;

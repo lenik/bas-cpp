@@ -6,7 +6,7 @@
 #include <vector>
 
 class OutputStream {
-public:
+  public:
     virtual ~OutputStream() {}
 
     // Write a single byte (0-255). Returns true on success.
@@ -16,9 +16,8 @@ public:
     virtual size_t write(const uint8_t* buf, size_t off, size_t len);
     virtual size_t write(std::vector<uint8_t> data);
 
-    virtual void flush() = 0;
-
-    virtual void close() = 0;
+    virtual void flush() {}
+    virtual void close() {}
 };
 
 #endif // OUTPUTSTREAM_H

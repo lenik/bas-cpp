@@ -9,7 +9,7 @@
 
 class IWriteStream : public OutputStream, public Writer {
 public:
-    virtual ~IWriteStream() = default;
+    ~IWriteStream() override = default;
 
     enum class MalformAction {
         Skip,
@@ -23,22 +23,26 @@ public:
     virtual int malformReplacement() const = 0;
     virtual void setMalformReplacement(int codePoint) = 0;
 
+    using Writer::write;
+    using OutputStream::write;
+    
     // Write a single byte (0-255). Returns true on success.
-    virtual bool write(int byte) = 0;
+    // bool write(int byte) override = 0;
 
     // Write one Unicode code point. Returns true on success, false on encoding failure.
-    virtual bool writeChar(char32_t codePoint) = 0;
+    // bool writeChar(char32_t codePoint) override = 0;
 
     // Write len bytes from buf+off. Returns bytes written, or 0 on failure.
-    virtual size_t write(const uint8_t* buf, size_t off, size_t len) = 0;
+    // size_t write(const uint8_t* buf, size_t off, size_t len) override = 0;
 
     // Convenience write for UTF-8 string with current encoding.
-    virtual bool write(std::string_view data) = 0;
-    virtual bool writeln(std::string_view data) = 0;
+    // bool write(std::string_view data) override = 0;
+    // bool writeln(std::string_view data) override = 0;
 
-    virtual void flush() = 0;
-
-    virtual void close() = 0;
+    // void flush() override = 0;
+    // void close() override = 0;
+    using Writer::flush;
+    using Writer::close;
 };
 
 #endif // IWRITESTREAM_H

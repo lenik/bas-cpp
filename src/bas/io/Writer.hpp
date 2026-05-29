@@ -5,7 +5,7 @@
 
 class Writer {
 public:
-    ~Writer() = default;
+    virtual ~Writer() = default;
 
     // Write one Unicode code point (as int). Returns true on success, false on failure.
     virtual bool writeChar(char32_t codePoint) = 0;
