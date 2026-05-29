@@ -37,7 +37,7 @@ class JsonRegistry : public IRegistry, public IJsonForm {
 
     virtual ~JsonRegistry() = default;
 
-    void jsonIn(boost::json::object& o, const JsonFormOptions& opts) override;
+    void jsonIn(const boost::json::object& o, const JsonFormOptions& opts) override;
     void jsonOut(boost::json::object& obj, const JsonFormOptions& opts) override;
 
     std::optional<NodeInfo> stat(std::string_view path) const override;

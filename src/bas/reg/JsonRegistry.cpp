@@ -87,7 +87,7 @@ std::unique_ptr<JsonRegistry> JsonRegistry::load(const VolumeFile& file,
     return std::make_unique<JsonRegistry>(std::move(load), std::move(save));
 }
 
-void JsonRegistry::jsonIn(boost::json::object& o, const JsonFormOptions& opts) { //
+void JsonRegistry::jsonIn(const boost::json::object& o, const JsonFormOptions& opts) { //
     m_doc = o;
 }
 

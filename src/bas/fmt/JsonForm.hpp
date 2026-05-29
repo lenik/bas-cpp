@@ -23,7 +23,7 @@ struct JsonFormOptions {
 };
 
 class IJsonForm : public ITextForm {
-public:
+  public:
     IJsonForm() = default;
     virtual ~IJsonForm() {}
 
@@ -39,26 +39,26 @@ public:
         out->write(text);
     }
 
-public:
+  public:
     virtual bool likeObject() { return true; }
 
-    virtual void jsonIn(boost::json::value &in,
-                        const JsonFormOptions &opts = JsonFormOptions::DEFAULT) {
+    virtual void jsonIn(const boost::json::value& in,
+                        const JsonFormOptions& opts = JsonFormOptions::DEFAULT) {
         if (in.is_null()) {
             return;
         }
         jsonIn(in.get_object(), opts);
     }
 
-    virtual void jsonIn(boost::json::object &o, const JsonFormOptions &opts) = 0;
+    virtual void jsonIn(const boost::json::object& in, const JsonFormOptions& opts) = 0;
 
-    boost::json::value jsonOut(const JsonFormOptions &opts = JsonFormOptions::DEFAULT) {
+    virtual boost::json::value jsonOut(const JsonFormOptions& opts = JsonFormOptions::DEFAULT) {
         boost::json::object obj;
         jsonOut(obj, opts);
         return obj;
     }
 
-    virtual void jsonOut(boost::json::object &obj, const JsonFormOptions &opts) = 0;
+    virtual void jsonOut(boost::json::object& out, const JsonFormOptions& opts) = 0;
 };
 
 #endif // JSONFORM_H
