@@ -4,11 +4,13 @@ exe_inc = include_directories('../src', '..')
 app_cpp_list = [
     'asl.cpp',
     'reg.cpp',
+    'acdemo.cpp',
     'vols.cpp',
+    'ptr_test.cpp',
 ]
 foreach app_cpp : app_cpp_list
     app_name = app_cpp.split('/')[-1].replace('.cpp', '')
-    if app_name == 'vols' or app_name == 'reg'
+    if app_name == 'vols' or app_name == 'reg' or app_name == 'acdemo'
         install_dir = get_option('bindir')
         # Same logger as libbas-cpp so vols/reg can tune levels for library log calls.
         app_logger = 'cpp'
@@ -16,9 +18,10 @@ foreach app_cpp : app_cpp_list
         install_dir = pkgdatadir / 'app'
         app_logger = app_name
     endif
+    app_sources = [app_cpp]
     executable(
         app_name,
-        app_cpp,
+        app_sources,
         include_directories: exe_inc,
         link_with: lib_bas_cpp,
         dependencies: exe_deps,
