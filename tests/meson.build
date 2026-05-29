@@ -64,6 +64,7 @@ test_cpps = [
     'bas/net/DataUriInputStream_test.cpp',
     'bas/net/DataProtocol_test.cpp',
     'bas/script/json_test.cpp',
+    'bas/security/security_test.cpp',
     'bas/volume/ext4/Ext4_write_test.cpp',
     'bas/volume/ext4/Ext4_test.cpp',
     'bas/volume/ext4/Ext4_forest_test.cpp',
