@@ -45,10 +45,9 @@ bas_c_static_dep = dependency('bas-c-static', required: true)
 if fs.is_dir('subprojects/boost')
     boost_sub = subproject('boost')
     boost_json_dep = boost_sub.get_variable('boost_json_dep')
-    boost_locale_dep = boost_sub.get_variable('boost_locale_dep')
-    boost_dep = declare_dependency(dependencies: [boost_json_dep, boost_locale_dep])
+    boost_dep = boost_json_dep
 else
-    boost_dep = dependency('boost', modules: ['json', 'locale'], required: true)
+    boost_dep = dependency('boost', modules: ['json'], required: true)
 endif
 
 date_dep = subproject('date_tz').get_variable('date_dep')
@@ -299,7 +298,7 @@ lib_bas_cpp = library(
     dependencies: exe_deps,
     include_directories: exe_inc,
     cpp_args: cpp_args,
-    #cpp_pch: cpp_pch,
+    cpp_pch: cpp_pch,
     override_options: override_options, # Allows undefined symbols at link time
     version: meson.project_version(),
     soversion: meson.project_version().split('.')[0],
@@ -313,7 +312,7 @@ lib_bas_cpp_static = static_library(
     dependencies: exe_static_deps,
     include_directories: exe_inc,
     cpp_args: cpp_args,
-    #cpp_pch: cpp_pch,
+    cpp_pch: cpp_pch,
     override_options: override_options,
     install: true,
 )
@@ -340,7 +339,7 @@ pkgconfig.generate(
     description: 'C++ base library: I/O, network, volume, formatting, scripting',
     version: meson.project_version(),
     subdirs: 'bas',
-    requires: ['bas-c', 'glib-2.0', 'icu-uc', 'libcurl', 'openssl', 'zlib'],
+    requires: ['bas-c', 'glib-2.0', 'libcurl', 'openssl', 'zlib'],
 )
 
 pkgconfig.generate(
@@ -349,7 +348,7 @@ pkgconfig.generate(
     description: 'C++ base library: I/O, network, volume, formatting, scripting',
     version: meson.project_version(),
     subdirs: 'bas',
-    requires: ['glib-2.0', 'icu-uc', 'libcurl', 'openssl', 'zlib'],
+    requires: ['glib-2.0', 'libcurl', 'openssl', 'zlib'],
 )
 
 # ---- Headers for libbas-c package (includedir/bas-c) ----

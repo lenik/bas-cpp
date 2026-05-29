@@ -1,7 +1,6 @@
 #include <boost/json.hpp>
 #include <boost/json/array.hpp>
 #include <boost/json/object.hpp>
-#include <boost/json/src.hpp>
 #include <boost/signals2.hpp>
 #include <boost/type_traits/is_array.hpp>
 
@@ -48,15 +47,6 @@
 #include <date/date.h>
 #include <date/tz.h>
 
-#include <ext2fs/ext2_fs.h>
-#include <ext2fs/ext2_io.h>
-#include <ext2fs/ext2fs.h>
-
-#include <linux/stat.h>
-
-#include <mach-o/dyld.h>
-#include <mach-o/loader.h>
-
 #include <unicode/ucnv.h>
 #include <unicode/umachine.h>
 #include <unicode/unistr.h>
@@ -81,4 +71,3 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <windows.h>
