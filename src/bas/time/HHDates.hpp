@@ -31,12 +31,15 @@ class HHInstant final : public Instant {
 
     static HHInstant now();
     static HHInstant fromEpochSecond(int64_t epochSecond, int32_t nano = 0);
+    static bool isValidIsoString(const std::string& text);
+    static HHInstant parseIsoString(const std::string& text);
 
     const sys_time& value() const;
 
     int32_t nano() const override;
     int64_t epochSecond() const override;
 
+    using Temporal::isSupported;
     bool isSupported(TemporalField field) const override;
     std::optional<int64_t> getLong(TemporalField field) const override;
 
@@ -56,6 +59,8 @@ class HHLocalDate final : public LocalDate {
     HHLocalDate(int y, unsigned m, unsigned d);
 
     static HHLocalDate now();
+    static bool isValidIsoString(const std::string& text);
+    static HHLocalDate parseIsoString(const std::string& text);
     const date::local_days& value() const;
 
     int32_t year() const override;
@@ -66,6 +71,7 @@ class HHLocalDate final : public LocalDate {
     bool isLeapYear() const override;
     uint32_t lengthOfMonth() const override;
 
+    using Temporal::isSupported;
     bool isSupported(TemporalField field) const override;
     std::optional<int64_t> getLong(TemporalField field) const override;
 
@@ -79,33 +85,36 @@ class HHLocalDate final : public LocalDate {
 };
 
 class HHLocalTime final : public LocalTime {
-    public:
-      using duration = std::chrono::nanoseconds;
-  
-      HHLocalTime();
-      explicit HHLocalTime(duration value);
-      HHLocalTime(unsigned h, unsigned m, unsigned s, unsigned n = 0);
-  
-      static HHLocalTime now();
-      duration value() const;
-  
-      uint32_t hour() const override;
-      uint32_t minute() const override;
-      uint32_t second() const override;
-      uint32_t nano() const override;
-  
-      bool isSupported(TemporalField field) const override;
-      std::optional<int64_t> getLong(TemporalField field) const override;
-  
-      std::unique_ptr<Temporal> with(TemporalField field, int64_t newValue) const override;
-      std::unique_ptr<Temporal> plus(int64_t amount, TemporalUnit unit) const override;
-  
-      std::string toIsoString() const override;
-  
-    private:
-      duration m_value;
-  };
-  
+  public:
+    using duration = std::chrono::nanoseconds;
+
+    HHLocalTime();
+    explicit HHLocalTime(duration value);
+    HHLocalTime(unsigned h, unsigned m, unsigned s, unsigned n = 0);
+
+    static HHLocalTime now();
+    static bool isValidIsoString(const std::string& text);
+    static HHLocalTime parseIsoString(const std::string& text);
+    duration value() const;
+
+    uint32_t hour() const override;
+    uint32_t minute() const override;
+    uint32_t second() const override;
+    uint32_t nano() const override;
+
+    using Temporal::isSupported;
+    bool isSupported(TemporalField field) const override;
+    std::optional<int64_t> getLong(TemporalField field) const override;
+
+    std::unique_ptr<Temporal> with(TemporalField field, int64_t newValue) const override;
+    std::unique_ptr<Temporal> plus(int64_t amount, TemporalUnit unit) const override;
+
+    std::string toIsoString() const override;
+
+  private:
+    duration m_value;
+};
+
 class HHLocalDateTime final : public LocalDateTime {
   public:
     using duration = std::chrono::nanoseconds;
@@ -116,11 +125,14 @@ class HHLocalDateTime final : public LocalDateTime {
     HHLocalDateTime(const HHLocalDate& d, const HHLocalTime& t);
 
     static HHLocalDateTime now();
+    static bool isValidIsoString(const std::string& text);
+    static HHLocalDateTime parseIsoString(const std::string& text);
     const local_time& value() const;
 
     std::unique_ptr<LocalDate> toLocalDate() const override;
     std::unique_ptr<LocalTime> toLocalTime() const override;
 
+    using Temporal::isSupported;
     bool isSupported(TemporalField field) const override;
     std::optional<int64_t> getLong(TemporalField field) const override;
 
@@ -137,11 +149,18 @@ class HHOffsetDateTime final : public OffsetDateTime {
   public:
     HHOffsetDateTime();
     HHOffsetDateTime(const HHLocalDateTime& localDateTime, int32_t offsetSeconds);
+    
+    static HHOffsetDateTime fromTimePoint(const std::chrono::system_clock::time_point& timePoint,
+                                          int32_t offsetSeconds);
+    
+                                          static bool isValidIsoString(const std::string& text);
+    static HHOffsetDateTime parseIsoString(const std::string& text);
 
     std::unique_ptr<LocalDateTime> toLocalDateTime() const override;
     int32_t offsetSeconds() const override;
     std::unique_ptr<ZoneOffset> offset() const override;
 
+    using Temporal::isSupported;
     bool isSupported(TemporalField field) const override;
     std::optional<int64_t> getLong(TemporalField field) const override;
 
@@ -159,11 +178,14 @@ class HHOffsetTime final : public OffsetTime {
   public:
     HHOffsetTime();
     HHOffsetTime(const HHLocalTime& localTime, int32_t offsetSeconds);
+    static bool isValidIsoString(const std::string& text);
+    static HHOffsetTime parseIsoString(const std::string& text);
 
     std::unique_ptr<LocalTime> toLocalTime() const override;
     int32_t offsetSeconds() const override;
     std::unique_ptr<ZoneOffset> offset() const override;
 
+    using Temporal::isSupported;
     bool isSupported(TemporalField field) const override;
     std::optional<int64_t> getLong(TemporalField field) const override;
 
@@ -186,11 +208,14 @@ class HHZonedDateTime final : public ZonedDateTime {
     explicit HHZonedDateTime(zoned_time value);
 
     static HHZonedDateTime now();
+    static bool isValidIsoString(const std::string& text);
+    static HHZonedDateTime parseIsoString(const std::string& text);
     const zoned_time& value() const;
 
     std::unique_ptr<OffsetDateTime> toOffsetDateTime() const override;
     std::string zoneId() const override;
 
+    using Temporal::isSupported;
     bool isSupported(TemporalField field) const override;
     std::optional<int64_t> getLong(TemporalField field) const override;
     std::unique_ptr<Temporal> with(TemporalField field, int64_t newValue) const override;
@@ -206,10 +231,13 @@ class HHZonedTime final : public ZonedTime {
   public:
     HHZonedTime();
     HHZonedTime(const HHOffsetTime& offsetTime, std::string zoneId);
+    static bool isValidIsoString(const std::string& text);
+    static HHZonedTime parseIsoString(const std::string& text);
 
     std::unique_ptr<OffsetTime> toOffsetTime() const override;
     std::string zoneId() const override;
 
+    using Temporal::isSupported;
     bool isSupported(TemporalField field) const override;
     std::optional<int64_t> getLong(TemporalField field) const override;
     std::unique_ptr<Temporal> with(TemporalField field, int64_t newValue) const override;

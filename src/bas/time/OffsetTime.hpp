@@ -22,7 +22,10 @@ public:
     virtual std::unique_ptr<Temporal> withOffsetSameLocal(int32_t newOffsetSeconds) const;
     virtual std::unique_ptr<Temporal> withOffsetSameInstant(int32_t newOffsetSeconds) const;
     virtual int compareTo(const OffsetTime& other) const;
-    virtual std::string toIsoString() const = 0;
+    virtual std::string toIsoString() const override;
+
+    static bool isValidIsoString(const std::string& text);
+    static std::unique_ptr<OffsetTime> parseIsoString(const std::string& text);
 };
 
 } // namespace bas::time

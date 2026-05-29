@@ -1,5 +1,11 @@
 #include "LocalTime.hpp"
 
+#include "HHDates.hpp"
+
+#include <iomanip>
+#include <memory>
+#include <sstream>
+
 namespace bas::time {
 
 std::unique_ptr<Temporal> LocalTime::withHour(uint32_t h) const {
@@ -71,5 +77,24 @@ int64_t LocalTime::toSecondOfDay() const {
 }
 
 int64_t LocalTime::toNanoOfDay() const { return toSecondOfDay() * 1000000000LL + nano(); }
+
+std::string LocalTime::toIsoString() const {
+    std::ostringstream out;
+    out << std::setfill('0') << std::setw(2) << hour() << ':' << std::setw(2) << minute() << ':'
+        << std::setw(2) << second();
+    const auto ns = nano();
+    if (ns != 0) {
+        out << '.' << std::setw(9) << std::setfill('0') << ns;
+    }
+    return out.str();
+}
+
+bool LocalTime::isValidIsoString(const std::string& text) {
+    return HHLocalTime::isValidIsoString(text);
+}
+
+std::unique_ptr<LocalTime> LocalTime::parseIsoString(const std::string& text) {
+    return std::make_unique<HHLocalTime>(HHLocalTime::parseIsoString(text));
+}
 
 } // namespace bas::time

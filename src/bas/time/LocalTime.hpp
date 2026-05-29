@@ -42,7 +42,10 @@ public:
     virtual int64_t toSecondOfDay() const;
     virtual int64_t toNanoOfDay() const;
     virtual std::unique_ptr<OffsetTime> atOffset(const ZoneOffset& offset) const;
-    virtual std::string toIsoString() const = 0;
+    virtual std::string toIsoString() const override;
+
+    static bool isValidIsoString(const std::string& text);
+    static std::unique_ptr<LocalTime> parseIsoString(const std::string& text);
 };
 
 } // namespace bas::time

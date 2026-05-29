@@ -50,8 +50,10 @@ enum class TemporalUnit {
 class Temporal : public TemporalAccessor {
   public:
     ~Temporal() override = default;
+
     using TemporalAccessor::isSupported;
     virtual bool isSupported(TemporalUnit /*unit*/) const;
+    
     virtual std::unique_ptr<Temporal> with(const TemporalAdjuster& adjuster) const;
     virtual std::unique_ptr<Temporal> with(TemporalField field, int64_t newValue) const = 0;
     virtual std::unique_ptr<Temporal> plus(const TemporalAmount& amount) const;
@@ -83,7 +85,7 @@ class Temporal : public TemporalAccessor {
 
     std::filesystem::file_time_type toFileTime() const;
 
-    virtual std::string toIsoString() const;
+    virtual std::string toIsoString() const = 0;
 };
 
 } // namespace bas::time

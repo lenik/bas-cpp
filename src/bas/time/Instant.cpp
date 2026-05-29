@@ -1,5 +1,9 @@
 #include "Instant.hpp"
 
+#include "HHDates.hpp"
+
+#include <memory>
+
 namespace bas::time {
 
 int64_t Instant::toEpochMilli() const { return epochSecond() * 1000 + nano() / 1000000; }
@@ -45,5 +49,19 @@ int Instant::compareTo(const Instant& other) const {
 bool Instant::isAfter(const Instant& other) const { return compareTo(other) > 0; }
 
 bool Instant::isBefore(const Instant& other) const { return compareTo(other) < 0; }
+
+bool Instant::isValidIsoString(const std::string& text) {
+    return HHInstant::isValidIsoString(text);
+}
+
+std::string Instant::toIsoString() const {
+    auto epoch = epochSecond();
+    auto n = nano();
+    return HHInstant::fromEpochSecond(epoch, n).toIsoString();
+}
+
+std::unique_ptr<Instant> Instant::parseIsoString(const std::string& text) {
+    return std::make_unique<HHInstant>(HHInstant::parseIsoString(text));
+}
 
 } // namespace bas::time

@@ -1,6 +1,11 @@
 #include "HHDates.hpp"
 
+#include "IsoParseDetail.hpp"
 #include "ZoneId.hpp"
+
+#include <iomanip>
+#include <sstream>
+#include <stdexcept>
 
 namespace bas::time {
 
@@ -72,7 +77,12 @@ std::unique_ptr<Temporal> HHInstant::plus(int64_t amount, TemporalUnit unit) con
     }
 }
 
-std::string HHInstant::toIsoString() const { return date::format("%FT%TZ", m_value); }
+std::string HHInstant::toIsoString() const {
+    if (nano() == 0) {
+        return date::format("%FT%TZ", std::chrono::time_point_cast<std::chrono::seconds>(m_value));
+    }
+    return date::format("%FT%TZ", m_value);
+}
 
 // ------------------------------------------------------------------------------------------------
 // LocalDate
@@ -264,7 +274,11 @@ std::unique_ptr<Temporal> HHLocalDateTime::plus(int64_t amount, TemporalUnit uni
     }
 }
 
-std::string HHLocalDateTime::toIsoString() const { return date::format("%FT%T", m_value); }
+std::string HHLocalDateTime::toIsoString() const {
+    const auto date = *static_cast<const HHLocalDate*>(toLocalDate().get());
+    return date.toIsoString() + "T" +
+           static_cast<const HHLocalTime*>(toLocalTime().get())->toIsoString();
+}
 
 // ------------------------------------------------------------------------------------------------
 // LocalTime
@@ -356,7 +370,16 @@ std::unique_ptr<Temporal> HHLocalTime::plus(int64_t amount, TemporalUnit unit) c
     }
 }
 
-std::string HHLocalTime::toIsoString() const { return date::format("%T", m_value); }
+std::string HHLocalTime::toIsoString() const {
+    std::ostringstream out;
+    out << std::setfill('0') << std::setw(2) << hour() << ':' << std::setw(2) << minute() << ':'
+        << std::setw(2) << second();
+    const auto ns = nano();
+    if (ns != 0) {
+        out << '.' << std::setw(9) << std::setfill('0') << ns;
+    }
+    return out.str();
+}
 
 // ------------------------------------------------------------------------------------------------
 // OffsetDateTime
@@ -561,6 +584,201 @@ std::unique_ptr<Temporal> HHZonedTime::plus(int64_t amount, TemporalUnit unit) c
 
 std::string HHZonedTime::toIsoString() const {
     return m_offsetTime.toIsoString() + "[" + m_zoneId + "]";
+}
+
+bool HHLocalDate::isValidIsoString(const std::string& text) {
+    return detail::tryParseLocalDate(text);
+}
+
+HHLocalDate HHLocalDate::parseIsoString(const std::string& text) {
+    std::istringstream in(text);
+    date::local_days value;
+    in >> date::parse("%F", value);
+    if (in.fail() || !detail::isStreamFullyConsumed(in)) {
+        throw std::invalid_argument("invalid ISO-8601 date: " + text);
+    }
+    return HHLocalDate(value);
+}
+
+bool HHLocalTime::isValidIsoString(const std::string& text) {
+    return detail::tryParseLocalTime(text);
+}
+
+HHLocalTime HHLocalTime::parseIsoString(const std::string& text) {
+    if (!detail::tryParseLocalTime(text)) {
+        throw std::invalid_argument("invalid ISO-8601 time: " + text);
+    }
+    const auto ldt = HHLocalDateTime::parseIsoString("1970-01-01T" + text);
+    return *static_cast<const HHLocalTime*>(ldt.toLocalTime().get());
+}
+
+bool HHLocalDateTime::isValidIsoString(const std::string& text) {
+    return detail::tryParseLocalDateTime(text);
+}
+
+HHLocalDateTime HHLocalDateTime::parseIsoString(const std::string& text) {
+    const auto parts = detail::splitOffsetSuffix(text);
+    if (!parts.offset.empty()) {
+        throw std::invalid_argument("invalid ISO-8601 local date-time (offset not allowed): " +
+                                    text);
+    }
+    std::istringstream in{std::string(parts.local)};
+    HHLocalDateTime::local_time value;
+    in >> date::parse("%FT%T", value);
+    if (in.fail() || !detail::isStreamFullyConsumed(in)) {
+        throw std::invalid_argument("invalid ISO-8601 local date-time: " + text);
+    }
+    return HHLocalDateTime(value);
+}
+
+bool HHInstant::isValidIsoString(const std::string& text) { return detail::tryParseInstant(text); }
+
+HHInstant HHInstant::parseIsoString(const std::string& text) {
+    std::istringstream in(text);
+    HHInstant::sys_time value;
+    if (text.find('Z') != std::string::npos || text.find('z') != std::string::npos) {
+        in >> date::parse("%FT%TZ", value);
+    } else if (text.find('T') != std::string::npos &&
+               text.find_first_of("+-", text.find('T')) != std::string::npos) {
+        in >> date::parse("%FT%T%Ez", value);
+    } else {
+        in >> date::parse("%FT%T", value);
+    }
+    if (in.fail() || !detail::isStreamFullyConsumed(in)) {
+        throw std::invalid_argument("invalid ISO-8601 instant: " + text);
+    }
+    return HHInstant(value);
+}
+
+bool HHOffsetDateTime::isValidIsoString(const std::string& text) {
+    const auto zone = detail::splitZoneSuffix(text);
+    if (!zone.ok || !zone.zone.empty()) {
+        return false;
+    }
+    const auto parts = detail::splitOffsetSuffix(zone.body);
+    if (!detail::tryParseLocalDateTime(std::string(parts.local))) {
+        return false;
+    }
+    int32_t offsetSeconds = 0;
+    if (!parts.offset.empty() && !detail::tryParseOffsetSeconds(parts.offset, offsetSeconds)) {
+        return false;
+    }
+    return true;
+}
+
+HHOffsetDateTime
+HHOffsetDateTime::fromTimePoint(const std::chrono::system_clock::time_point& timePoint,
+                                int32_t offsetSeconds) {
+    date::local_time<std::chrono::system_clock::duration> local_now =
+        date::current_zone()->to_local(timePoint);
+    auto localDateTime = HHLocalDateTime(local_now);
+    return HHOffsetDateTime(localDateTime, offsetSeconds);
+}
+
+HHOffsetDateTime HHOffsetDateTime::parseIsoString(const std::string& text) {
+    const auto zone = detail::splitZoneSuffix(text);
+    if (!zone.ok) {
+        throw std::invalid_argument("invalid ISO-8601 string: missing ']' in zone suffix");
+    }
+    if (!zone.zone.empty()) {
+        throw std::invalid_argument(
+            "invalid ISO-8601 offset date-time (zone suffix not allowed): " + text);
+    }
+    const auto parts = detail::splitOffsetSuffix(zone.body);
+    const auto local = HHLocalDateTime::parseIsoString(std::string(parts.local));
+    int32_t offsetSeconds = 0;
+    if (!parts.offset.empty() && !detail::tryParseOffsetSeconds(parts.offset, offsetSeconds)) {
+        throw std::invalid_argument("invalid ISO-8601 offset: " + text);
+    }
+    return HHOffsetDateTime(local, offsetSeconds);
+}
+
+bool HHOffsetTime::isValidIsoString(const std::string& text) {
+    const auto zone = detail::splitZoneSuffix(text);
+    if (!zone.ok || !zone.zone.empty()) {
+        return false;
+    }
+    const auto parts = detail::splitOffsetTimeSuffix(zone.body);
+    if (!detail::tryParseLocalTime(std::string(parts.local))) {
+        return false;
+    }
+    int32_t offsetSeconds = 0;
+    if (!parts.offset.empty() && !detail::tryParseOffsetSeconds(parts.offset, offsetSeconds)) {
+        return false;
+    }
+    return true;
+}
+
+HHOffsetTime HHOffsetTime::parseIsoString(const std::string& text) {
+    const auto zone = detail::splitZoneSuffix(text);
+    if (!zone.ok) {
+        throw std::invalid_argument("invalid ISO-8601 string: missing ']' in zone suffix");
+    }
+    if (!zone.zone.empty()) {
+        throw std::invalid_argument("invalid ISO-8601 offset time (zone suffix not allowed): " +
+                                    text);
+    }
+    const auto parts = detail::splitOffsetTimeSuffix(zone.body);
+    const auto local = HHLocalTime::parseIsoString(std::string(parts.local));
+    int32_t offsetSeconds = 0;
+    if (!parts.offset.empty() && !detail::tryParseOffsetSeconds(parts.offset, offsetSeconds)) {
+        throw std::invalid_argument("invalid ISO-8601 offset: " + text);
+    }
+    return HHOffsetTime(local, offsetSeconds);
+}
+
+bool HHZonedDateTime::isValidIsoString(const std::string& text) {
+    const auto zone = detail::splitZoneSuffix(text);
+    if (!zone.ok) {
+        return false;
+    }
+    if (!HHOffsetDateTime::isValidIsoString(std::string(zone.body))) {
+        return false;
+    }
+    return detail::isKnownTimeZone(zone.zone);
+}
+
+HHZonedDateTime HHZonedDateTime::parseIsoString(const std::string& text) {
+    const auto zone = detail::splitZoneSuffix(text);
+    if (!zone.ok) {
+        throw std::invalid_argument("invalid ISO-8601 string: missing ']' in zone suffix");
+    }
+    const auto odt = HHOffsetDateTime::parseIsoString(std::string(zone.body));
+    const auto* local = static_cast<const HHLocalDateTime*>(odt.toLocalDateTime().get());
+    const auto zoneName =
+        zone.zone.empty() ? std::string(date::current_zone()->name()) : std::string(zone.zone);
+    const auto zonePtr = date::locate_zone(zoneName);
+    if (zonePtr == nullptr) {
+        throw std::invalid_argument("invalid ISO-8601 time zone: " + zoneName);
+    }
+    const auto sys = date::make_zoned(zonePtr, local->value()).get_sys_time();
+    return HHZonedDateTime(date::zoned_time(zonePtr, sys));
+}
+
+bool HHZonedTime::isValidIsoString(const std::string& text) {
+    const auto zone = detail::splitZoneSuffix(text);
+    if (!zone.ok || zone.zone.empty()) {
+        return false;
+    }
+    if (!HHOffsetTime::isValidIsoString(std::string(zone.body))) {
+        return false;
+    }
+    return detail::isKnownTimeZone(zone.zone);
+}
+
+HHZonedTime HHZonedTime::parseIsoString(const std::string& text) {
+    const auto zone = detail::splitZoneSuffix(text);
+    if (!zone.ok) {
+        throw std::invalid_argument("invalid ISO-8601 string: missing ']' in zone suffix");
+    }
+    if (zone.zone.empty()) {
+        throw std::invalid_argument("invalid ISO-8601 zoned time (missing zone id): " + text);
+    }
+    if (!detail::isKnownTimeZone(zone.zone)) {
+        throw std::invalid_argument("invalid ISO-8601 time zone: " + std::string(zone.zone));
+    }
+    const auto offsetTime = HHOffsetTime::parseIsoString(std::string(zone.body));
+    return HHZonedTime(offsetTime, std::string(zone.zone));
 }
 
 } // namespace bas::time

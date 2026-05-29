@@ -35,7 +35,10 @@ class Instant : public Temporal {
 
     virtual bool isAfter(const Instant& other) const;
     virtual bool isBefore(const Instant& other) const;
-    virtual std::string toIsoString() const = 0;
+    virtual std::string toIsoString() const override;
+
+    static bool isValidIsoString(const std::string& text);
+    static std::unique_ptr<Instant> parseIsoString(const std::string& text);
 };
 
 } // namespace bas::time

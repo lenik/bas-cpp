@@ -1,5 +1,9 @@
 #include "LocalDate.hpp"
 
+#include "HHDates.hpp"
+
+#include <memory>
+
 namespace bas::time {
 
 DayOfWeek LocalDate::dayOfWeek() const { return DayOfWeek::Monday; }
@@ -66,5 +70,29 @@ int LocalDate::compareTo(const LocalDate& other) const {
 bool LocalDate::isAfter(const LocalDate& other) const { return compareTo(other) > 0; }
 
 bool LocalDate::isBefore(const LocalDate& other) const { return compareTo(other) < 0; }
+
+std::string LocalDate::toIsoString() const {
+    auto yearStr = std::to_string(year());
+    if (year() < 1000) {
+        yearStr = "0" + yearStr;
+    }
+    auto monthStr = std::to_string(month());
+    if (month() < 10) {
+        monthStr = "0" + monthStr;
+    }
+    auto dayStr = std::to_string(day());
+    if (day() < 10) {
+        dayStr = "0" + dayStr;
+    }
+    return yearStr + "-" + monthStr + "-" + dayStr;
+}
+
+bool LocalDate::isValidIsoString(const std::string& text) {
+    return HHLocalDate::isValidIsoString(text);
+}
+
+std::unique_ptr<LocalDate> LocalDate::parseIsoString(const std::string& text) {
+    return std::make_unique<HHLocalDate>(HHLocalDate::parseIsoString(text));
+}
 
 } // namespace bas::time

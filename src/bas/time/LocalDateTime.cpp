@@ -1,5 +1,9 @@
 #include "LocalDateTime.hpp"
 
+#include "HHDates.hpp"
+
+#include <memory>
+
 namespace bas::time {
 
 int32_t LocalDateTime::year() const { return toLocalDate()->year(); }
@@ -89,5 +93,17 @@ int LocalDateTime::compareTo(const LocalDateTime& other) const {
 bool LocalDateTime::isAfter(const LocalDateTime& other) const { return compareTo(other) > 0; }
 
 bool LocalDateTime::isBefore(const LocalDateTime& other) const { return compareTo(other) < 0; }
+
+std::string LocalDateTime::toIsoString() const {
+    return toLocalDate()->toIsoString() + "T" + toLocalTime()->toIsoString();
+}
+
+bool LocalDateTime::isValidIsoString(const std::string& text) {
+    return HHLocalDateTime::isValidIsoString(text);
+}
+
+std::unique_ptr<LocalDateTime> LocalDateTime::parseIsoString(const std::string& text) {
+    return std::make_unique<HHLocalDateTime>(HHLocalDateTime::parseIsoString(text));
+}
 
 } // namespace bas::time

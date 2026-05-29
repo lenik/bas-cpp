@@ -1,5 +1,9 @@
 #include "OffsetTime.hpp"
 
+#include "HHDates.hpp"
+
+#include <memory>
+
 namespace bas::time {
 
 std::unique_ptr<Temporal> OffsetTime::withOffsetSameLocal(int32_t newOffsetSeconds) const {
@@ -20,6 +24,32 @@ int OffsetTime::compareTo(const OffsetTime& other) const {
         return offsetSeconds() < other.offsetSeconds() ? -1 : 1;
     }
     return 0;
+}
+
+std::string OffsetTime::toIsoString() const {
+    auto sec = offsetSeconds();
+    auto min = sec / 60;
+    auto hour = min / 60;
+    min = min % 60;
+    sec = sec % 60;
+
+    auto hourStr = std::to_string(hour);
+    if (hour < 10) {
+        hourStr = "0" + hourStr;
+    }
+    auto minStr = std::to_string(min);
+    if (min < 10) {
+        minStr = "0" + minStr;
+    }
+    return toLocalTime()->toIsoString() + "+" + hourStr + ":" + minStr;
+}
+
+bool OffsetTime::isValidIsoString(const std::string& text) {
+    return HHOffsetTime::isValidIsoString(text);
+}
+
+std::unique_ptr<OffsetTime> OffsetTime::parseIsoString(const std::string& text) {
+    return std::make_unique<HHOffsetTime>(HHOffsetTime::parseIsoString(text));
 }
 
 } // namespace bas::time

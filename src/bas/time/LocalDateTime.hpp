@@ -53,7 +53,10 @@ public:
 
     virtual bool isAfter(const LocalDateTime& other) const;
     virtual bool isBefore(const LocalDateTime& other) const;
-    virtual std::string toIsoString() const = 0;
+    virtual std::string toIsoString() const override;
+
+    static bool isValidIsoString(const std::string& text);
+    static std::unique_ptr<LocalDateTime> parseIsoString(const std::string& text);
 };
 
 } // namespace bas::time

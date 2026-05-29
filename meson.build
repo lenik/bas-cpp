@@ -158,6 +158,8 @@ cpp_sources = files(
     './src/bas/script/json.cpp',
     './src/bas/script/scriptable.cpp',
     './src/bas/time/Duration.cpp',
+    './src/bas/time/HHDates.cpp',
+    './src/bas/time/IsoParseDetail.cpp',
     './src/bas/time/Instant.cpp',
     './src/bas/time/LocalDate.cpp',
     './src/bas/time/LocalDateTime.cpp',

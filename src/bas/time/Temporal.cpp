@@ -113,6 +113,4 @@ std::filesystem::file_time_type Temporal::toFileTime() const {
     return std::filesystem::file_time_type::clock::time_point(tp.time_since_epoch());
 }
 
-std::string Temporal::toIsoString() const { return std::to_string(epochSecond(0)); }
-
 } // namespace bas::time
