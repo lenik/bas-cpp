@@ -1,4 +1,4 @@
-#include "permission.hpp"
+#include "Permission.hpp"
 
 #include <algorithm>
 
@@ -49,15 +49,31 @@ bool matchTokens(const std::vector<std::string_view>& pattern, std::size_t pi,
 } // namespace
 
 bool DefaultPermissionMatcher::matches(const Permission& pattern,
-                                     const Permission& permission) const {
-    const auto pat = splitPermissionTokens(pattern);
-    const auto perm = splitPermissionTokens(permission);
+                                       const Permission& permission) const {
+    if (!pattern.resource.empty() || !permission.resource.empty()) {
+        if (pattern.resource != permission.resource && pattern.resource != "*" &&
+            !pattern.resource.empty()) {
+            return false;
+        }
+        if (pattern.resource != permission.resource && permission.resource != "*" &&
+            !permission.resource.empty()) {
+            return false;
+        }
+    }
+    const std::string patternText = pattern.pattern();
+    const std::string permissionText = permission.pattern();
+    const auto pat = splitPermissionTokens(patternText);
+    const auto perm = splitPermissionTokens(permissionText);
     return matchTokens(pat, 0, perm, 0);
 }
 
 int DefaultPermissionMatcher::specificity(const Permission& pattern) const {
     int score = 0;
-    for (const auto token : splitPermissionTokens(pattern)) {
+    if (!pattern.resource.empty() && pattern.resource != "*") {
+        score += 20;
+    }
+    const std::string patternText = pattern.pattern();
+    for (const auto token : splitPermissionTokens(patternText)) {
         if (token == "**") {
             score += 0;
         } else if (token == "*") {

@@ -1,4 +1,4 @@
-#include "command_support.hpp"
+#include "CommandSupport.hpp"
 
 #include <algorithm>
 
@@ -18,7 +18,7 @@ std::string takeFlag(std::vector<std::string>& args, const std::string& flag) {
         if (args[i] == flag) {
             std::string value = args[i + 1];
             args.erase(args.begin() + static_cast<std::ptrdiff_t>(i),
-                        args.begin() + static_cast<std::ptrdiff_t>(i + 2));
+                       args.begin() + static_cast<std::ptrdiff_t>(i + 2));
             return value;
         }
     }
@@ -27,6 +27,40 @@ std::string takeFlag(std::vector<std::string>& args, const std::string& flag) {
 
 bool hasFlag(const std::vector<std::string>& args, const std::string& flag) {
     return std::find(args.begin(), args.end(), flag) != args.end();
+}
+
+bool consumeFlag(std::vector<std::string>& args, const std::string& flag) {
+    const auto it = std::find(args.begin(), args.end(), flag);
+    if (it == args.end()) {
+        return false;
+    }
+    args.erase(it);
+    return true;
+}
+
+bool takeHelpRequest(std::vector<std::string>& args) {
+    bool found = false;
+    for (auto it = args.begin(); it != args.end();) {
+        if (*it == "-h" || *it == "--help") {
+            it = args.erase(it);
+            found = true;
+        } else {
+            ++it;
+        }
+    }
+    return found;
+}
+
+bool argsAreOnlyHelpFlags(const std::vector<std::string>& args) {
+    if (args.empty()) {
+        return false;
+    }
+    for (const auto& token : args) {
+        if (token != "-h" && token != "--help") {
+            return false;
+        }
+    }
+    return true;
 }
 
 int commandSuccess() { return 0; }
@@ -41,7 +75,7 @@ std::string currentWord(const std::vector<std::string>& args, std::size_t index)
 }
 
 std::vector<std::string> filterByPrefix(const std::vector<std::string>& options,
-                                          const std::string& prefix) {
+                                        const std::string& prefix) {
     std::vector<std::string> matches;
     for (const auto& option : options) {
         if (prefix.empty() || option.compare(0, prefix.size(), prefix) == 0) {
@@ -51,9 +85,34 @@ std::vector<std::string> filterByPrefix(const std::vector<std::string>& options,
     return matches;
 }
 
-bool isKnownRealmType(std::string_view s) {
-    return s == "global" || s == "device" || s == "app";
+ResolvedCommand resolveCommandByPrefix(const std::vector<std::string>& commands,
+                                       std::string_view token) {
+    ResolvedCommand result;
+    if (token.empty()) {
+        return result;
+    }
+    for (const auto& cmd : commands) {
+        if (cmd == token) {
+            result.match = CommandMatch::Found;
+            result.value = cmd;
+            return result;
+        }
+    }
+    const auto matches = filterByPrefix(commands, std::string(token));
+    if (matches.size() == 1) {
+        result.match = CommandMatch::Found;
+        result.value = matches.front();
+        return result;
+    }
+    if (matches.size() > 1) {
+        result.match = CommandMatch::Ambiguous;
+        result.value = std::string(token);
+        return result;
+    }
+    return result;
 }
+
+bool isKnownRealmType(std::string_view s) { return s == "global" || s == "device" || s == "app"; }
 
 std::optional<Realm> parseAtRealmToken(const std::string& token) {
     if (token.empty() || token.front() != '@') {
@@ -100,7 +159,7 @@ void writeRealmSuffix(std::ostream& out, const Realm& realm) {
         out << " realm=(none)";
         return;
     }
-    out << " realm=" << realmDisplayLabel(realm);
+    out << " realm=" << realm.displayLabel();
     if (!realm.uuid.empty()) {
         out << " uuid=" << realm.uuid;
     }
