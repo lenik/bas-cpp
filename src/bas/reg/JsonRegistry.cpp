@@ -16,6 +16,12 @@
 
 namespace bas::reg {
 
+JsonRegistry::JsonRegistry() {
+    m_doc.emplace_object();
+    m_load = [this]() { return m_doc; };
+    m_save = [](boost::json::value&) {};
+}
+
 JsonRegistry::JsonRegistry(std::function<boost::json::value()> load_fn,
                            std::function<void(boost::json::value&)> save_fn)
     : m_load(std::move(load_fn)), m_save(std::move(save_fn)) {
@@ -31,7 +37,7 @@ JsonRegistry::JsonRegistry(boost::json::value& doc)
     }
 }
 
-std::unique_ptr<JsonRegistry> JsonRegistry::load(const std::filesystem::path& path,
+std::shared_ptr<JsonRegistry> JsonRegistry::load(const std::filesystem::path& path,
                                                  std::string_view encoding) {
     auto load = [path, encoding]() {
         std::ifstream in(path);
@@ -58,10 +64,10 @@ std::unique_ptr<JsonRegistry> JsonRegistry::load(const std::filesystem::path& pa
         }
         out << boost::json::serialize(doc);
     };
-    return std::make_unique<JsonRegistry>(std::move(load), std::move(save));
+    return std::make_shared<JsonRegistry>(std::move(load), std::move(save));
 }
 
-std::unique_ptr<JsonRegistry> JsonRegistry::load(const VolumeFile& file,
+std::shared_ptr<JsonRegistry> JsonRegistry::load(const VolumeFile& file,
                                                  std::string_view encoding) {
     auto load = [file, encoding]() {
         if (!file.exists() || !file.isFile()) {
@@ -84,7 +90,7 @@ std::unique_ptr<JsonRegistry> JsonRegistry::load(const VolumeFile& file,
         auto utf8 = boost::json::serialize(doc);
         file.writeFileString(utf8, encoding);
     };
-    return std::make_unique<JsonRegistry>(std::move(load), std::move(save));
+    return std::make_shared<JsonRegistry>(std::move(load), std::move(save));
 }
 
 void JsonRegistry::jsonIn(const boost::json::object& o, const JsonFormOptions& opts) { //
@@ -190,5 +196,39 @@ void JsonRegistry::reset() { m_doc = boost::json::object{}; }
 void JsonRegistry::load() { m_doc = m_load(); }
 
 void JsonRegistry::save() { m_save(m_doc); }
+
+std::optional<boost::json::value> JsonRegistry::getJson(std::string_view path) const {
+    const std::string normalized = bas::util::replace(path, '.', '/');
+    if (normalized.empty()) {
+        return m_doc;
+    }
+    const auto* node = json::locate_const(m_doc, normalized).node;
+    if (node == nullptr) {
+        return std::nullopt;
+    }
+    return *node;
+}
+
+bool JsonRegistry::setJson(std::string_view path, boost::json::value value) {
+    if (!m_doc.is_object()) {
+        m_doc.emplace_object();
+    }
+    const std::string normalized = bas::util::replace(path, '.', '/');
+    if (normalized.empty()) {
+        const boost::json::value old = m_doc;
+        m_doc = std::move(value);
+        emitChanged(normalized, jsonToOption(m_doc), jsonToOption(old));
+        return true;
+    }
+    auto target = json::locate(m_doc, normalized, '/', true);
+    if (target.node == nullptr) {
+        return false;
+    }
+    boost::json::value toWrite = std::move(value);
+    const auto old = target.set(toWrite);
+    emitChanged(normalized, jsonToOption(toWrite),
+                old.has_value() ? jsonToOption(*old) : std::nullopt);
+    return true;
+}
 
 } // namespace bas::reg

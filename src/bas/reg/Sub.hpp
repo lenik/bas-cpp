@@ -73,6 +73,9 @@ class IContainerManager {
     /** Write all in-memory containers marked dirty since last save. */
     void flushCachedContainers();
 
+    /** Drop in-memory container cache (e.g. before reload). */
+    void cacheClear();
+
   protected:
     mutable std::unordered_map<std::string, boost::json::value> m_containerCache;
     mutable std::unordered_map<std::string, bool> m_containerDirty;

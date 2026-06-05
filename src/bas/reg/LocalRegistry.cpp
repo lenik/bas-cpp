@@ -6,11 +6,13 @@
 namespace bas::reg {
 
 LocalRegistry::LocalRegistry(std::string_view root_dir, bool autoSave)
-    : VolumeRegistry(VolumeFile(&LocalVolume::home(), std::string(root_dir)), autoSave) {
-    if (auto* vol = m_root.getVolume()) {
+    : VolumeRegistry(VolumeFile(LocalVolume::at(LocalVolume::home().getRootPath()), std::string(root_dir)),
+                     autoSave) {
+    if (m_root.getVolume()) {
+        Volume& vol = *m_root.getVolume();
         const std::string& rootPath = m_root.getPath();
-        if (!rootPath.empty() && !vol->exists(rootPath)) {
-            vol->createDirectories(rootPath);
+        if (!rootPath.empty() && !vol.exists(rootPath)) {
+            vol.createDirectories(rootPath);
         }
     }
 }

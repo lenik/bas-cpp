@@ -191,6 +191,11 @@ bool IContainerManager::cacheRemoveFragment(const RRL& rrl) {
     return false;
 }
 
+void IContainerManager::cacheClear() {
+    m_containerCache.clear();
+    m_containerDirty.clear();
+}
+
 void IContainerManager::flushCachedContainers() {
     for (const auto& [container, dirty] : m_containerDirty) {
         if (!dirty)

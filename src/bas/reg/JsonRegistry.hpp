@@ -23,16 +23,16 @@ namespace bas::reg {
  */
 class JsonRegistry : public IRegistry, public IJsonForm {
   public:
-    JsonRegistry() = default;
+    JsonRegistry();
 
     JsonRegistry(boost::json::value& doc);
 
     JsonRegistry(std::function<boost::json::value()> load_fn,
                  std::function<void(boost::json::value&)> save_fn);
 
-    static std::unique_ptr<JsonRegistry> load(const std::filesystem::path& path,
+    static std::shared_ptr<JsonRegistry> load(const std::filesystem::path& path,
                                               std::string_view encoding = "utf-8");
-    static std::unique_ptr<JsonRegistry> load(const VolumeFile& file,
+    static std::shared_ptr<JsonRegistry> load(const VolumeFile& file,
                                               std::string_view encoding = "utf-8");
 
     virtual ~JsonRegistry() = default;
@@ -53,6 +53,12 @@ class JsonRegistry : public IRegistry, public IJsonForm {
     void reset() override;
     void load() override;
     void save() override;
+
+    /** Read JSON subtree at unified path (slash or dot segments). */
+    std::optional<boost::json::value> getJson(std::string_view path) const;
+
+    /** Replace JSON subtree at path (creates missing object path segments). */
+    bool setJson(std::string_view path, boost::json::value value);
 
   private:
     boost::json::value m_doc{boost::json::object{}};

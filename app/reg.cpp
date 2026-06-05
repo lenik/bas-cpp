@@ -144,9 +144,9 @@ void importJson(IRegistry& reg, std::string_view path, const boost::json::value&
 }
 
 struct RegistryContext {
-    std::unique_ptr<LocalVolume> localVolume;
-    std::unique_ptr<VolumeRegistry> volume;
-    std::unique_ptr<JsonRegistry> json;
+    std::shared_ptr<LocalVolume> localVolume;
+    std::shared_ptr<VolumeRegistry> volume;
+    std::shared_ptr<JsonRegistry> json;
     IRegistry* reg = nullptr;
     IContainerManager* containers = nullptr;
     bool jsonDirty = false;
@@ -186,9 +186,9 @@ bool openRegistry(const std::string& rootOpt, RegistryContext& ctx) {
         }
     }
     if (fs::is_directory(rootPath, ec)) {
-        ctx.localVolume = std::make_unique<LocalVolume>(rootPath.string());
+        ctx.localVolume = std::make_shared<LocalVolume>(rootPath.string());
         ctx.volume =
-            std::make_unique<VolumeRegistry>(VolumeFile(ctx.localVolume.get(), std::string("/")));
+            std::make_shared<VolumeRegistry>(VolumeFile(ctx.localVolume, std::string("/")));
         ctx.reg = ctx.volume.get();
         ctx.containers = dynamic_cast<IContainerManager*>(ctx.reg);
         return true;
