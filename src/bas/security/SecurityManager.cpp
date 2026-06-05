@@ -1,7 +1,8 @@
-#include "access_controller.hpp"
+#include "SecurityManager.hpp"
 
-#include "access_denied.hpp"
-#include "realm.hpp"
+#include "AccessDenied.hpp"
+#include "PolicyStore.hpp"
+#include "Realm.hpp"
 
 #include <algorithm>
 
@@ -36,39 +37,57 @@ void syncCredentialRealmFromIdentities(Credential& cred, const IdentitySet& set)
 
 } // namespace
 
-AccessController::AccessController(std::shared_ptr<ACList> acl,
-                     std::shared_ptr<CredentialManager> credentialManager,
-                     std::shared_ptr<IdentityRegistry> identityRegistry,
-                     std::shared_ptr<LoginPolicy> loginPolicy,
-                     std::shared_ptr<PermissionMatcher> permissionMatcher,
-                     std::shared_ptr<ACResolvePolicy> resolvePolicy)
-    : m_acl(std::move(acl)), m_credentialManager(std::move(credentialManager)),
+SecurityManager::SecurityManager(std::shared_ptr<PolicyStore> policyStore,
+                                   std::shared_ptr<CredentialManager> credentialManager,
+                                   std::shared_ptr<IdentityRegistry> identityRegistry,
+                                   std::shared_ptr<LoginPolicy> loginPolicy,
+                                   std::shared_ptr<PermissionMatcher> permissionMatcher,
+                                   std::shared_ptr<ACResolvePolicy> resolvePolicy)
+    : m_policyStore(std::move(policyStore)), m_credentialManager(std::move(credentialManager)),
       m_identityRegistry(std::move(identityRegistry)), m_loginPolicy(std::move(loginPolicy)),
-      m_permissionMatcher(std::move(permissionMatcher)), m_resolvePolicy(std::move(resolvePolicy)) {}
+      m_permissionMatcher(std::move(permissionMatcher)), m_resolvePolicy(std::move(resolvePolicy)),
+      m_decisionResolver(std::make_shared<DefaultAccessDecisionResolver>()) {}
 
-void AccessController::setLoginUi(std::shared_ptr<LoginUi> ui) { m_loginUi = std::move(ui); }
+void SecurityManager::setDecisionResolver(std::shared_ptr<AccessDecisionResolver> resolver) {
+    m_decisionResolver = std::move(resolver);
+}
 
-const std::vector<Realm>& AccessController::realms() const { return m_identityRegistry->realms(); }
+void SecurityManager::setLoginUi(std::shared_ptr<LoginUi> ui) { m_loginUi = std::move(ui); }
 
-std::optional<Realm> AccessController::findRealmByName(const std::string& name) const {
+const std::vector<Realm>& SecurityManager::realms() const { return m_identityRegistry->realms(); }
+
+std::optional<Realm> SecurityManager::findRealmByName(const std::string& name) const {
     return m_identityRegistry->findRealmByName(name);
 }
 
-Realm AccessController::resolveRealmHint(Realm hint) const {
+Realm SecurityManager::resolveRealmHint(Realm hint) const {
     return m_identityRegistry->resolveRealmHint(hint);
 }
 
-void AccessController::start() {
-    ACRequestOptions options;
-    options.interactive = false;
+void SecurityManager::start() {
+    AccessRequestOptions options;
+    options.allowConsoleInteraction = false;
+    options.allowGuiInteraction = false;
     options.allowAutoLogin = true;
-    options.reason = "AccessController startup";
-    tryAutoLogin("", options);
+    options.reason = "SecurityManager startup";
+    tryAutoLogin(Permission{}, options);
 }
 
-std::vector<Identity> AccessController::currentIdentities() const { return m_activeIdentities; }
+std::vector<Identity> SecurityManager::currentIdentities() const { return m_activeIdentities; }
 
-void AccessController::activate(const IdentitySet& identitySet) {
+Subject SecurityManager::currentSubject() const { return Subject::fromIdentities(m_activeIdentities); }
+
+AccessDecision SecurityManager::evaluate(const Subject& subject,
+                                         const Permission& permission) const {
+    std::vector<ACEntry> entries;
+    for (const auto& identity : subject.identities) {
+        const auto effective = m_policyStore->effectiveEntriesOf(identity.ref());
+        entries.insert(entries.end(), effective.begin(), effective.end());
+    }
+    return m_decisionResolver->resolve(permission, entries);
+}
+
+void SecurityManager::activate(const IdentitySet& identitySet) {
     auto isActive = [this](const Identity& id) {
         return std::any_of(m_activeIdentities.begin(), m_activeIdentities.end(),
                            [&](const Identity& active) { return active.ref() == id.ref(); });
@@ -88,7 +107,7 @@ void AccessController::activate(const IdentitySet& identitySet) {
     }
 }
 
-void AccessController::logout(const IdentityRef& identity) {
+void SecurityManager::logout(const IdentityRef& identity) {
     m_suppressAutoLogin = true;
     m_activeIdentities.erase(
         std::remove_if(m_activeIdentities.begin(), m_activeIdentities.end(),
@@ -96,7 +115,7 @@ void AccessController::logout(const IdentityRef& identity) {
         m_activeIdentities.end());
 }
 
-void AccessController::logoutType(const std::string& identityType) {
+void SecurityManager::logoutType(const std::string& identityType) {
     m_suppressAutoLogin = true;
     m_activeIdentities.erase(
         std::remove_if(m_activeIdentities.begin(), m_activeIdentities.end(),
@@ -104,48 +123,49 @@ void AccessController::logoutType(const std::string& identityType) {
         m_activeIdentities.end());
 }
 
-void AccessController::logoutAll() {
+void SecurityManager::logoutAll() {
     m_suppressAutoLogin = true;
     m_activeIdentities.clear();
 }
 
-void AccessController::logoutRealm(const Realm& realm) {
+void SecurityManager::logoutRealm(const Realm& realm) {
     m_suppressAutoLogin = true;
     m_activeIdentities.erase(
         std::remove_if(m_activeIdentities.begin(), m_activeIdentities.end(),
-                       [&](const Identity& id) { return realmScopedEqual(id.realm, realm); }),
+                       [&](const Identity& id) { return id.realm.scopedEqual(realm); }),
         m_activeIdentities.end());
 }
 
-ACMode AccessController::checkPermission(const Permission& permission) const {
+AccessEffect SecurityManager::checkPermission(const Permission& permission) const {
     return normalizeResult(checkPermissionRaw(permission, m_activeIdentities));
 }
 
-ACMode AccessController::checkPermission(const Permission& permission,
-                                  const ACRequestOptions& options) const {
+AccessEffect SecurityManager::checkPermission(const Permission& permission,
+                                         const AccessRequestOptions& options) const {
     if (options.realmHint.empty() || !options.realmHint.hasKey()) {
         return checkPermission(permission);
     }
     std::vector<Identity> filtered;
     filtered.reserve(m_activeIdentities.size());
     for (const auto& id : m_activeIdentities) {
-        if (realmMatches(id.realm, options.realmHint)) {
+        if (id.realm.match(options.realmHint)) {
             filtered.push_back(id);
         }
     }
     return normalizeResult(checkPermissionRaw(permission, filtered));
 }
 
-ACMode AccessController::requestPermission(const Permission& permission, const ACRequestOptions& options) {
-    ACMode mode = checkPermissionRaw(permission);
-    if (mode != ACMode::Unknown) {
+AccessEffect SecurityManager::requestPermission(const Permission& permission,
+                                           const AccessRequestOptions& options) {
+    AccessEffect mode = checkPermissionRaw(permission);
+    if (mode != AccessEffect::Unknown) {
         return normalizeResult(mode);
     }
 
     if (options.allowAutoLogin && !m_suppressAutoLogin) {
         tryAutoLogin(permission, options);
         mode = checkPermissionRaw(permission);
-        if (mode != ACMode::Unknown) {
+        if (mode != AccessEffect::Unknown) {
             return normalizeResult(mode);
         }
     }
@@ -160,37 +180,39 @@ ACMode AccessController::requestPermission(const Permission& permission, const A
             continue;
         }
         mode = checkPermissionRaw(permission);
-        if (mode != ACMode::Unknown) {
+        if (mode != AccessEffect::Unknown) {
             return normalizeResult(mode);
         }
     }
 
-    return ACMode::Deny;
+    return AccessEffect::Deny;
 }
 
-void AccessController::requirePermission(const Permission& permission, const ACRequestOptions& options) {
-    if (requestPermission(permission, options) != ACMode::Allow) {
+void SecurityManager::requirePermission(const Permission& permission,
+                                         const AccessRequestOptions& options) {
+    if (requestPermission(permission, options) != AccessEffect::Allow) {
         throw AccessDenied(permission);
     }
 }
 
-ACMode AccessController::checkPermissionRaw(const Permission& permission) const {
+AccessEffect SecurityManager::checkPermissionRaw(const Permission& permission) const {
     return checkPermissionRaw(permission, m_activeIdentities);
 }
 
-ACMode AccessController::checkPermissionRaw(const Permission& permission,
-                                     const std::vector<Identity>& identities) const {
-    return m_acl->checkAny(identities, permission, *m_permissionMatcher, *m_resolvePolicy);
+AccessEffect SecurityManager::checkPermissionRaw(const Permission& permission,
+                                            const std::vector<Identity>& identities) const {
+    return policyCheckAny(*m_policyStore, identities, permission, *m_permissionMatcher,
+                          *m_resolvePolicy);
 }
 
-ACMode AccessController::normalizeResult(ACMode mode) const {
-    if (mode == ACMode::Unknown) {
-        return ACMode::Deny;
+AccessEffect SecurityManager::normalizeResult(AccessEffect mode) const {
+    if (mode.isUnknown()) {
+        return AccessEffect::Deny;
     }
     return mode;
 }
 
-void AccessController::tryAutoLogin(const Permission& permission, const ACRequestOptions& options) {
+void SecurityManager::tryAutoLogin(const Permission& permission, const AccessRequestOptions& options) {
     const auto services = m_identityRegistry->findAutoLoginServices();
     for (auto& service : services) {
         if (!service) {
@@ -211,7 +233,8 @@ void AccessController::tryAutoLogin(const Permission& permission, const ACReques
 }
 
 std::vector<std::shared_ptr<IdentityService>>
-AccessController::selectServices(const Permission& /*permission*/, const ACRequestOptions& options) const {
+SecurityManager::selectServices(const Permission& /*permission*/,
+                                 const AccessRequestOptions& options) const {
     std::vector<std::shared_ptr<IdentityService>> pool;
     if (!options.realmHint.empty()) {
         pool = m_identityRegistry->findByRealm(options.realmHint);
@@ -232,9 +255,10 @@ AccessController::selectServices(const Permission& /*permission*/, const ACReque
     return pool;
 }
 
-bool AccessController::tryLoginWithService(IdentityService& service, const Permission& permission,
-                                    const ACRequestOptions& options) {
-    if (options.interactive && service.canAutoLogin()) {
+bool SecurityManager::tryLoginWithService(IdentityService& service, const Permission& permission,
+                                           const AccessRequestOptions& options) {
+    const bool interactive = options.allowGuiInteraction || options.allowConsoleInteraction;
+    if (interactive && service.canAutoLogin()) {
         return false;
     }
 
@@ -267,11 +291,10 @@ bool AccessController::tryLoginWithService(IdentityService& service, const Permi
         return true;
     }
 
-    if (result.status == LoginStatus::NeedInteraction && options.interactive &&
+    if (result.status == LoginStatus::NeedInteraction && interactive &&
         result.form.has_value() && m_loginUi) {
         credentialRequest.interactive = true;
-        if (auto interactiveCred =
-                m_loginUi->requestCredential(*result.form, credentialRequest)) {
+        if (auto interactiveCred = m_loginUi->requestCredential(*result.form, credentialRequest)) {
             loginRequest.credential = std::move(interactiveCred);
             loginRequest.interactive = true;
             result = service.login(loginRequest);
@@ -291,7 +314,7 @@ bool AccessController::tryLoginWithService(IdentityService& service, const Permi
     return false;
 }
 
-std::size_t AccessController::activateCachedCredentials(const ACRequestOptions& options) {
+std::size_t SecurityManager::activateCachedCredentials(const AccessRequestOptions& options) {
     std::size_t activated = 0;
     for (const auto& service : m_identityRegistry->list()) {
         if (!service || service->canAutoLogin()) {
@@ -337,10 +360,11 @@ std::size_t AccessController::activateCachedCredentials(const ACRequestOptions& 
     return activated;
 }
 
-bool AccessController::login(const ACRequestOptions& options) {
-    ACRequestOptions opts = options;
+bool SecurityManager::login(const AccessRequestOptions& options) {
+    AccessRequestOptions opts = options;
     opts.realmHint = resolveRealmHint(opts.realmHint);
-    opts.interactive = true;
+    opts.allowGuiInteraction = true;
+    opts.allowConsoleInteraction = true;
     opts.allowAutoLogin = false;
     if (opts.preferredIdentityTypes.empty()) {
         opts.preferredIdentityTypes = {"user"};
@@ -354,12 +378,12 @@ bool AccessController::login(const ACRequestOptions& options) {
         return true;
     }
 
-    const auto services = selectServices("", opts);
+    const auto services = selectServices(Permission{}, opts);
     for (auto& service : services) {
         if (!service || service->canAutoLogin()) {
             continue;
         }
-        if (tryLoginWithService(*service, "", opts)) {
+        if (tryLoginWithService(*service, Permission{}, opts)) {
             m_suppressAutoLogin = false;
             return true;
         }
@@ -367,35 +391,34 @@ bool AccessController::login(const ACRequestOptions& options) {
     return false;
 }
 
-void AccessController::removeConflicting(const Identity& incoming) {
-    m_activeIdentities.erase(
+void SecurityManager::removeConflicting(const Identity& incoming) {
+    m_activeIdentities.erase( //
         std::remove_if(m_activeIdentities.begin(), m_activeIdentities.end(),
                        [&](const Identity& id) {
-                           return id.type == incoming.type &&
-                                  realmScopedEqual(id.realm, incoming.realm);
+                           return id.type == incoming.type && id.realm.scopedEqual(incoming.realm);
                        }),
         m_activeIdentities.end());
 }
 
-void AccessController::activateOne(const Identity& incoming) {
+void SecurityManager::activateOne(const Identity& incoming) {
     const auto action = m_loginPolicy->resolveConflict(m_activeIdentities, incoming);
 
-    switch (action) {
-    case LoginConflictAction::KeepExisting:
+    switch (action.value()) {
+    case LoginConflictAction::Value::KEEP_EXISTING:
         if (m_loginPolicy->canCoexist(m_activeIdentities, incoming)) {
             m_activeIdentities.push_back(incoming);
         }
         break;
 
-    case LoginConflictAction::ReplaceExisting:
+    case LoginConflictAction::Value::REPLACE_EXISTING:
         removeConflicting(incoming);
         m_activeIdentities.push_back(incoming);
         break;
 
-    case LoginConflictAction::RejectIncoming:
+    case LoginConflictAction::Value::REJECT_INCOMING:
         break;
 
-    case LoginConflictAction::AskUser:
+    case LoginConflictAction::Value::ASK_USER:
         // Without GUI provider, treat as reject incoming.
         break;
     }

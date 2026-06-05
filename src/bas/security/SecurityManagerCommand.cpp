@@ -1,7 +1,7 @@
-#include "access_controller.hpp"
+#include "SecurityManager.hpp"
 
-#include "command_support.hpp"
-#include "json.hpp"
+#include "ACList.hpp"
+#include "CommandSupport.hpp"
 
 #include <iostream>
 
@@ -21,7 +21,7 @@ void printAcHelp(std::ostream& out) {
            "  help                           show this help\n";
 }
 
-static std::vector<std::string> registeredRealmCompletions(const AccessController& ac,
+static std::vector<std::string> registeredRealmCompletions(const SecurityManager& ac,
                                                            const std::string& prefix) {
     std::vector<std::string> options;
     for (const auto& realm : ac.realms()) {
@@ -32,7 +32,7 @@ static std::vector<std::string> registeredRealmCompletions(const AccessControlle
     return filterByPrefix(options, prefix);
 }
 
-void printIdentities(const AccessController& ac) {
+void printIdentities(const SecurityManager& ac) {
     const auto identities = ac.currentIdentities();
     if (identities.empty()) {
         std::cout << "no active identities\n";
@@ -48,8 +48,8 @@ void printIdentities(const AccessController& ac) {
     }
 }
 
-void printMode(const std::string& verb, const std::string& permission, ACMode mode) {
-    std::cout << verb << ' ' << permission << ": " << acModeToString(mode) << '\n';
+void printMode(const std::string& verb, const std::string& permission, AccessEffect mode) {
+    std::cout << verb << ' ' << permission << ": " << mode.str() << '\n';
 }
 
 static const std::vector<std::string> kAcCommands = {
@@ -61,7 +61,9 @@ static const std::vector<std::string> kDemoPermissions = {
 };
 
 static const std::vector<std::string> kRealmCompletions = {
-    "@global", "@device:", "@app:",
+    "@global",
+    "@device:",
+    "@app:",
 };
 
 void peelLeadingRealm(std::vector<std::string>& args, Realm& parsed, bool& hasParsed) {
@@ -77,13 +79,17 @@ void peelLeadingRealm(std::vector<std::string>& args, Realm& parsed, bool& hasPa
 
 } // namespace
 
-void AccessController::setCommandDefaults(Realm defaultRealm, std::string defaultSubject) {
+void SecurityManager::setCommandDefaults(Realm defaultRealm, std::string defaultSubject) {
     m_cmdDefaultRealm = std::move(defaultRealm);
     m_cmdDefaultSubject = std::move(defaultSubject);
 }
 
-int AccessController::invoke(std::vector<std::string>& args) {
+int SecurityManager::invoke(std::vector<std::string>& args) {
     if (args.empty()) {
+        printAcHelp(std::cout);
+        return commandSuccess();
+    }
+    if (argsAreOnlyHelpFlags(args)) {
         printAcHelp(std::cout);
         return commandSuccess();
     }
@@ -117,7 +123,7 @@ int AccessController::invoke(std::vector<std::string>& args) {
             return commandFailure();
         }
         logoutRealm(realm);
-        std::cout << "logged out identities in realm " << realmDisplayLabel(realm) << '\n';
+        std::cout << "logged out identities in realm " << realm.displayLabel() << '\n';
         return commandSuccess();
     }
     if (cmd == "reload-creds") {
@@ -128,7 +134,7 @@ int AccessController::invoke(std::vector<std::string>& args) {
         m_credentialManager->reloadCredentials();
         std::cout << "reloaded " << m_credentialManager->credentialPersistedCount()
                   << " credential(s) from " << m_credentialManager->credentialPath() << '\n';
-        ACRequestOptions options;
+        AccessRequestOptions options;
         activateCachedCredentials(options);
         printIdentities(*this);
         return commandSuccess();
@@ -148,9 +154,9 @@ int AccessController::invoke(std::vector<std::string>& args) {
             std::cerr << "usage: check [@realm] PERMISSION\n";
             return commandFailure();
         }
-        ACRequestOptions options;
+        AccessRequestOptions options;
         options.realmHint = realm;
-        printMode("check", args[0], checkPermission(args[0], options));
+        printMode("check", args[0], checkPermission(Permission::parse(args[0]), options));
         return commandSuccess();
     }
     if (cmd == "request") {
@@ -158,8 +164,9 @@ int AccessController::invoke(std::vector<std::string>& args) {
             std::cerr << "usage: request [@realm] PERMISSION [USER]\n";
             return commandFailure();
         }
-        ACRequestOptions options;
-        options.interactive = true;
+        AccessRequestOptions options;
+        options.allowGuiInteraction = true;
+        options.allowConsoleInteraction = true;
         options.allowAutoLogin = !autoLoginSuppressed();
         options.realmHint = realm;
         options.reason = "acdemo request";
@@ -168,13 +175,14 @@ int AccessController::invoke(std::vector<std::string>& args) {
         } else if (!m_cmdDefaultSubject.empty()) {
             options.nameHint = m_cmdDefaultSubject;
         }
-        printMode("request", args[0], requestPermission(args[0], options));
+        printMode("request", args[0], requestPermission(Permission::parse(args[0]), options));
         printIdentities(*this);
         return commandSuccess();
     }
     if (cmd == "login") {
-        ACRequestOptions options;
-        options.interactive = true;
+        AccessRequestOptions options;
+        options.allowGuiInteraction = true;
+        options.allowConsoleInteraction = true;
         options.realmHint = realm;
         options.reason = "acdemo login";
         if (!args.empty()) {
@@ -185,7 +193,7 @@ int AccessController::invoke(std::vector<std::string>& args) {
         if (login(options)) {
             std::cout << "login ok";
             if (!realm.empty()) {
-                std::cout << " realm=" << realmDisplayLabel(realm);
+                std::cout << " realm=" << realm.displayLabel();
             }
             std::cout << '\n';
             printIdentities(*this);
@@ -199,8 +207,8 @@ int AccessController::invoke(std::vector<std::string>& args) {
     return commandFailure();
 }
 
-std::vector<std::string> AccessController::complete(const std::vector<std::string>& args,
-                                             std::size_t index) const {
+std::vector<std::string> SecurityManager::complete(const std::vector<std::string>& args,
+                                                    std::size_t index) const {
     const std::string cword = currentWord(args, index);
     if (index == 0) {
         return filterByPrefix(kAcCommands, cword);
