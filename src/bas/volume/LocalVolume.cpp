@@ -2,6 +2,7 @@
 
 #include "DirEntry.hpp"
 #include "DirNode.hpp"
+#include "VolumeFile.hpp"
 #include "mountinfo.hpp"
 
 #include "../io/IOException.hpp"
@@ -20,7 +21,9 @@
 #include <fstream>
 #include <memory>
 #include <sstream>
+#include <stdexcept>
 #include <system_error>
+#include <unordered_map>
 
 #include <sys/stat.h>
 
@@ -44,6 +47,96 @@ static void strip_trailing_slashes(std::string& s) {
         s.pop_back();
 }
 
+namespace {
+
+std::string canonicalLocalPath(std::string_view path) {
+    fs::path input(path);
+    if (path.empty()) {
+        throw std::invalid_argument("LocalVolume::file: path is required");
+    }
+    try {
+        if (fs::exists(input)) {
+            return fs::canonical(input).string();
+        }
+        return fs::absolute(input).lexically_normal().string();
+    } catch (...) {
+        return fs::absolute(input).string();
+    }
+}
+
+std::string volumePathWithinMount(const std::string& canonicalPath,
+                                  const std::string& canonicalMountPoint) {
+    if (canonicalPath == canonicalMountPoint) {
+        return "/";
+    }
+    if (canonicalMountPoint == "/") {
+        return canonicalPath;
+    }
+    return canonicalPath.substr(canonicalMountPoint.size());
+}
+
+std::string normalizedRootCacheKey(std::string_view rootdir) {
+    if (rootdir.empty()) {
+        throw std::invalid_argument("LocalVolume::at: rootdir is required");
+    }
+    std::string root(rootdir);
+    strip_trailing_slashes(root);
+    try {
+        if (fs::exists(root)) {
+            return fs::canonical(root).string();
+        }
+    } catch (...) {
+    }
+    return root;
+}
+
+VolumeFile openFileByParent(std::string canonicalPath) {
+    fs::path localPath(canonicalPath);
+    std::string root;
+    std::string volumePath;
+    if (fs::is_directory(localPath)) {
+        root = localPath.string();
+        volumePath = "/";
+    } else {
+        root = localPath.parent_path().string();
+        if (root.empty()) {
+            root = ".";
+        }
+        volumePath = std::string("/") + localPath.filename().string();
+    }
+    strip_trailing_slashes(root);
+    auto volume = LocalVolume::at(root);
+    return VolumeFile(volume, volumePath);
+}
+
+} // namespace
+
+VolumeFile LocalVolume::file(std::string_view path) {
+    const std::string canonicalPath = canonicalLocalPath(path);
+    MountInfo mount;
+    if (findMountForPath(canonicalPath, mount)) {
+        const std::string volumePath =
+            volumePathWithinMount(canonicalPath, mount.canonicalMountPoint);
+        auto volume = at(mount.canonicalMountPoint);
+        return VolumeFile(volume, volumePath);
+    }
+    return openFileByParent(canonicalPath);
+}
+
+std::shared_ptr<LocalVolume> LocalVolume::at(std::string_view rootdir) {
+    static std::unordered_map<std::string, std::shared_ptr<LocalVolume>> cache;
+
+    const std::string key = normalizedRootCacheKey(rootdir);
+    const auto it = cache.find(key);
+    if (it != cache.end()) {
+        return it->second;
+    }
+
+    auto volume = std::make_shared<LocalVolume>(key);
+    cache.emplace(key, volume);
+    return volume;
+}
+
 LocalVolume::LocalVolume(std::string_view rootPath) : m_rootPath(rootPath) {
     strip_trailing_slashes(m_rootPath);
     if (!fs::exists(m_rootPath)) {
@@ -52,17 +145,11 @@ LocalVolume::LocalVolume(std::string_view rootPath) : m_rootPath(rootPath) {
 }
 
 LocalVolume& LocalVolume::home() {
-    static LocalVolume* s_home;
-    if (s_home == nullptr) {
 #ifdef _WIN32
-        auto home = std::filesystem::path(getenv("USERPROFILE"));
-        s_home = new LocalVolume(home.string());
+    return *at(std::filesystem::path(getenv("USERPROFILE")).string());
 #else
-        auto home = std::filesystem::path(getenv("HOME"));
-        s_home = new LocalVolume(home.string());
+    return *at(std::filesystem::path(getenv("HOME")).string());
 #endif
-    }
-    return *s_home;
 }
 
 void LocalVolume::setRootPath(std::string_view rootPath) {

@@ -163,15 +163,16 @@ void Volume::setLabel(std::string_view label) {
 }
 
 std::unique_ptr<VolumeFile> Volume::getRootFile() {
-    return std::make_unique<VolumeFile>(this, std::string("/"));
+    return std::make_unique<VolumeFile>(VolumeFile::borrowVolume(this), std::string("/"));
 }
 
 std::unique_ptr<VolumeFile> Volume::resolve(std::string_view path) {
-    return std::make_unique<VolumeFile>(this, std::string(path));
+    return std::make_unique<VolumeFile>(VolumeFile::borrowVolume(this), std::string(path));
 }
 
 std::unique_ptr<const VolumeFile> Volume::resolve(std::string_view path) const {
-    return std::make_unique<const VolumeFile>(const_cast<Volume*>(this), std::string(path));
+    return std::make_unique<const VolumeFile>(VolumeFile::borrowVolume(const_cast<Volume*>(this)),
+                                              std::string(path));
 }
 
 std::string Volume::normalizeArg(std::string_view path, std::optional<std::string> fallback) const {

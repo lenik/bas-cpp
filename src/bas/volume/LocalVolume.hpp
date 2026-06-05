@@ -2,8 +2,10 @@
 #define LOCALVOLUME_H
 
 #include "Volume.hpp"
+#include "VolumeFile.hpp"
 #include "mountinfo.hpp"
 
+#include <memory>
 #include <optional>
 #include <string>
 
@@ -43,6 +45,12 @@ class LocalVolume : public Volume {
   public:
     explicit LocalVolume(std::string_view rootPath);
     virtual ~LocalVolume() = default;
+
+    /** Resolve a host path to a VolumeFile on the matching LocalVolume. */
+    static VolumeFile file(std::string_view path);
+
+    /** Cached LocalVolume for @a rootdir; stable for process lifetime. */
+    static std::shared_ptr<LocalVolume> at(std::string_view rootdir);
 
     static LocalVolume& home();
 

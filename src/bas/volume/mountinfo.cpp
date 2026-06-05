@@ -4,6 +4,68 @@
 #include <sstream>
 #include <vector>
 
+#if defined(__linux__)
+#include <mntent.h>
+#include <paths.h>
+#include <sys/stat.h>
+#include <sys/sysmacros.h>
+#endif
+
+namespace fs = std::filesystem;
+
+namespace {
+
+bool pathIsUnderMount(std::string_view path, std::string_view mount) {
+    if (path.empty() || mount.empty()) {
+        return false;
+    }
+    if (path == mount) {
+        return true;
+    }
+    if (mount == "/") {
+        return path.front() == '/';
+    }
+    return path.size() > mount.size() && path[mount.size()] == '/' &&
+           path.compare(0, mount.size(), mount) == 0;
+}
+
+#if defined(__linux__)
+bool statDeviceForPath(const std::string& path, dev_t& outDev) {
+    struct stat st {};
+    if (::stat(path.c_str(), &st) == 0) {
+        outDev = st.st_dev;
+        return true;
+    }
+    const fs::path parent = fs::path(path).parent_path();
+    if (parent.empty() || ::stat(parent.c_str(), &st) != 0) {
+        return false;
+    }
+    outDev = st.st_dev;
+    return true;
+}
+
+void fillMountInfoFromMntent(const mntent& ent, MountInfo& out) {
+    out.reset();
+    out.mountPoint = ent.mnt_dir;
+    out.fsType = ent.mnt_type;
+    out.device = ent.mnt_fsname;
+    out.vfsOpts = ent.mnt_opts != nullptr ? ent.mnt_opts : "";
+    try {
+        out.canonicalMountPoint = fs::canonical(ent.mnt_dir).string();
+    } catch (...) {
+        out.canonicalMountPoint = fs::absolute(ent.mnt_dir).string();
+    }
+
+    struct stat devStat {};
+    if (!out.device.empty() && out.device.front() == '/' && ::stat(out.device.c_str(), &devStat) == 0) {
+        out.major = major(devStat.st_rdev);
+        out.minor = minor(devStat.st_rdev);
+    }
+}
+#endif
+
+} // namespace
+
 bool parseMountInfoLine(const std::string& line, MountInfo& out) {
     std::istringstream iss(line);
     std::vector<std::string> tokens;
@@ -102,4 +164,57 @@ bool parseMountInfoLine(const std::string& line, MountInfo& out) {
     }
 
     return true;
+}
+
+bool findMountForPath(const std::string& canonicalPath, MountInfo& out) {
+#if defined(__linux__)
+    dev_t targetDev = 0;
+    if (!statDeviceForPath(canonicalPath, targetDev)) {
+        return false;
+    }
+
+    FILE* fp = setmntent(_PATH_MOUNTED, "r");
+    if (fp == nullptr) {
+        fp = setmntent("/proc/mounts", "r");
+    }
+    if (fp == nullptr) {
+        return false;
+    }
+
+    mntent entry {};
+    char buffer[4096];
+    bool found = false;
+    std::size_t bestLen = 0;
+
+    while (true) {
+        mntent* ent = getmntent_r(fp, &entry, buffer, sizeof(buffer));
+        if (ent == nullptr) {
+            break;
+        }
+
+        struct stat mntStat {};
+        if (::stat(ent->mnt_dir, &mntStat) != 0 || mntStat.st_dev != targetDev) {
+            continue;
+        }
+
+        MountInfo candidate;
+        fillMountInfoFromMntent(*ent, candidate);
+        if (!pathIsUnderMount(canonicalPath, candidate.canonicalMountPoint)) {
+            continue;
+        }
+
+        if (!found || candidate.canonicalMountPoint.size() >= bestLen) {
+            out = candidate;
+            bestLen = candidate.canonicalMountPoint.size();
+            found = true;
+        }
+    }
+
+    endmntent(fp);
+    return found;
+#else
+    (void)canonicalPath;
+    (void)out;
+    return false;
+#endif
 }

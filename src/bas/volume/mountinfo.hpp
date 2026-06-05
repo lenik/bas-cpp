@@ -38,4 +38,7 @@ struct MountInfo {
 
 bool parseMountInfoLine(const std::string& line, MountInfo& out);
 
+/** Mount for @p canonicalPath: match path st_dev against getmntent_r entries. */
+bool findMountForPath(const std::string& canonicalPath, MountInfo& out);
+
 #endif // MOUNTINFO_HPP

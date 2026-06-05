@@ -106,7 +106,7 @@ std::optional<VolumeFile> VolumeManager::resolveUri(std::string_view uri) const 
         return std::nullopt;
     }
 
-    Volume* volume = m_volumes[index].get();
+    const auto& volume = m_volumes[index];
     if (!volume) {
         return std::nullopt;
     }
@@ -118,7 +118,7 @@ std::optional<VolumeFile> VolumeManager::resolveUri(std::string_view uri) const 
         return std::nullopt;
     }
 
-    return VolumeFile(volume, normalizedPath);
+    return VolumeFile(VolumeFile::borrowVolume(volume.get()), normalizedPath);
 }
 
 bool VolumeManager::addFat32Volume(std::string_view imagePath) {

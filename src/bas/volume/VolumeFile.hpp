@@ -21,11 +21,20 @@ class Volume;
  * VolumeFile - A wrapper around Volume that provides convenient file operations.
  */
 struct VolumeFile {
-    Volume* m_volume;
+    std::shared_ptr<Volume> m_volume;
     std::string m_path;
 
   public:
-    VolumeFile(Volume* volume, std::string path);
+    struct BorrowedVolumeDeleter {
+        void operator()(Volume*) const noexcept {}
+    };
+
+    /** Non-owning alias for process-lifetime-stable Volume instances. */
+    static std::shared_ptr<Volume> borrowVolume(Volume* volume) {
+        return volume ? std::shared_ptr<Volume>(volume, BorrowedVolumeDeleter{}) : nullptr;
+    }
+
+    VolumeFile(std::shared_ptr<Volume> volume, std::string path);
     VolumeFile(const VolumeFile& other) = default;
     VolumeFile(VolumeFile&& other) noexcept = default;
     VolumeFile& operator=(const VolumeFile& other) = default;
@@ -37,8 +46,8 @@ struct VolumeFile {
     }
     bool operator!=(const VolumeFile& other) const { return !(*this == other); }
 
-    Volume* getVolume() const { return m_volume; }
-    void setVolume(Volume* volume);
+    const std::shared_ptr<Volume>& getVolume() const { return m_volume; }
+    void setVolume(std::shared_ptr<Volume> volume);
 
     std::string getPath() const { return m_path; }
     void setPath(std::string path);

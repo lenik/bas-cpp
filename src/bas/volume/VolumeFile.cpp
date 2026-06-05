@@ -18,9 +18,10 @@ extern "C" {
 
 namespace fs = std::filesystem;
 
-VolumeFile::VolumeFile(Volume* volume, std::string path) : m_volume(volume), m_path(path) {}
+VolumeFile::VolumeFile(std::shared_ptr<Volume> volume, std::string path)
+    : m_volume(std::move(volume)), m_path(std::move(path)) {}
 
-void VolumeFile::setVolume(Volume* volume) { m_volume = volume; }
+void VolumeFile::setVolume(std::shared_ptr<Volume> volume) { m_volume = std::move(volume); }
 
 void VolumeFile::setPath(std::string path) { m_path = path; }
 
