@@ -1,5 +1,4 @@
-#include "credential.hpp"
-#include "json.hpp"
+#include "CredentialManager.hpp"
 
 #include "../time/Instant.hpp"
 #include "../time/OffsetDateTime.hpp"
@@ -58,7 +57,7 @@ void CredentialMeta::jsonIn(const boost::json::object& in, const JsonFormOptions
     subjectHint = boost::json::value_to<std::string>(in.at("subjectHint"));
     serviceHint = boost::json::value_to<std::string>(in.at("serviceHint"));
     if (auto* realmVal = in.if_contains("realm")) {
-        realmJsonIn(realm, *realmVal);
+        realm.jsonIn(*realmVal, opts);
     }
     if (auto* expires = in.if_contains("expiresAt")) {
         std::string expiresStr = boost::json::value_to<std::string>(*expires);
@@ -85,7 +84,7 @@ void CredentialMeta::jsonOut(boost::json::object& out, const JsonFormOptions& op
     out["serviceHint"] = serviceHint;
     if (!realm.empty()) {
         boost::json::object realmObj;
-        realmJsonOut(realm, realmObj);
+        realm.jsonOut(realmObj, opts);
         out["realm"] = realmObj;
     }
     if (expiresAt.has_value()) {
@@ -156,7 +155,7 @@ bool credentialUsable(const Credential& cred, const CredentialRequest& request) 
         request.serviceHint != cred.meta.serviceHint) {
         return false;
     }
-    if (!realmMatches(cred.meta.realm, request.realmHint)) {
+    if (!cred.meta.realm.match(request.realmHint)) {
         return false;
     }
     const auto now = std::chrono::system_clock::now();
@@ -273,9 +272,6 @@ void DefaultCredentialManager::jsonOut(boost::json::object& out, const JsonFormO
     out["credentials"] = array;
 }
 
-DecoratedCredentialManager::DecoratedCredentialManager(VariantPtr<CredentialManager> wrapped)
-    : m_wrapped(std::move(wrapped)) {}
-
 std::optional<Credential> DecoratedCredentialManager::get(const CredentialRequest& request) {
     return m_wrapped->get(request);
 }
@@ -315,7 +311,7 @@ void DecoratedCredentialManager::jsonOut(boost::json::object& out, const JsonFor
 }
 
 FileCredentialManager::FileCredentialManager(std::filesystem::path path,
-                                             VariantPtr<CredentialManager> wrapped)
+                                             std::shared_ptr<CredentialManager> wrapped)
     : DecoratedCredentialManager(std::move(wrapped)), m_path(std::move(path)) {
     loadFromDisk();
 }

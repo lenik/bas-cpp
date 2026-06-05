@@ -2,13 +2,11 @@
 #define BAS_SECURITY_USER_STORE_HPP
 
 #include "../fmt/JsonForm.hpp"
-#include "../util/ptr.hpp"
 #include "../volume/LocalVolume.hpp"
 #include "../volume/VolumeFile.hpp"
-#include "command_support.hpp"
-#include "identity.hpp"
-#include "realm.hpp"
-#include "types.hpp"
+#include "CommandSupport.hpp"
+#include "Identity.hpp"
+#include "Types.hpp"
 
 #include <chrono>
 #include <filesystem>
@@ -17,6 +15,11 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+namespace bas::reg {
+class IRegistry;
+class IContainerManager;
+} // namespace bas::reg
 
 namespace bas::security {
 
@@ -35,7 +38,7 @@ struct UserProfile : IJsonForm {
 };
 
 /**
- * Server-side verification material (password-hash, public-key, fingerprint, …).
+ * Server-side verification material (password-hash, password-plain, public-key, …).
  * Not a login Credential — must not hold plaintext secrets.
  */
 struct UserAuthKey : IJsonForm {
@@ -59,10 +62,11 @@ struct UserAuthKey : IJsonForm {
     void jsonOut(boost::json::object& out, const JsonFormOptions& opts) override;
 };
 
-/** Aggregate: profile + role identities + auth keys (+ record-level metadata). */
+/** Aggregate: profile + role names + auth keys (+ record-level metadata). */
 struct UserRecord : IJsonForm {
     UserProfile profile;
-    std::vector<IdentityRef> roles;
+    /** Role names only; realm is applied at login time outside the store. */
+    std::vector<std::string> roles;
     std::vector<UserAuthKey> keys;
 
     JsonObject attributes;
@@ -93,18 +97,13 @@ class UserStore : public IJsonForm, public ICommandSupport {
     std::vector<std::string> complete(const std::vector<std::string>& args,
                                       std::size_t index) const override;
 
-    virtual std::vector<Realm> getRealms() const = 0;
-
     virtual bool hasUser(const std::string& userName) const = 0;
 
     virtual std::optional<UserProfile> getUserProfile(const std::string& userName) const = 0;
 
-    virtual std::optional<UserRecord> getUserRecord(
-        const std::string& userName,
-        const std::optional<Realm>& realm = std::nullopt) const = 0;
+    virtual std::optional<UserRecord> getUserRecord(const std::string& userName) const = 0;
 
-    virtual std::vector<std::string> listUsers(
-        const std::optional<Realm>& realmFilter = std::nullopt) const = 0;
+    virtual std::vector<std::string> listUsers() const = 0;
 
     virtual void addUser(const UserRecord& user) = 0;
 
@@ -112,18 +111,18 @@ class UserStore : public IJsonForm, public ICommandSupport {
 
     virtual void removeUser(const std::string& userName) = 0;
 
-    virtual void clear(const std::optional<Realm>& realmFilter = std::nullopt) = 0;
+    virtual void clear() = 0;
 
     virtual void enableUser(const std::string& userName) = 0;
     virtual void disableUser(const std::string& userName) = 0;
 
-    virtual std::vector<IdentityRef> getRoles(const std::string& userName) const = 0;
+    virtual std::vector<std::string> getRoles(const std::string& userName) const = 0;
 
-    virtual void setRoles(const std::string& userName, const std::vector<IdentityRef>& roles) = 0;
+    virtual void setRoles(const std::string& userName, const std::vector<std::string>& roles) = 0;
 
-    virtual void addRole(const std::string& userName, const IdentityRef& role) = 0;
+    virtual void addRole(const std::string& userName, const std::string& roleName) = 0;
 
-    virtual void removeRole(const std::string& userName, const IdentityRef& role) = 0;
+    virtual void removeRole(const std::string& userName, const std::string& roleName) = 0;
 
     virtual std::vector<UserAuthKey> getKeys(const std::string& userName) const = 0;
 
@@ -149,24 +148,20 @@ class UserStore : public IJsonForm, public ICommandSupport {
 
 class DefaultUserStore : public UserStore {
   public:
-    std::vector<Realm> getRealms() const override;
-
     bool hasUser(const std::string& userName) const override;
     std::optional<UserProfile> getUserProfile(const std::string& userName) const override;
-    std::optional<UserRecord> getUserRecord(const std::string& userName,
-                                            const std::optional<Realm>& realm =
-                                                std::nullopt) const override;
-    std::vector<std::string> listUsers(const std::optional<Realm>& realmFilter) const override;
+    std::optional<UserRecord> getUserRecord(const std::string& userName) const override;
+    std::vector<std::string> listUsers() const override;
     void addUser(const UserRecord& user) override;
     void updateUserProfile(const std::string& userName, const UserProfile& profile) override;
     void removeUser(const std::string& userName) override;
-    void clear(const std::optional<Realm>& realmFilter) override;
+    void clear() override;
     void enableUser(const std::string& userName) override;
     void disableUser(const std::string& userName) override;
-    std::vector<IdentityRef> getRoles(const std::string& userName) const override;
-    void setRoles(const std::string& userName, const std::vector<IdentityRef>& roles) override;
-    void addRole(const std::string& userName, const IdentityRef& role) override;
-    void removeRole(const std::string& userName, const IdentityRef& role) override;
+    std::vector<std::string> getRoles(const std::string& userName) const override;
+    void setRoles(const std::string& userName, const std::vector<std::string>& roles) override;
+    void addRole(const std::string& userName, const std::string& roleName) override;
+    void removeRole(const std::string& userName, const std::string& roleName) override;
     std::vector<UserAuthKey> getKeys(const std::string& userName) const override;
     std::vector<UserAuthKey> getKeysByType(const std::string& userName,
                                            const std::string& keyType) const override;
@@ -184,47 +179,33 @@ class DefaultUserStore : public UserStore {
     void jsonOut(boost::json::object& out, const JsonFormOptions& opts) override;
 
   private:
-    struct StoredUser {
-        std::optional<Realm> realm;
-        std::string name;
-        UserRecord record;
-    };
-
-    static Realm storedUserRealm(const std::optional<Realm>& realm);
-
-    std::string storageKey(const std::string& userName, const std::optional<Realm>& realm) const;
-    StoredUser& requireUser(const std::string& userName,
-                            const std::optional<Realm>& realm = std::nullopt);
-    const StoredUser& requireUser(const std::string& userName,
-                                   const std::optional<Realm>& realm = std::nullopt) const;
-    bool realmFilterMatch(const Realm& stored, const std::optional<Realm>& filter) const;
+    UserRecord& requireUser(const std::string& userName);
+    const UserRecord& requireUser(const std::string& userName) const;
 
     void jsonInUsersArray(const boost::json::array& users, const JsonFormOptions& opts);
 
-    std::unordered_map<std::string, StoredUser> m_users;
+    std::unordered_map<std::string, UserRecord> m_users;
 };
 
 class DecoratedUserStore : public UserStore {
   public:
-    explicit DecoratedUserStore(VariantPtr<UserStore> wrapped);
+    explicit DecoratedUserStore(std::shared_ptr<UserStore> wrapped)
+        : m_wrapped(std::move(wrapped)) {}
 
-    std::vector<Realm> getRealms() const override;
     bool hasUser(const std::string& userName) const override;
     std::optional<UserProfile> getUserProfile(const std::string& userName) const override;
-    std::optional<UserRecord> getUserRecord(const std::string& userName,
-                                            const std::optional<Realm>& realm =
-                                                std::nullopt) const override;
-    std::vector<std::string> listUsers(const std::optional<Realm>& realmFilter) const override;
+    std::optional<UserRecord> getUserRecord(const std::string& userName) const override;
+    std::vector<std::string> listUsers() const override;
     void addUser(const UserRecord& user) override;
     void updateUserProfile(const std::string& userName, const UserProfile& profile) override;
     void removeUser(const std::string& userName) override;
-    void clear(const std::optional<Realm>& realmFilter) override;
+    void clear() override;
     void enableUser(const std::string& userName) override;
     void disableUser(const std::string& userName) override;
-    std::vector<IdentityRef> getRoles(const std::string& userName) const override;
-    void setRoles(const std::string& userName, const std::vector<IdentityRef>& roles) override;
-    void addRole(const std::string& userName, const IdentityRef& role) override;
-    void removeRole(const std::string& userName, const IdentityRef& role) override;
+    std::vector<std::string> getRoles(const std::string& userName) const override;
+    void setRoles(const std::string& userName, const std::vector<std::string>& roles) override;
+    void addRole(const std::string& userName, const std::string& roleName) override;
+    void removeRole(const std::string& userName, const std::string& roleName) override;
     std::vector<UserAuthKey> getKeys(const std::string& userName) const override;
     std::vector<UserAuthKey> getKeysByType(const std::string& userName,
                                            const std::string& keyType) const override;
@@ -245,37 +226,34 @@ class DecoratedUserStore : public UserStore {
     std::vector<std::string> complete(const std::vector<std::string>& args,
                                       std::size_t index) const override;
 
-    const UserStore* wrapped() const { return m_wrapped.operator->(); }
-    UserStore* wrapped() { return m_wrapped.operator->(); }
+    const UserStore* wrapped() const { return m_wrapped.get(); }
+    UserStore* wrapped() { return m_wrapped.get(); }
 
   protected:
-    VariantPtr<UserStore> m_wrapped;
+    std::shared_ptr<UserStore> m_wrapped;
 };
 
 /** Persists users to a JSON file (demo only: password hashes in plain text). */
 class FileUserStore : public DecoratedUserStore {
   public:
-    std::vector<Realm> getRealms() const override;
-    explicit FileUserStore(VolumeFile file, VariantPtr<UserStore> wrapped);
+    explicit FileUserStore(VolumeFile file, std::shared_ptr<UserStore> wrapped);
 
     /** Convenience: owns a @ref LocalVolume rooted at @a path's parent directory. */
-    explicit FileUserStore(std::filesystem::path path, VariantPtr<UserStore> wrapped);
+    explicit FileUserStore(std::filesystem::path path, std::shared_ptr<UserStore> wrapped);
 
     bool hasUser(const std::string& userName) const override;
     std::optional<UserProfile> getUserProfile(const std::string& userName) const override;
-    std::optional<UserRecord> getUserRecord(const std::string& userName,
-                                            const std::optional<Realm>& realm =
-                                                std::nullopt) const override;
-    std::vector<std::string> listUsers(const std::optional<Realm>& realmFilter) const override;
+    std::optional<UserRecord> getUserRecord(const std::string& userName) const override;
+    std::vector<std::string> listUsers() const override;
     void addUser(const UserRecord& user) override;
     void updateUserProfile(const std::string& userName, const UserProfile& profile) override;
     void removeUser(const std::string& userName) override;
-    void clear(const std::optional<Realm>& realmFilter) override;
+    void clear() override;
     void enableUser(const std::string& userName) override;
     void disableUser(const std::string& userName) override;
-    void setRoles(const std::string& userName, const std::vector<IdentityRef>& roles) override;
-    void addRole(const std::string& userName, const IdentityRef& role) override;
-    void removeRole(const std::string& userName, const IdentityRef& role) override;
+    void setRoles(const std::string& userName, const std::vector<std::string>& roles) override;
+    void addRole(const std::string& userName, const std::string& roleName) override;
+    void removeRole(const std::string& userName, const std::string& roleName) override;
     void addKey(const std::string& userName, const UserAuthKey& key) override;
     void updateKey(const std::string& userName, const UserAuthKey& key) override;
     void removeKey(const std::string& userName, const std::string& keyId) override;
@@ -301,24 +279,69 @@ class FileUserStore : public DecoratedUserStore {
     void loadFromDisk();
     void writeStoreToDisk();
 
-    std::unique_ptr<LocalVolume> m_ownedVolume;
+    std::shared_ptr<LocalVolume> m_ownedVolume;
     VolumeFile m_file;
     std::size_t m_loadedCount = 0;
 };
 
-/** Verify password credential against enabled password-hash keys (demo: plain hash in data). */
-bool verifyUserPassword(const UserStore& store, const std::string& userName, const std::string& password,
-                        const std::optional<Realm>& realm = std::nullopt);
+/** Verify password credential against enabled password-hash / password-plain keys. */
+bool verifyUserPassword(const UserStore& store, const std::string& userName,
+                        const std::string& password);
 
-/** Fill @a store with built-in sample users (alice, bob, j, admin). */
-void populateDemoUsers(DefaultUserStore& store);
-
-/** DefaultUserStore preloaded with @ref populateDemoUsers. */
-class DemoUserStore : public DefaultUserStore {
+/**
+ * UserStore backed by bas::reg::IRegistry. Each user is a JSON UserRecord at
+ * `{rrlPrefix}/{userName}` (RRL path under the registry tree).
+ */
+class RegistryUserStore : public DecoratedUserStore {
   public:
-    DemoUserStore() { populateDemoUsers(*this); }
+    RegistryUserStore(std::shared_ptr<::bas::reg::IRegistry> registry, std::string rrlPrefix,
+                      std::shared_ptr<UserStore> wrapped);
+
+    bool hasUser(const std::string& userName) const override;
+    std::optional<UserProfile> getUserProfile(const std::string& userName) const override;
+    std::optional<UserRecord> getUserRecord(const std::string& userName) const override;
+    std::vector<std::string> listUsers() const override;
+    void addUser(const UserRecord& user) override;
+    void updateUserProfile(const std::string& userName, const UserProfile& profile) override;
+    void removeUser(const std::string& userName) override;
+    void clear() override;
+    void enableUser(const std::string& userName) override;
+    void disableUser(const std::string& userName) override;
+    void setRoles(const std::string& userName, const std::vector<std::string>& roles) override;
+    void addRole(const std::string& userName, const std::string& roleName) override;
+    void removeRole(const std::string& userName, const std::string& roleName) override;
+    void addKey(const std::string& userName, const UserAuthKey& key) override;
+    void updateKey(const std::string& userName, const UserAuthKey& key) override;
+    void removeKey(const std::string& userName, const std::string& keyId) override;
+    void enableKey(const std::string& userName, const std::string& keyId) override;
+    void disableKey(const std::string& userName, const std::string& keyId) override;
+
+    const ::bas::reg::IRegistry& registry() const { return *m_registry; }
+    ::bas::reg::IRegistry& registry() { return *m_registry; }
+    const std::string& rrlPrefix() const { return m_prefix; }
+    std::size_t loadedCount() const { return m_loadedCount; }
 
     std::string storeLabel() const override;
+    std::filesystem::path storePath() const override;
+    bool canReloadFromDisk() const override;
+    void reloadFromDisk() override;
+    void saveToDisk() override;
+
+    int invoke(std::vector<std::string>& args) override;
+    std::vector<std::string> complete(const std::vector<std::string>& args,
+                                      std::size_t index) const override;
+
+  private:
+    void loadFromRegistry();
+    void flush();
+    void writeUser(const std::string& userName);
+    void removeUserFromRegistry(const std::string& userName);
+    std::string userPath(const std::string& userName) const;
+
+    std::shared_ptr<::bas::reg::IRegistry> m_registry;
+    ::bas::reg::IContainerManager* m_containers = nullptr;
+    std::string m_prefix;
+    std::size_t m_loadedCount = 0;
 };
 
 } // namespace bas::security

@@ -1,6 +1,6 @@
-#include "credential.hpp"
+#include "CredentialManager.hpp"
 
-#include "command_support.hpp"
+#include "CommandSupport.hpp"
 
 #include <iostream>
 
@@ -49,6 +49,10 @@ static const std::vector<std::string> kCredCommands = {
 int CredentialManager::invoke(std::vector<std::string>& args) {
     if (args.empty()) {
         printCredentials(*this, false);
+        return commandSuccess();
+    }
+    if (argsAreOnlyHelpFlags(args)) {
+        printCredentialHelp(std::cout);
         return commandSuccess();
     }
 
@@ -106,6 +110,11 @@ int CredentialManager::invoke(std::vector<std::string>& args) {
         ref.id = args[1];
         remove(ref);
         std::cout << "removed credential [" << ref.store << "] " << ref.id << '\n';
+        return commandSuccess();
+    }
+
+    if (takeHelpRequest(args)) {
+        printCredentialHelp(std::cout);
         return commandSuccess();
     }
 

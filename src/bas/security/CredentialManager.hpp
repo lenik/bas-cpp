@@ -1,12 +1,12 @@
 #ifndef BAS_SECURITY_CREDENTIAL_HPP
 #define BAS_SECURITY_CREDENTIAL_HPP
 
-#include "command_support.hpp"
-#include "types.hpp"
-#include "realm.hpp"
+#include "CommandSupport.hpp"
+#include "Permission.hpp"
+#include "Types.hpp"
+#include "Realm.hpp"
 
 #include "../fmt/JsonForm.hpp"
-#include "../util/ptr.hpp"
 
 #include <chrono>
 #include <filesystem>
@@ -203,7 +203,8 @@ class DefaultCredentialManager : public CredentialManager {
 
 class DecoratedCredentialManager : public CredentialManager {
   public:
-    explicit DecoratedCredentialManager(VariantPtr<CredentialManager> wrapped);
+    explicit DecoratedCredentialManager(std::shared_ptr<CredentialManager> wrapped)
+        : m_wrapped(std::move(wrapped)) {}
 
     std::optional<Credential> get(const CredentialRequest& request) override;
     CredentialRef put(Credential credential) override;
@@ -218,15 +219,15 @@ class DecoratedCredentialManager : public CredentialManager {
     void jsonIn(const boost::json::object& in, const JsonFormOptions& opts) override;
     void jsonOut(boost::json::object& out, const JsonFormOptions& opts) override;
 
-    const CredentialManager* wrapped() const { return m_wrapped.operator->(); }
-    CredentialManager* wrapped() { return m_wrapped.operator->(); }
+    const CredentialManager* wrapped() const { return m_wrapped.get(); }
+    CredentialManager* wrapped() { return m_wrapped.get(); }
 
     int invoke(std::vector<std::string>& args) override;
     std::vector<std::string> complete(const std::vector<std::string>& args,
                                       std::size_t index) const override;
 
   protected:
-    VariantPtr<CredentialManager> m_wrapped;
+    std::shared_ptr<CredentialManager> m_wrapped;
 };
 
 /** Persists credentials to a JSON file (demo only: secrets stored in plain text). */
@@ -235,7 +236,7 @@ class FileCredentialManager : public DecoratedCredentialManager {
     static constexpr const char* kStore = "file";
 
     explicit FileCredentialManager(std::filesystem::path path,
-                                   VariantPtr<CredentialManager> wrapped);
+                                   std::shared_ptr<CredentialManager> wrapped);
 
     std::optional<Credential> get(const CredentialRequest& request) override;
     CredentialRef put(Credential credential) override;
