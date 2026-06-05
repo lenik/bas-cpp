@@ -1,14 +1,18 @@
-#include "bas/security/access_controller.hpp"
-#include "bas/security/login_ui.hpp"
-#include "bas/security/ac_rule.hpp"
-#include "bas/security/ac_list.hpp"
-#include "bas/security/credential.hpp"
-#include "bas/security/identity_registry.hpp"
-#include "bas/security/identity_service.hpp"
-#include "bas/security/login_policy.hpp"
-#include "bas/security/permission.hpp"
-#include "bas/security/realm.hpp"
-#include "bas/security/user_store.hpp"
+#include "bas/security/SecurityManager.hpp"
+#include "bas/security/LoginUi.hpp"
+#include "bas/security/AccessDecisionResolver.hpp"
+#include "bas/security/Binding.hpp"
+#include "bas/security/PolicyStore.hpp"
+#include "bas/security/CredentialManager.hpp"
+#include "bas/security/IdentityRegistry.hpp"
+#include "bas/security/IdentityService.hpp"
+#include "bas/security/LoginPolicy.hpp"
+#include "bas/security/Permission.hpp"
+#include "bas/security/Realm.hpp"
+#include "bas/security/PasswordDigest.hpp"
+#include "bas/security/UserStore.hpp"
+
+#include <bas/reg/JsonRegistry.hpp>
 
 #include <cassert>
 #include <iostream>
@@ -18,34 +22,38 @@ using namespace bas::security;
 
 static void test_permission_matcher() {
     DefaultPermissionMatcher matcher;
-    assert(matcher.matches("file.*", "file.read"));
-    assert(matcher.matches("file.*", "file.write"));
-    assert(!matcher.matches("file.*", "file.read.local"));
-    assert(matcher.matches("file.**", "file"));
-    assert(matcher.matches("file.**", "file.read"));
-    assert(matcher.matches("file.**", "file.read.local"));
-    assert(matcher.specificity("file.read") > matcher.specificity("file.*"));
-    assert(matcher.specificity("file.*") > matcher.specificity("file.**"));
+    assert(matcher.matches(Permission{"file.*"}, Permission{"file.read"}));
+    assert(matcher.matches(Permission{"file.*"}, Permission{"file.write"}));
+    assert(!matcher.matches(Permission{"file.*"}, Permission{"file.read.local"}));
+    assert(matcher.matches(Permission{"file.**"}, Permission{"file"}));
+    assert(matcher.matches(Permission{"file.**"}, Permission{"file.read"}));
+    assert(matcher.matches(Permission{"file.**"}, Permission{"file.read.local"}));
+    assert(matcher.specificity(Permission{"file.read"}) > matcher.specificity(Permission{"file.*"}));
+    assert(matcher.specificity(Permission{"file.*"}) > matcher.specificity(Permission{"file.**"}));
+    assert(!matcher.matches(Permission{"fab.order.modify"}, Permission{"fab.order.delete"}));
 }
 
 static void test_resolve_tied_permission_specificity() {
     DefaultACResolvePolicy resolver;
-    std::vector<ACMatch> matches;
+    std::vector<ACEMatch> matches;
 
     const Realm global = Realm::GLOBAL;
-    matches.push_back(
-        ACMatch{ACEntry{IdentityRef{"user", global, "a"}, ACRule{"file.read", ACMode::Allow}},
-                20, 5});
-    matches.push_back(
-        ACMatch{ACEntry{IdentityRef{"user", global, "b"}, ACRule{"file.*", ACMode::Deny}}, 20, 3});
-    assert(resolver.resolve(matches) == ACMode::Deny);
+    matches.push_back(ACEMatch{
+        ACEntry{Permission{"file.read"}, AccessEffect::Allow}, IdentityRef{"user", global, "a"}, 20,
+        5});
+    matches.push_back(ACEMatch{
+        ACEntry{Permission{"file.*"}, AccessEffect::Deny}, IdentityRef{"user", global, "b"}, 20,
+        3});
+    assert(resolver.resolve(matches) == AccessEffect::Deny);
 
     matches.clear();
-    matches.push_back(ACMatch{
-        ACEntry{IdentityRef{"user", global, "low"}, ACRule{"file.read", ACMode::Allow}}, 20, 2});
-    matches.push_back(ACMatch{
-        ACEntry{IdentityRef{"user", global, "high"}, ACRule{"file.read", ACMode::Allow}}, 20, 9});
-    assert(resolver.resolve(matches) == ACMode::Allow);
+    matches.push_back(ACEMatch{
+        ACEntry{Permission{"file.read"}, AccessEffect::Allow}, IdentityRef{"user", global, "low"},
+        20, 2});
+    matches.push_back(ACEMatch{
+        ACEntry{Permission{"file.read"}, AccessEffect::Allow}, IdentityRef{"user", global, "high"},
+        20, 9});
+    assert(resolver.resolve(matches) == AccessEffect::Allow);
 }
 
 static void test_credential_from_login_form() {
@@ -114,12 +122,12 @@ static void test_credential_layers() {
 }
 
 static void test_acl_and_manager() {
-    auto acl = std::make_shared<DefaultACList>();
+    auto acl = std::make_shared<DefaultPolicyStore>();
     const Realm global = Realm::GLOBAL;
-    acl->add(ACEntry{IdentityRef{"role", global, "operator"},
-                     ACRule{"fab.order.modify", ACMode::Allow}});
-    acl->add(
-        ACEntry{IdentityRef{"user", global, "bob"}, ACRule{"fab.order.delete", ACMode::Deny}});
+    acl->addGrant(makeAccessGrant(IdentityRef{"role", global, "operator"},
+                                  Permission{"fab.order.modify"}, AccessEffect::Allow));
+    acl->addGrant(makeAccessGrant(IdentityRef{"user", global, "bob"},
+                                  Permission{"fab.order.delete"}, AccessEffect::Deny));
 
     auto credentialManager = std::make_shared<DefaultCredentialManager>();
     auto registry = std::make_shared<IdentityRegistry>();
@@ -130,10 +138,10 @@ static void test_acl_and_manager() {
     auto matcher = std::make_shared<DefaultPermissionMatcher>();
     auto resolver = std::make_shared<DefaultACResolvePolicy>();
 
-    AccessController ac(acl, credentialManager, registry, loginPolicy, matcher, resolver);
+    SecurityManager ac(acl, credentialManager, registry, loginPolicy, matcher, resolver);
     ac.start();
 
-    assert(ac.checkPermission("fab.order.modify") == ACMode::Deny);
+    assert(ac.checkPermission(Permission{"fab.order.modify"}) == AccessEffect::Deny);
 
     Identity role;
     role.type = "role";
@@ -147,8 +155,8 @@ static void test_acl_and_manager() {
     set.identities.push_back(role);
     ac.activate(set);
 
-    assert(ac.checkPermission("fab.order.modify") == ACMode::Allow);
-    assert(ac.checkPermission("fab.order.delete") == ACMode::Deny);
+    assert(ac.checkPermission(Permission{"fab.order.modify"}) == AccessEffect::Allow);
+    assert(ac.checkPermission(Permission{"fab.order.delete"}) == AccessEffect::Deny);
 }
 
 static void test_login_policy_multi_realm() {
@@ -227,13 +235,13 @@ static void test_realm_type_matching() {
 
     Realm hintDevice;
     hintDevice.type = "device";
-    assert(realmMatches(stored, hintDevice));
+    assert(stored.match(hintDevice));
 
     Realm hintApp;
     hintApp.type = "app";
-    assert(!realmMatches(stored, hintApp));
+    assert(!stored.match(hintApp));
 
-    assert(realmDisplayLabel(stored) == "device:tablet-1");
+    assert(stored.displayLabel() == "device:tablet-1");
 }
 
 static void test_credential_realm_filter() {
@@ -278,7 +286,8 @@ static void test_user_store_profile_and_keys() {
 
     const auto keys = store.getKeysByType("alice", "password-hash");
     assert(keys.size() == 1);
-    assert(keys[0].data.at("hash").as_string() == "alice");
+    assert(keys[0].data.at("algorithm").as_string() == "sha256");
+    assert(keys[0].data.at("hash").as_string() == digestPassword("sha256", "alice"));
 
     assert(verifyUserPassword(store, "alice", "alice"));
     assert(!verifyUserPassword(store, "alice", "wrong"));
@@ -286,7 +295,7 @@ static void test_user_store_profile_and_keys() {
     const auto record = store.getUserRecord("j");
     assert(record.has_value());
     assert(record->roles.size() == 1);
-    assert(record->roles[0].name == "operator");
+    assert(record->roles[0] == "operator");
 }
 
 static void test_user_record_json_roundtrip() {
@@ -294,7 +303,7 @@ static void test_user_record_json_roundtrip() {
     record.profile.name = "tester";
     record.profile.displayName = "Tester";
     record.profile.email = "t@example.com";
-    record.roles = {roleRef(Realm::GLOBAL, "operator"), roleRef(Realm::GLOBAL, "auditor")};
+    record.roles = {"operator", "auditor"};
     UserAuthKey key;
     key.id = "pwd-1";
     key.type = "password-hash";
@@ -311,13 +320,57 @@ static void test_user_record_json_roundtrip() {
     parsed.jsonIn(o, JsonFormOptions::DEFAULT);
     assert(parsed.profile.name == "tester");
     assert(parsed.roles.size() == 2);
+    assert(parsed.roles[0] == "operator");
+    assert(parsed.roles[1] == "auditor");
     assert(parsed.keys[0].data.at("hash").as_string() == "abc");
+}
+
+static void test_password_digest_algorithms() {
+    assert(digestPassword("md5", "test") == "098f6bcd4621d373cade4e832627b4f6");
+    assert(digestPassword("sha1", "test") == "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3");
+    assert(digestPassword("sha256", "test") ==
+           "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08");
+
+    UserAuthKey plain = makePasswordPlainKey("pwd", "secret");
+    assert(plain.type == "password-plain");
+    assert(passwordMatchesAuthKey("secret", plain, std::chrono::system_clock::now()));
+    assert(!passwordMatchesAuthKey("wrong", plain, std::chrono::system_clock::now()));
 }
 
 static void test_secret_masked() {
     SecretValue secret("super-secret-value");
     assert(secret.masked().find("super-secret-value") == std::string::npos);
     assert(!secret.masked().empty());
+}
+
+static void test_registry_user_store() {
+    auto registry = std::make_shared<bas::reg::JsonRegistry>();
+    auto store = std::make_shared<RegistryUserStore>(
+        registry, "security/users", std::make_shared<DefaultUserStore>());
+
+    UserRecord alice;
+    alice.profile.name = "alice";
+    alice.profile.displayName = "Alice";
+    alice.roles = {"operator"};
+    alice.keys.push_back(makePasswordHashKey("pwd-main", "alice"));
+    store->addUser(alice);
+
+    assert(store->hasUser("alice"));
+    assert(store->loadedCount() == 1);
+    assert(verifyUserPassword(*store, "alice", "alice"));
+
+    auto reloaded = std::make_shared<RegistryUserStore>(
+        registry, "security/users", std::make_shared<DefaultUserStore>());
+    assert(reloaded->hasUser("alice"));
+    assert(reloaded->getRoles("alice").size() == 1);
+    assert(verifyUserPassword(*reloaded, "alice", "alice"));
+
+    reloaded->removeUser("alice");
+    assert(!reloaded->hasUser("alice"));
+
+    auto empty = std::make_shared<RegistryUserStore>(
+        registry, "security/users", std::make_shared<DefaultUserStore>());
+    assert(!empty->hasUser("alice"));
 }
 
 int main() {
@@ -330,9 +383,11 @@ int main() {
     test_credential_layers();
     test_credential_realm_filter();
     test_user_store_profile_and_keys();
+    test_password_digest_algorithms();
     test_user_record_json_roundtrip();
     test_acl_and_manager();
     test_secret_masked();
+    test_registry_user_store();
     std::cout << "bas.security tests passed\n";
     return 0;
 }

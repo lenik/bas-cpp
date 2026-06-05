@@ -1,20 +1,20 @@
-#include <bas/security/ac_list.hpp>
-#include <bas/security/access_controller.hpp>
-#include <bas/security/ac_rule.hpp>
-#include <bas/security/access_denied.hpp>
-#include <bas/security/command_support.hpp>
-#include <bas/security/credential.hpp>
-#include <bas/security/identity_registry.hpp>
-#include <bas/security/identity_service.hpp>
-#include <bas/security/login_ui.hpp>
-#include <bas/security/login_policy.hpp>
-#include <bas/security/permission.hpp>
-#include <bas/security/realm.hpp>
-#include <bas/security/user_store.hpp>
+#include <bas/security/AccessDecisionResolver.hpp>
+#include <bas/security/AccessDenied.hpp>
+#include <bas/security/CommandSupport.hpp>
+#include <bas/security/CredentialManager.hpp>
+#include <bas/security/IdentityRegistry.hpp>
+#include <bas/security/IdentityService.hpp>
+#include <bas/security/LoginPolicy.hpp>
+#include <bas/security/LoginUi.hpp>
+#include <bas/security/Permission.hpp>
+#include <bas/security/PolicyStore.hpp>
+#include <bas/security/Realm.hpp>
+#include <bas/security/SecurityManager.hpp>
+#include <bas/security/UserStore.hpp>
 
+#include <bas/cli/opt_parser.h>
+#include <bas/log/uselog.h>
 #include <bas/util/repl.hpp>
-
-#include <getopt.h>
 
 #include <algorithm>
 #include <cstdlib>
@@ -107,10 +107,10 @@ void printUsage(std::ostream& out) {
            "  login [@realm] [USER]             interactive login → active identities\n"
            "  whoami                            list active identities\n"
            "  creds [-v]                        list cached credentials (no secrets)\n"
-           "  man                               enter credential manager shell\n"
-           "  con                               enter access controller shell\n"
-           "  store                             enter user store shell\n"
-           "  acl                               enter ACL shell\n"
+           "  sm                                enter security manager shell\n"
+           "  us                                enter user store shell\n"
+           "  cm                                enter credential manager shell\n"
+           "  ps                                enter policy store shell\n"
            "  reg                               enter identity registry shell\n"
            "  id                                enter identity service shell (current realm)\n"
            "  realm show|NAME|@realm            show or switch current realm\n"
@@ -119,16 +119,17 @@ void printUsage(std::ostream& out) {
            "  logout-realm [NAME]               clear identities in a realm\n"
            "  reload-creds                      reload credentials and restore cached logins\n"
            "  help                              show this help\n\n"
-           "  Interactive shells: con, store, acl, man, reg, id (exit or Ctrl-D to leave)\n"
-           "  One-shot: store SUBCMD … | man SUBCMD … | creds [-v]\n\n"
+           "  Interactive shells: sm, store, acl, cm, reg, id (exit or Ctrl-D to leave)\n"
+           "  One-shot: store SUBCMD … | cm SUBCMD … | creds [-v]\n\n"
            "  @realm syntax:\n"
            "    @factory-a          realm name\n"
            "    @device:tablet-1    realm type + name (types: global, device, app)\n"
            "    @device             realm type only\n\n"
            "options:\n"
-           "  -f, --cred-file PATH              credential cache file\n"
-           "  -d, --store FILE                  user store JSON file (default: built-in demo)\n"
-           "  -a, --acl FILE                    ACL JSON file (default: built-in demo rules)\n"
+           "  (global options must appear before the subcommand, e.g. acdemo -d user.db store …)\n"
+           "  -f, --credential-db PATH          credential cache file\n"
+           "  -d, --user-db FILE                user store JSON file (default: built-in demo)\n"
+           "  -p, --policy-db FILE              policy store JSON file (default: built-in demo)\n"
            "  -u, --subject USER                default subject hint\n"
            "  -r, --realm NAME                  default realm name\n"
            "      --realm-type TYPE             default realm type (global|device|app)\n"
@@ -139,38 +140,36 @@ void printUsage(std::ostream& out) {
            "  fab.order.view / fab.order.modify / fab.order.delete / file.save\n";
 }
 
-std::size_t restoreCachedLogins(sec::AccessController& ac, const sec::Realm& realmFilter) {
-    sec::ACRequestOptions options;
+std::size_t restoreCachedLogins(sec::SecurityManager& ac, const sec::Realm& realmFilter) {
+    sec::AccessRequestOptions options;
     options.realmHint = realmFilter;
     return ac.activateCachedCredentials(options);
 }
 
-std::shared_ptr<sec::ACList> makeAcl(const std::optional<std::filesystem::path>& aclPath) {
+std::shared_ptr<sec::PolicyStore>
+makePolicyStore(const std::optional<std::filesystem::path>& aclPath) {
     if (!aclPath.has_value()) {
-        return std::make_shared<sec::DemoACList>();
+        return std::make_shared<sec::DemoPolicyStore>();
     }
-    auto acl = std::make_shared<sec::FileACList>(*aclPath,
-                                                 std::make_unique<sec::DefaultACList>());
-    if (acl->entries().empty()) {
-        sec::populateDemoAcl(*acl);
-        acl->flush();
+    auto store = std::make_shared<sec::FilePolicyStore>(
+        *aclPath, std::make_shared<sec::DefaultPolicyStore>());
+    if (store->grants().empty()) {
+        sec::populateDemoPolicy(*store);
+        store->persistToDisk();
     }
-    return acl;
+    return store;
 }
 
-std::shared_ptr<sec::IdentityRegistry> makeDemoRegistry(
-    const std::shared_ptr<sec::UserStore>& userStore, const sec::Realm& defaultRealm = {}) {
+std::shared_ptr<sec::IdentityRegistry>
+makeDemoRegistry(const std::shared_ptr<sec::UserStore>& userStore,
+                 const sec::Realm& defaultRealm = {}) {
     auto registry = std::make_shared<sec::IdentityRegistry>();
     auto anonymous = std::make_shared<sec::AnonymousIdentityService>();
     auto storeService = std::make_shared<sec::StoreIdentityService>(userStore);
     registry->add(anonymous);
-    registry->add(storeService);
-    registry->registerRealm(sec::Realm::GLOBAL, storeService);
-    for (const auto& realm : userStore->getRealms()) {
-        registry->registerRealm(realm, storeService);
-    }
-    if (!defaultRealm.empty()) {
-        registry->registerRealm(defaultRealm, storeService);
+    registry->add(storeService, sec::Realm::GLOBAL);
+    if (!defaultRealm.empty() && !defaultRealm.scopedEqual(sec::Realm::GLOBAL)) {
+        registry->add(storeService, defaultRealm);
     }
     return registry;
 }
@@ -178,15 +177,15 @@ std::shared_ptr<sec::IdentityRegistry> makeDemoRegistry(
 struct DemoContext {
     std::shared_ptr<sec::FileCredentialManager> credentials;
     std::shared_ptr<sec::UserStore> userStore;
-    std::shared_ptr<sec::ACList> acl;
+    std::shared_ptr<sec::PolicyStore> policyStore;
     std::shared_ptr<sec::IdentityRegistry> registry;
-    std::shared_ptr<sec::AccessController> ac;
+    std::shared_ptr<sec::SecurityManager> sm;
 };
 
 std::shared_ptr<sec::IdentityService> identityServiceForCurrentRealm(const DemoContext& ctx) {
-    sec::Realm realm = ctx.ac->commandDefaultRealm();
+    sec::Realm realm = ctx.sm->commandDefaultRealm();
     if (realm.empty()) {
-        const auto realms = ctx.ac->realms();
+        const auto realms = ctx.sm->realms();
         if (!realms.empty()) {
             realm = realms.front();
         }
@@ -210,7 +209,7 @@ void printRealmInfo(const sec::Realm& realm, bool current) {
         std::cout << "  (none)\n";
         return;
     }
-    std::cout << "  label: " << sec::realmDisplayLabel(realm) << '\n';
+    std::cout << "  label: " << realm.displayLabel() << '\n';
     if (!realm.type.empty()) {
         std::cout << "  type: " << realm.type << '\n';
     }
@@ -236,27 +235,27 @@ bool switchCurrentRealm(DemoContext& ctx, const std::string& token) {
             std::cerr << "invalid realm token: " << token << '\n';
             return false;
         }
-        realm = ctx.ac->resolveRealmHint(*parsed);
-    } else if (const auto found = ctx.ac->findRealmByName(token)) {
+        realm = ctx.sm->resolveRealmHint(*parsed);
+    } else if (const auto found = ctx.sm->findRealmByName(token)) {
         realm = *found;
     } else if (sec::isKnownRealmType(token)) {
         realm.type = token;
-        realm = ctx.ac->resolveRealmHint(realm);
+        realm = ctx.sm->resolveRealmHint(realm);
     } else {
         realm.name = token;
-        realm = ctx.ac->resolveRealmHint(realm);
+        realm = ctx.sm->resolveRealmHint(realm);
     }
-    ctx.ac->setCommandDefaultRealm(realm);
-    std::cout << "current realm: " << sec::realmDisplayLabel(realm) << '\n';
+    ctx.sm->setCommandDefaultRealm(realm);
+    std::cout << "current realm: " << realm.displayLabel() << '\n';
     return true;
 }
 
 sec::Realm effectiveCurrentRealm(const DemoContext& ctx) {
-    sec::Realm realm = ctx.ac->commandDefaultRealm();
+    sec::Realm realm = ctx.sm->commandDefaultRealm();
     if (!realm.empty()) {
-        return ctx.ac->resolveRealmHint(realm);
+        return ctx.sm->resolveRealmHint(realm);
     }
-    const auto& realms = ctx.ac->realms();
+    const auto& realms = ctx.sm->realms();
     if (!realms.empty()) {
         return realms.front();
     }
@@ -264,11 +263,11 @@ sec::Realm effectiveCurrentRealm(const DemoContext& ctx) {
 }
 
 bool isMarkedCurrentRealm(const DemoContext& ctx, const sec::Realm& realm) {
-    const sec::Realm configured = ctx.ac->commandDefaultRealm();
+    const sec::Realm configured = ctx.sm->commandDefaultRealm();
     if (!configured.empty()) {
-        return sec::realmSame(realm, configured);
+        return realm.same(configured);
     }
-    return sec::realmSame(realm, effectiveCurrentRealm(ctx));
+    return realm.same(effectiveCurrentRealm(ctx));
 }
 
 bool runRealmCommand(DemoContext& ctx, std::vector<std::string>& args) {
@@ -286,14 +285,14 @@ bool runRealmCommand(DemoContext& ctx, std::vector<std::string>& args) {
 }
 
 bool runRealmsCommand(const DemoContext& ctx) {
-    const auto& realms = ctx.ac->realms();
+    const auto& realms = ctx.sm->realms();
     if (realms.empty()) {
         std::cout << "no registered realms\n";
         return true;
     }
     std::cout << "registered realms:\n";
     for (const auto& realm : realms) {
-        std::cout << "  " << sec::realmDisplayLabel(realm);
+        std::cout << "  " << realm.displayLabel();
         if (isMarkedCurrentRealm(ctx, realm)) {
             std::cout << " (current)";
         }
@@ -305,13 +304,13 @@ bool runRealmsCommand(const DemoContext& ctx) {
 namespace {
 
 const std::vector<std::string> kTopLevelCommands = {
-    "help",   "?",        "store",  "acl",          "man",      "con",        "reg",        "id",
-    "creds",  "registry", "realm",  "realms",       "whoami",   "logout",     "logout-realm",
-    "check",  "request",  "login",  "reload-creds", "quit",     "exit",       "q",
+    "help",    "?",        "us",           "ps",     "cm",     "sm",     "reg",          "id",
+    "creds",   "registry", "realm",        "realms", "whoami", "logout", "logout-realm", "check",
+    "request", "login",    "reload-creds", "quit",   "exit",   "q",
 };
 
 const std::vector<std::string> kShellEntryCommands = {
-    "store", "acl", "man", "reg", "id", "con", "registry",
+    "us", "ps", "cm", "reg", "id", "sm", "registry",
 };
 
 const std::vector<std::string> kRealmSubCommands = {
@@ -319,8 +318,7 @@ const std::vector<std::string> kRealmSubCommands = {
 };
 
 std::vector<std::string> completeCommand(const DemoContext& ctx,
-                                         const std::vector<std::string>& args,
-                                         std::size_t index) {
+                                         const std::vector<std::string>& args, std::size_t index) {
     const std::string cword = sec::currentWord(args, index);
     if (index == 0) {
         return sec::filterByPrefix(kTopLevelCommands, cword);
@@ -329,30 +327,30 @@ std::vector<std::string> completeCommand(const DemoContext& ctx,
         return {};
     }
     const std::string& cmd = args[0];
-    if (cmd == "store") {
+    if (cmd == "us") {
         std::vector<std::string> sub(args.begin() + 1, args.end());
         const std::size_t subIndex = index > 0 ? index - 1 : 0;
         return ctx.userStore->complete(sub, subIndex);
     }
-    if (cmd == "acl") {
+    if (cmd == "ps") {
         std::vector<std::string> sub(args.begin() + 1, args.end());
         const std::size_t subIndex = index > 0 ? index - 1 : 0;
-        return ctx.acl->complete(sub, subIndex);
+        return ctx.policyStore->complete(sub, subIndex);
     }
-    if (cmd == "man") {
+    if (cmd == "cm") {
         std::vector<std::string> sub(args.begin() + 1, args.end());
         const std::size_t subIndex = index > 0 ? index - 1 : 0;
         return ctx.credentials->complete(sub, subIndex);
     }
-    if (cmd == "con") {
+    if (cmd == "sm") {
         std::vector<std::string> sub(args.begin() + 1, args.end());
         const std::size_t subIndex = index > 0 ? index - 1 : 0;
-        return ctx.ac->complete(sub, subIndex);
+        return ctx.sm->complete(sub, subIndex);
     }
     if (cmd == "realm") {
         if (index == 1) {
             std::vector<std::string> options = kRealmSubCommands;
-            for (const auto& realm : ctx.ac->realms()) {
+            for (const auto& realm : ctx.sm->realms()) {
                 if (!realm.name.empty()) {
                     options.push_back(realm.name);
                     options.push_back("@" + realm.name);
@@ -382,7 +380,7 @@ std::vector<std::string> completeCommand(const DemoContext& ctx,
         }
         return {};
     }
-    return ctx.ac->complete(args, index);
+    return ctx.sm->complete(args, index);
 }
 
 } // namespace
@@ -393,14 +391,13 @@ bool runSubShell(sec::ICommandSupport& target, const std::string& name, const st
                  std::vector<std::string>& history, bool& replExiting) {
     std::cout << "entered " << name << " (exit or Ctrl-D to leave)\n";
     const bas::util::repl::CompleteFn completer = [&target](const std::vector<std::string>& args,
-                                                          std::size_t index) {
+                                                            std::size_t index) {
         return target.complete(args, index);
     };
 
     while (true) {
         std::string line;
-        const auto status =
-            bas::util::repl::readLine(prompt, completer, history, line, true);
+        const auto status = bas::util::repl::readLine(prompt, completer, history, line, true);
         if (status == bas::util::repl::ReadLineStatus::Eof) {
             replExiting = true;
             return false;
@@ -424,28 +421,28 @@ bool runSubShell(sec::ICommandSupport& target, const std::string& name, const st
 
 bool enterSubShell(DemoContext& ctx, const std::string& cmd, std::vector<std::string>& history,
                    bool& replExiting) {
-    if (cmd == "store") {
-        return runSubShell(*ctx.userStore, "store", "store> ", history, replExiting);
+    if (cmd == "us" || cmd == "user-store") {
+        return runSubShell(*ctx.userStore, "us", "user store> ", history, replExiting);
     }
-    if (cmd == "acl") {
-        return runSubShell(*ctx.acl, "acl", "acl> ", history, replExiting);
+    if (cmd == "ps" || cmd == "policy-store") {
+        return runSubShell(*ctx.policyStore, "ps", "policy store> ", history, replExiting);
     }
-    if (cmd == "man") {
-        return runSubShell(*ctx.credentials, "man", "man> ", history, replExiting);
+    if (cmd == "cm" || cmd == "credential-manager") {
+        return runSubShell(*ctx.credentials, "cm", "credential manager> ", history, replExiting);
     }
-    if (cmd == "con") {
-        return runSubShell(*ctx.ac, "con", "con> ", history, replExiting);
+    if (cmd == "sm" || cmd == "security-manager") {
+        return runSubShell(*ctx.sm, "sm", "security manager> ", history, replExiting);
     }
-    if (cmd == "reg" || cmd == "registry") {
-        return runSubShell(*ctx.registry, "reg", "reg> ", history, replExiting);
+    if (cmd == "reg" || cmd == "identity-registry") {
+        return runSubShell(*ctx.registry, "reg", "identity registry> ", history, replExiting);
     }
-    if (cmd == "id") {
+    if (cmd == "id" || cmd == "identity-service") {
         const auto service = identityServiceForCurrentRealm(ctx);
         if (!service) {
             std::cerr << "no identity service for current realm\n";
             return true;
         }
-        return runSubShell(*service, "id", "id> ", history, replExiting);
+        return runSubShell(*service, "id", "identity service> ", history, replExiting);
     }
     return true;
 }
@@ -467,17 +464,17 @@ bool runCommand(DemoContext& ctx, std::vector<std::string> args) {
         printUsage(std::cout);
         return true;
     }
-    if (cmd == "store") {
+    if (cmd == "us" || cmd == "user-store") {
         return ctx.userStore->invoke(args) == sec::commandSuccess();
     }
-    if (cmd == "acl") {
-        return ctx.acl->invoke(args) == sec::commandSuccess();
+    if (cmd == "ps" || cmd == "policy-store") {
+        return ctx.policyStore->invoke(args) == sec::commandSuccess();
     }
-    if (cmd == "man") {
+    if (cmd == "cm" || cmd == "credential-manager") {
         return ctx.credentials->invoke(args) == sec::commandSuccess();
     }
-    if (cmd == "con") {
-        return ctx.ac->invoke(args) == sec::commandSuccess();
+    if (cmd == "sm" || cmd == "security-manager") {
+        return ctx.sm->invoke(args) == sec::commandSuccess();
     }
     if (cmd == "creds") {
         if (args.empty()) {
@@ -491,10 +488,10 @@ bool runCommand(DemoContext& ctx, std::vector<std::string> args) {
     if (cmd == "realms") {
         return runRealmsCommand(ctx);
     }
-    if (cmd == "reg" || cmd == "registry") {
+    if (cmd == "reg" || cmd == "identity-registry") {
         return ctx.registry->invoke(args) == sec::commandSuccess();
     }
-    if (cmd == "id") {
+    if (cmd == "id" || cmd == "identity-service") {
         const auto service = identityServiceForCurrentRealm(ctx);
         if (!service) {
             std::cerr << "no identity service for current realm\n";
@@ -506,7 +503,7 @@ bool runCommand(DemoContext& ctx, std::vector<std::string> args) {
     std::vector<std::string> acArgs;
     acArgs.push_back(cmd);
     acArgs.insert(acArgs.end(), args.begin(), args.end());
-    return ctx.ac->invoke(acArgs) == sec::commandSuccess();
+    return ctx.sm->invoke(acArgs) == sec::commandSuccess();
 }
 
 std::vector<std::string> tokenize(std::string_view line) {
@@ -525,15 +522,16 @@ int runRepl(DemoContext& ctx, const std::filesystem::path& historyPath) {
     std::cout << "  Ctrl-arrows: word   Ctrl-K/U/W Alt-BS: kill word   Ctrl-L: redraw\n";
     std::cout << "  Shells: con, store, acl, man, reg, id (exit or Ctrl-D to leave)\n";
     std::vector<std::string> whoami{"whoami"};
-    ctx.ac->invoke(whoami);
+    ctx.sm->invoke(whoami);
     std::vector<std::string> credList;
     ctx.credentials->invoke(credList);
     std::cout << "credential file: " << ctx.credentials->credentialPath() << '\n';
     std::cout << "user store: " << ctx.userStore->storeLabel() << "\n\n";
+    // std::cout << "policy store: " << ctx.policyStore->storeLabel() << "\n\n";
 
     std::vector<std::string> history = loadHistory(historyPath);
     const bas::util::repl::CompleteFn completer = [&ctx](const std::vector<std::string>& args,
-                                                       std::size_t index) {
+                                                         std::size_t index) {
         return completeCommand(ctx, args, index);
     };
 
@@ -565,48 +563,48 @@ int runRepl(DemoContext& ctx, const std::filesystem::path& historyPath) {
     return 0;
 }
 
-DemoContext makeContext(const std::filesystem::path& credPath,
-                        const std::optional<std::filesystem::path>& storePath,
-                        const std::optional<std::filesystem::path>& aclPath,
+DemoContext makeContext(const std::filesystem::path& credentialCachePath,
+                        const std::optional<std::filesystem::path>& userStorePath,
+                        const std::optional<std::filesystem::path>& policyStorePath,
                         std::string defaultSubject, sec::Realm defaultRealm) {
     DemoContext ctx;
     ctx.credentials = std::make_shared<sec::FileCredentialManager>(
-        credPath, std::make_unique<sec::DefaultCredentialManager>());
+        credentialCachePath, std::make_shared<sec::DefaultCredentialManager>());
 
-    if (storePath.has_value()) {
+    if (userStorePath.has_value()) {
         ctx.userStore = std::make_shared<sec::FileUserStore>(
-            *storePath, std::make_unique<sec::DefaultUserStore>());
+            *userStorePath, std::make_shared<sec::DefaultUserStore>());
     } else {
         ctx.userStore = std::make_shared<sec::DemoUserStore>();
     }
 
-    auto acl = makeAcl(aclPath);
+    auto policyStore = makePolicyStore(policyStorePath);
     auto registry = makeDemoRegistry(ctx.userStore, defaultRealm);
     auto loginPolicy = std::make_shared<sec::LoginPolicy>();
     auto matcher = std::make_shared<sec::DefaultPermissionMatcher>();
     auto resolver = std::make_shared<sec::DefaultACResolvePolicy>();
 
-    ctx.acl = acl;
+    ctx.policyStore = policyStore;
     ctx.registry = registry;
-    ctx.ac = std::make_shared<sec::AccessController>(acl, ctx.credentials, registry, loginPolicy,
-                                                     matcher, resolver);
-    auto consoleLogin = std::make_shared<sec::ConsoleLogin>(*ctx.ac);
-    ctx.ac->setLoginUi(consoleLogin);
-    ctx.ac->setCommandDefaults(std::move(defaultRealm), std::move(defaultSubject));
+    ctx.sm = std::make_shared<sec::SecurityManager>(policyStore, ctx.credentials, registry,
+                                                    loginPolicy, matcher, resolver);
+    auto consoleLogin = std::make_shared<sec::ConsoleLogin>(*ctx.sm);
+    ctx.sm->setLoginUi(consoleLogin);
+    ctx.sm->setCommandDefaults(std::move(defaultRealm), std::move(defaultSubject));
     return ctx;
 }
 
 int main(int argc, char** argv) {
-    std::filesystem::path credPath = defaultCredentialPath();
-    std::optional<std::filesystem::path> storePath;
-    std::optional<std::filesystem::path> aclPath;
+    std::filesystem::path credentialCachePath = defaultCredentialPath();
+    std::optional<std::filesystem::path> userStorePath;
+    std::optional<std::filesystem::path> policyStorePath;
     std::string defaultSubject;
     sec::Realm defaultRealm;
 
     static const option longOpts[] = {
-        {"cred-file", required_argument, nullptr, 'f'},
-        {"store", required_argument, nullptr, 'd'},
-        {"acl", required_argument, nullptr, 'a'},
+        {"credential-db", required_argument, nullptr, 'f'},
+        {"user-db", required_argument, nullptr, 'd'},
+        {"policy-db", required_argument, nullptr, 'p'},
         {"subject", required_argument, nullptr, 'u'},
         {"realm", required_argument, nullptr, 'r'},
         {"realm-type", required_argument, nullptr, 3},
@@ -616,29 +614,32 @@ int main(int argc, char** argv) {
         {nullptr, 0, nullptr, 0},
     };
 
+    opt_parser_t parser;
+    opt_parser_init(&parser);
+
     int opt = 0;
-    while ((opt = getopt_long(argc, argv, "f:u:r:hd:a:", longOpts, nullptr)) != -1) {
+    while ((opt = opt_parse_long(&parser, argc, argv, "f:u:r:hd:a:", longOpts, nullptr)) != -1) {
         switch (opt) {
         case 'f':
-            credPath = optarg;
+            credentialCachePath = parser.optarg;
             break;
         case 'd':
-            storePath = optarg;
+            userStorePath = parser.optarg;
             break;
-        case 'a':
-            aclPath = optarg;
+        case 'p':
+            policyStorePath = parser.optarg;
             break;
         case 'u':
-            defaultSubject = optarg;
+            defaultSubject = parser.optarg;
             break;
         case 'r':
-            defaultRealm.name = optarg;
+            defaultRealm.name = parser.optarg;
             break;
         case 3:
-            defaultRealm.type = optarg;
+            defaultRealm.type = parser.optarg;
             break;
         case 2:
-            defaultRealm.uuid = optarg;
+            defaultRealm.uuid = parser.optarg;
             break;
         case 1:
             std::cout << "acdemo " << kVersion << '\n';
@@ -653,45 +654,44 @@ int main(int argc, char** argv) {
     }
 
     std::vector<std::string> cmdArgs;
-    for (int i = optind; i < argc; ++i) {
+    for (int i = parser.optind; i < argc; ++i) {
         cmdArgs.emplace_back(argv[i]);
     }
 
     try {
-        DemoContext ctx = makeContext(credPath, storePath, aclPath, defaultSubject, defaultRealm);
+        DemoContext ctx =
+            makeContext(credentialCachePath, userStorePath, policyStorePath, defaultSubject, defaultRealm);
 
-        std::cout << "credential cache: " << ctx.credentials->credentialPath() << '\n';
-        std::cout << "user store: " << ctx.userStore->storeLabel();
+        logdebug_fmt("credential cache: %s", ctx.credentials->credentialPath().c_str());
+        logdebug_fmt("user store %s", ctx.userStore->storeLabel().c_str());
+
         const auto storeFile = ctx.userStore->storePath();
         if (!storeFile.empty()) {
-            std::cout << " (" << storeFile << ')';
+            logdebug_fmt("store file: %s", storeFile.c_str());
         }
-        std::cout << '\n';
         if (!defaultRealm.empty()) {
-            std::cout << "default";
-            sec::writeRealmSuffix(std::cout, defaultRealm);
-            std::cout << '\n';
+            logdebug_fmt("default realm: %s", defaultRealm.str().c_str());
         }
         if (ctx.credentials->credentialPersistedCount() > 0) {
-            std::cout << "loaded " << ctx.credentials->credentialPersistedCount()
-                      << " cached credential(s) from disk\n";
+            logdebug_fmt("loaded %d cached credential(s) from disk",
+                         ctx.credentials->credentialPersistedCount());
         }
 
-        ctx.ac->start();
-        restoreCachedLogins(*ctx.ac, {});
+        ctx.sm->start();
+        restoreCachedLogins(*ctx.sm, {});
 
         if (cmdArgs.empty()) {
             std::vector<std::string> whoami{"whoami"};
-            ctx.ac->invoke(whoami);
+            ctx.sm->invoke(whoami);
             std::cout << '\n';
             return runRepl(ctx, defaultHistoryPath());
         }
         return runCommand(ctx, cmdArgs) ? 0 : 1;
     } catch (const sec::AccessDenied& e) {
-        std::cerr << e.what() << '\n';
+        logerror_fmt("access denied: %s", e.what());
         return 1;
     } catch (const std::exception& e) {
-        std::cerr << "acdemo: " << e.what() << '\n';
+        logerror_fmt("error: %s", e.what());
         return 1;
     }
 }
