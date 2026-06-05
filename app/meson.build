@@ -6,7 +6,6 @@ app_cpp_list = [
     'reg.cpp',
     'acdemo.cpp',
     'vols.cpp',
-    'ptr_test.cpp',
 ]
 foreach app_cpp : app_cpp_list
     app_name = app_cpp.split('/')[-1].replace('.cpp', '')
