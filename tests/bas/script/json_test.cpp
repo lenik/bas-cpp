@@ -1,7 +1,7 @@
 // Unit tests for script/json.hpp (boost::json helpers).
 // Build: requires linking Boost.JSON (e.g. meson or add third_party/boost_json src to tests.mf).
 
-#include "json.hpp"
+#include "bas/script/json.hpp"
 
 #include <cassert>
 #include <iostream>
