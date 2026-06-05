@@ -1,9 +1,9 @@
 #ifndef BAS_SECURITY_LOGIN_UI_HPP
 #define BAS_SECURITY_LOGIN_UI_HPP
 
-#include "credential.hpp"
-#include "identity_service.hpp"
-#include "realm.hpp"
+#include "CredentialManager.hpp"
+#include "IdentityService.hpp"
+#include "Realm.hpp"
 
 #include <functional>
 #include <memory>
@@ -12,7 +12,7 @@
 
 namespace bas::security {
 
-class AccessController;
+class SecurityManager;
 
 /** Build a credential from form field values supplied by @a readField (return nullopt to cancel). */
 std::optional<Credential> credentialFromLoginForm(
@@ -23,7 +23,7 @@ class LoginUi {
   public:
     virtual ~LoginUi() = default;
 
-    virtual AccessController* controller() = 0;
+    virtual SecurityManager* controller() = 0;
 
     virtual std::optional<std::string> realmType() const { return std::nullopt; }
 
@@ -35,9 +35,9 @@ class LoginUi {
 
 class ConsoleLogin : public LoginUi {
   public:
-    explicit ConsoleLogin(AccessController& controller);
+    explicit ConsoleLogin(SecurityManager& controller);
 
-    AccessController* controller() override;
+    SecurityManager* controller() override;
 
     std::optional<std::string> realmType() const override;
 
@@ -47,7 +47,7 @@ class ConsoleLogin : public LoginUi {
                                                 const CredentialRequest& request) override;
 
   private:
-    AccessController& m_controller;
+    SecurityManager& m_controller;
 };
 
 } // namespace bas::security

@@ -1,5 +1,5 @@
-#include "login_policy.hpp"
-#include "realm.hpp"
+#include "LoginPolicy.hpp"
+#include "Realm.hpp"
 
 #include <algorithm>
 #include <limits>
@@ -52,15 +52,14 @@ IdentityConcurrencyRule LoginPolicy::ruleOf(const std::string& identityType) con
     return fallback;
 }
 
-bool LoginPolicy::canCoexist(const std::vector<Identity>& active,
-                             const Identity& incoming) const {
+bool LoginPolicy::canCoexist(const std::vector<Identity>& active, const Identity& incoming) const {
     const auto rule = ruleOf(incoming.type);
     if (rule.maxActive == kUnlimited) {
         return true;
     }
     std::size_t occupied = 0;
     for (const auto& id : active) {
-        if (id.type == incoming.type && realmScopedEqual(id.realm, incoming.realm) &&
+        if (id.type == incoming.type && id.realm.scopedEqual(incoming.realm) &&
             id.name != incoming.name) {
             ++occupied;
         }

@@ -1,6 +1,6 @@
-#include "login_ui.hpp"
+#include "LoginUi.hpp"
 
-#include "access_controller.hpp"
+#include "SecurityManager.hpp"
 
 #include <algorithm>
 #include <cctype>
@@ -181,9 +181,9 @@ std::optional<Credential> credentialFromLoginForm(
     return cred;
 }
 
-ConsoleLogin::ConsoleLogin(AccessController& controller) : m_controller(controller) {}
+ConsoleLogin::ConsoleLogin(SecurityManager& controller) : m_controller(controller) {}
 
-AccessController* ConsoleLogin::controller() { return &m_controller; }
+SecurityManager* ConsoleLogin::controller() { return &m_controller; }
 
 std::optional<std::string> ConsoleLogin::realmType() const {
     if (auto r = realm()) {

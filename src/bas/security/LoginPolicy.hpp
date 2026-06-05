@@ -1,8 +1,8 @@
 #ifndef BAS_SECURITY_LOGIN_POLICY_HPP
 #define BAS_SECURITY_LOGIN_POLICY_HPP
 
-#include "identity.hpp"
-#include "types.hpp"
+#include "Identity.hpp"
+#include "Types.hpp"
 
 #include <cstddef>
 #include <string>
