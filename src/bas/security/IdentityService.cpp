@@ -1,5 +1,5 @@
-#include "identity_service.hpp"
-#include "user_store.hpp"
+#include "IdentityService.hpp"
+#include "UserStore.hpp"
 
 #include <unordered_set>
 
@@ -168,18 +168,11 @@ LoginResult StoreIdentityService::login(const LoginRequest& request) {
     if (!credential.secret.has_value()) {
         return loginFailed("password required");
     }
-    std::optional<Realm> storeRealm;
-    if (!credential.meta.realm.empty()) {
-        storeRealm = credential.meta.realm;
-    } else if (!request.realmHint.empty()) {
-        storeRealm = request.realmHint;
-    }
-
-    if (!verifyUserPassword(*m_userStore, username, credential.secret->value(), storeRealm)) {
+    if (!verifyUserPassword(*m_userStore, username, credential.secret->value())) {
         return loginFailed("invalid username or password");
     }
 
-    const auto record = m_userStore->getUserRecord(username, storeRealm);
+    const auto record = m_userStore->getUserRecord(username);
     if (!record.has_value() || !record->profile.enabled) {
         return loginFailed("user disabled");
     }
@@ -190,9 +183,9 @@ LoginResult StoreIdentityService::login(const LoginRequest& request) {
     }
 
     std::string displayName = record->profile.displayName.empty() ? username : record->profile.displayName;
-    std::vector<IdentityRef> roleRefs = record->roles;
-    if (roleRefs.empty()) {
-        roleRefs.push_back(roleRef(realm, "operator"));
+    std::vector<std::string> roleNames = record->roles;
+    if (roleNames.empty()) {
+        roleNames.push_back("operator");
     }
 
     Identity user =
@@ -202,11 +195,9 @@ LoginResult StoreIdentityService::login(const LoginRequest& request) {
     set.primary = user;
     set.identities.push_back(user);
 
-    for (const auto& roleRefEntry : roleRefs) {
-        Realm roleRealm = roleRefEntry.realm.empty() ? realm : roleRefEntry.realm;
-        const std::string& roleName = roleRefEntry.name;
+    for (const auto& roleName : roleNames) {
         Identity role =
-            makeIdentity("role", roleName, roleRealm, roleName, IdentitySource::Derived, id());
+            makeIdentity("role", roleName, realm, roleName, IdentitySource::Derived, id());
         set.identities.push_back(role);
     }
 

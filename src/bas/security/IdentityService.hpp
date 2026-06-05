@@ -1,11 +1,11 @@
 #ifndef BAS_SECURITY_IDENTITY_SERVICE_HPP
 #define BAS_SECURITY_IDENTITY_SERVICE_HPP
 
-#include "command_support.hpp"
-#include "credential.hpp"
-#include "identity.hpp"
-#include "realm.hpp"
-#include "types.hpp"
+#include "CommandSupport.hpp"
+#include "CredentialManager.hpp"
+#include "Identity.hpp"
+#include "Realm.hpp"
+#include "Types.hpp"
 
 #include <memory>
 #include <string>

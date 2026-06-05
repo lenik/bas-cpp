@@ -1,7 +1,7 @@
-#include "identity_service.hpp"
+#include "IdentityService.hpp"
 
-#include "command_support.hpp"
-#include "user_store.hpp"
+#include "CommandSupport.hpp"
+#include "UserStore.hpp"
 
 #include <iostream>
 

@@ -1,6 +1,6 @@
-#include "identity_registry.hpp"
+#include "IdentityRegistry.hpp"
 
-#include "command_support.hpp"
+#include "CommandSupport.hpp"
 
 #include <iostream>
 
@@ -41,17 +41,12 @@ void printRegistryRealms(const IdentityRegistry& registry) {
         return;
     }
     for (const auto& realm : realms) {
-        const auto services = registry.findByRealm(realm);
-        std::cout << "  " << realmDisplayLabel(realm) << " ->";
-        if (services.empty()) {
+        const auto service = registry.load(realm);
+        std::cout << "  " << realm.displayLabel() << " ->";
+        if (!service) {
             std::cout << " (no service)\n";
         } else {
-            for (const auto& service : services) {
-                if (service) {
-                    std::cout << ' ' << service->id();
-                }
-            }
-            std::cout << '\n';
+            std::cout << ' ' << service->id() << '\n';
         }
     }
 }
@@ -69,15 +64,6 @@ std::vector<std::string> serviceIds(const IdentityRegistry& registry) {
 }
 
 } // namespace
-
-std::shared_ptr<IdentityService> IdentityRegistry::findById(const std::string& serviceId) const {
-    for (const auto& service : m_services) {
-        if (service && service->id() == serviceId) {
-            return service;
-        }
-    }
-    return nullptr;
-}
 
 int IdentityRegistry::invoke(std::vector<std::string>& args) {
     if (args.empty()) {

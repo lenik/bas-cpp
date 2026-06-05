@@ -1,8 +1,10 @@
 #ifndef BAS_SECURITY_IDENTITY_HPP
 #define BAS_SECURITY_IDENTITY_HPP
 
-#include "types.hpp"
-#include "realm.hpp"
+#include "Realm.hpp"
+#include "Types.hpp"
+
+#include "../fmt/JsonForm.hpp"
 
 #include <chrono>
 #include <optional>
@@ -20,10 +22,13 @@ struct IdentityRef {
         if (type != other.type || name != other.name) {
             return false;
         }
-        return realmSame(realm, other.realm);
+        return realm.same(other.realm);
     }
 
     bool operator!=(const IdentityRef& other) const { return !(*this == other); }
+
+    void jsonIn(const boost::json::object& o, const JsonFormOptions& opts = JsonFormOptions::DEFAULT);
+    void jsonOut(boost::json::object& o, const JsonFormOptions& opts = JsonFormOptions::DEFAULT) const;
 };
 
 struct Identity {
@@ -49,8 +54,11 @@ struct Identity {
     }
 
     bool isActive(std::chrono::system_clock::time_point now) const {
-        return state == IdentityState::Active && !isExpired(now);
+        return state.isActive() && !isExpired(now);
     }
+
+    void jsonIn(const boost::json::object& o, const JsonFormOptions& opts = JsonFormOptions::DEFAULT);
+    void jsonOut(boost::json::object& o, const JsonFormOptions& opts = JsonFormOptions::DEFAULT) const;
 };
 
 struct IdentitySet {
@@ -58,6 +66,9 @@ struct IdentitySet {
     std::vector<Identity> identities;
 
     bool empty() const { return !primary.has_value() && identities.empty(); }
+
+    void jsonIn(const boost::json::object& o, const JsonFormOptions& opts = JsonFormOptions::DEFAULT);
+    void jsonOut(boost::json::object& o, const JsonFormOptions& opts = JsonFormOptions::DEFAULT) const;
 };
 
 inline IdentityRef roleRef(const Realm& realm, const std::string& roleName) {
