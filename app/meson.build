@@ -1,6 +1,9 @@
 #cpp_pch = '../' + cpp_pch
 exe_inc = include_directories('../src', '..')
 
+ncurses_dep = dependency('ncurses', required: true)
+ncursesw_dep = dependency('ncursesw', required: true)
+
 app_cpp_list = [
     'asl.cpp',
     'reg.cpp',
@@ -31,6 +34,17 @@ foreach app_cpp : app_cpp_list
         install_dir: install_dir,
     )
 endforeach
+
+executable(
+    'devdemo',
+    'devdemo.cpp',
+    include_directories: exe_inc,
+    link_with: lib_bas_cpp,
+    dependencies: exe_deps + [ncursesw_dep],
+    cpp_args: cpp_nowarn + ['-DLOGGER_NAME=cpp', '-DASSETS_NAME=bas_cpp', '-DNCURSES_WIDECHAR=1'],
+    install: true,
+    install_dir: get_option('bindir'),
+)
 
 man_list = [
     'vols.1',
