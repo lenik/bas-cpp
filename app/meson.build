@@ -36,8 +36,9 @@ foreach app_cpp : app_cpp_list
 endforeach
 
 executable(
-    'devdemo',
-    'devdemo.cpp',
+    'tanks_game',
+    'tanks_game.cpp',
+    'tanks_rbac.cpp',
     include_directories: exe_inc,
     link_with: lib_bas_cpp,
     dependencies: exe_deps + [ncursesw_dep],

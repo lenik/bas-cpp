@@ -1,93 +1,47 @@
-#include <bas/security/Demo.hpp>
-#include <bas/security/AccessDecisionResolver.hpp>
+#include "tanks_game.hpp"
+
 #include <bas/security/AccessDenied.hpp>
-#include <bas/security/CredentialManager.hpp>
-#include <bas/security/IdentityRegistry.hpp>
-#include <bas/security/IdentityService.hpp>
-#include <bas/security/LoginUi.hpp>
-#include <bas/security/Permission.hpp>
-#include <bas/security/PolicyStore.hpp>
-#include <bas/security/Realm.hpp>
-#include <bas/security/SecurityManager.hpp>
-#include <bas/security/UserStore.hpp>
 
 #include <algorithm>
 #include <clocale>
-#include <cctype>
-#include <cwchar>
-#include <deque>
 #include <iostream>
-#include <optional>
-#include <sstream>
-#include <string>
-#include <unordered_map>
-#include <vector>
 
-#include <ncurses.h>
 #include <unistd.h>
 
-namespace sec = bas::security;
-
-struct DeviceSlot {
-    sec::Realm realm;
-    std::string name;
-    std::string label;
-};
-
-struct DemoContext {
-    std::shared_ptr<sec::DefaultCredentialManager> credentials;
-    std::shared_ptr<sec::RealmPolicyStore> policyStore;
-    std::shared_ptr<sec::IdentityRegistry> registry;
-    std::shared_ptr<sec::SecurityManager> sm;
-    std::vector<DeviceSlot> devices;
-};
-
-struct TankSim {
-    int x = 10;
-    int y = 4;
-    int facing = 0; // 0=N 1=E 2=S 3=W
-    bool running = false;
-    std::string lastOp;
-    std::string lastResult;
-    struct Bullet {
-        int x = 0;
-        int y = 0;
-        int facing = 0;
-    };
-    std::vector<Bullet> bullets;
-};
-
-struct OpResult {
-    bool allowed = false;
-    std::string op;
-    std::string message;
-};
-
-const std::unordered_map<std::string, std::string> kOpPermissions = {
-    {"start", "device.start"},     {"forward", "device.forward"}, {"backward", "device.backward"},
-    {"left", "device.left"},       {"right", "device.right"},     {"fire", "device.fire"},
-    {"stop", "device.stop"},
-};
-
-constexpr int kMinFieldW = 12;
-constexpr int kMinFieldH = 5;
-constexpr int kMaxFieldW = 48;
-constexpr int kMaxFieldH = 24;
-constexpr int kHudH = 7;
-constexpr int kMinLogLines = 2;
-constexpr int kMinAclW = 16;
-constexpr int kMaxAclW = 44;
-constexpr int kMinGameCols = 36;
-constexpr int kMinGameRows = 20;
-
-// Single-cell tank glyphs (Unicode, rendered via ncursesw).
-static const wchar_t kTankGlyph[4][2] = {
+const wchar_t kTankGlyph[4][2] = {
     {L'\u25b2', L'\0'}, // ▲ north
     {L'\u25b6', L'\0'}, // ▶ east
     {L'\u25bc', L'\0'}, // ▼ south
     {L'\u25c0', L'\0'}, // ◀ west
 };
-static const wchar_t kBulletGlyph[2] = {L'\u00b7', L'\0'}; // ·
+const wchar_t kBulletGlyph[2] = {L'\u00b7', L'\0'}; // ·
+
+CurseGuard::CurseGuard() {
+    setlocale(LC_ALL, "");
+    initscr();
+    cbreak();
+    noecho();
+    keypad(stdscr, TRUE);
+    curs_set(0);
+    intrflush(stdscr, FALSE);
+    if (has_colors()) {
+        start_color();
+        use_default_colors();
+        init_pair(1, COLOR_GREEN, COLOR_BLACK);
+        init_pair(2, COLOR_YELLOW, COLOR_BLACK);
+        init_pair(3, COLOR_RED, COLOR_BLACK);
+        init_pair(4, COLOR_CYAN, COLOR_BLACK);
+        init_pair(5, COLOR_WHITE, COLOR_BLUE);
+        init_pair(6, COLOR_WHITE, COLOR_RED);
+        init_pair(7, COLOR_WHITE, COLOR_BLACK);
+    }
+    clear();
+    refresh();
+}
+
+CurseGuard::~CurseGuard() { endwin(); }
+
+GameWindows::~GameWindows() { destroyGameWindows(*this); }
 
 void addWideGlyph(WINDOW* win, int y, int x, const wchar_t* glyph) {
     mvwaddnwstr(win, y, x, glyph, 1);
@@ -119,42 +73,6 @@ void repaintInputField(WINDOW* dlg, int y, int x, int fieldW, std::string_view v
     wrefresh(dlg);
 }
 
-struct CurseGuard {
-    CurseGuard() {
-        setlocale(LC_ALL, "");
-        initscr();
-        cbreak();
-        noecho();
-        keypad(stdscr, TRUE);
-        curs_set(0);
-        intrflush(stdscr, FALSE);
-        if (has_colors()) {
-            start_color();
-            use_default_colors();
-            init_pair(1, COLOR_GREEN, COLOR_BLACK);
-            init_pair(2, COLOR_YELLOW, COLOR_BLACK);
-            init_pair(3, COLOR_RED, COLOR_BLACK);
-            init_pair(4, COLOR_CYAN, COLOR_BLACK);
-            init_pair(5, COLOR_WHITE, COLOR_BLUE);
-            init_pair(6, COLOR_WHITE, COLOR_RED);
-            init_pair(7, COLOR_WHITE, COLOR_BLACK);
-        }
-        clear();
-        refresh();
-    }
-    ~CurseGuard() { endwin(); }
-};
-
-struct GameWindows {
-    WINDOW* left = nullptr;
-    WINDOW* right = nullptr;
-    WINDOW* acl = nullptr;
-    WINDOW* hud = nullptr;
-    WINDOW* log = nullptr;
-
-    ~GameWindows();
-};
-
 void destroyGameWindows(GameWindows& gw) {
     if (gw.left) {
         delwin(gw.left);
@@ -177,30 +95,6 @@ void destroyGameWindows(GameWindows& gw) {
         gw.log = nullptr;
     }
 }
-
-GameWindows::~GameWindows() {
-    destroyGameWindows(*this);
-}
-
-struct GameLayout {
-    int fieldW = 22;
-    int fieldH = 9;
-    int fieldWinW = 24;
-    int fieldWinH = 11;
-    int leftX = 1;
-    int rightX = 26;
-    int tankRowY = 1;
-    int mainW = 49;
-    int hudY = 12;
-    int hudH = kHudH;
-    int logY = 19;
-    int logH = 8;
-    int logLines = 6;
-    int aclX = 0;
-    int aclW = 0;
-    int aclH = 0;
-    bool showAcl = false;
-};
 
 std::optional<GameLayout> computeLayout(int rows, int cols) {
     constexpr int kMargin = 1;
@@ -315,7 +209,7 @@ void drawTitleBar() {
 
 bool showTerminalSizeError(int rows, int cols) {
     clear();
-    mvprintw(2, 2, "Terminal too small for devdemo.");
+    mvprintw(2, 2, "Terminal too small for tanks_game.");
     mvprintw(3, 2, "Need at least %dx%d, have %dx%d.", kMinGameCols, kMinGameRows, cols, rows);
     mvprintw(5, 2, "Resize the terminal and try again. Press any key to exit.");
     refresh();
@@ -358,43 +252,6 @@ bool relayoutGame(GameWindows& gw, GameLayout& layout, std::vector<TankSim>& sim
     return true;
 }
 
-std::string trim(std::string_view text) {
-    const auto start = text.find_first_not_of(" \t\r\n");
-    if (start == std::string_view::npos) {
-        return {};
-    }
-    const auto end = text.find_last_not_of(" \t\r\n");
-    return std::string(text.substr(start, end - start + 1));
-}
-
-std::vector<std::string> tokenize(std::string_view line) {
-    std::vector<std::string> tokens;
-    std::istringstream iss{std::string(line)};
-    std::string word;
-    while (iss >> word) {
-        tokens.push_back(word);
-    }
-    return tokens;
-}
-
-std::string primaryUser(const sec::SecurityManager& sm, const sec::Realm& realm) {
-    for (const auto& id : sm.currentIdentities()) {
-        if (id.type == "user" && id.realm.match(realm)) {
-            return id.name;
-        }
-    }
-    return "(none)";
-}
-
-std::string primaryRole(const sec::SecurityManager& sm, const sec::Realm& realm) {
-    for (const auto& id : sm.currentIdentities()) {
-        if (id.type == "role" && id.realm.match(realm)) {
-            return id.name;
-        }
-    }
-    return "-";
-}
-
 const char* facingLabel(int facing) {
     static const char* labels[] = {"N", "E", "S", "W"};
     if (facing >= 0 && facing < 4) {
@@ -413,152 +270,6 @@ std::string truncStr(std::string s, std::size_t maxLen) {
     s.resize(maxLen - 1);
     s.push_back('.');
     return s;
-}
-
-std::string formatIdentity(const sec::IdentityRef& id) {
-    return id.type + ":" + id.name;
-}
-
-const sec::DefaultPolicyStore* defaultPolicyFor(const DemoContext& ctx, const sec::Realm& realm) {
-    const auto store = ctx.policyStore->storeForRealm(realm);
-    if (!store) {
-        return nullptr;
-    }
-    const sec::PolicyStore* raw = store.get();
-    if (const auto* file = dynamic_cast<const sec::FilePolicyStore*>(raw)) {
-        raw = file->wrapped();
-    }
-    return dynamic_cast<const sec::DefaultPolicyStore*>(raw);
-}
-
-bool identityMatchesCurrent(const DemoContext& ctx, const sec::Realm& realm,
-                            const sec::IdentityRef& ref) {
-    for (const auto& id : ctx.sm->currentIdentities()) {
-        if (id.ref() == ref && id.realm.match(realm)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool isActiveBinding(const DemoContext& ctx, const sec::Realm& realm,
-                     const sec::PolicyBinding& binding) {
-    return identityMatchesCurrent(ctx, realm, binding.identity);
-}
-
-int effectColorPair(const sec::AccessEffect& effect) {
-    if (effect.isAllow()) {
-        return 1;
-    }
-    if (effect.isDeny()) {
-        return 3;
-    }
-    return 0;
-}
-
-bool isWildcardPermission(const sec::Permission& permission) {
-    return permission.toString().find('*') != std::string::npos;
-}
-
-bool isAclActiveForCurrent(const DemoContext& ctx, const sec::Realm& realm,
-                           const sec::DefaultPolicyStore* policy, const std::string& aclId) {
-    if (!policy) {
-        return false;
-    }
-    for (const auto& binding : policy->bindings()) {
-        if (binding.aclId == aclId && isActiveBinding(ctx, realm, binding)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-bool shouldHighlightGrant(const DemoContext& ctx, const sec::Realm& realm,
-                          const sec::AccessGrant& grant) {
-    if (!identityMatchesCurrent(ctx, realm, grant.identity)) {
-        return false;
-    }
-    return !isWildcardPermission(grant.permission);
-}
-
-DemoContext makeContext() {
-    DemoContext ctx;
-    ctx.credentials = std::make_shared<sec::DefaultCredentialManager>();
-    ctx.policyStore = std::make_shared<sec::RealmPolicyStore>();
-    ctx.registry = std::make_shared<sec::IdentityRegistry>();
-    ctx.registry->add(std::make_shared<sec::AnonymousIdentityService>());
-
-    auto addDevice = [&](const std::string& name, const std::string& label,
-                         std::shared_ptr<sec::DefaultUserStore> userStore,
-                         std::shared_ptr<sec::DefaultPolicyStore> policy) {
-        DeviceSlot slot;
-        slot.name = name;
-        slot.label = label;
-        slot.realm.type = "device";
-        slot.realm.name = name;
-
-        ctx.registry->add(std::make_shared<sec::StoreIdentityService>(userStore), slot.realm);
-        ctx.policyStore->addRealmStore(slot.realm, policy);
-        ctx.devices.push_back(std::move(slot));
-    };
-
-    addDevice("tank-a", "Tank A", std::make_shared<sec::TankAUserStore>(),
-              std::make_shared<sec::TankAPolicyStore>());
-    addDevice("tank-b", "Tank B", std::make_shared<sec::TankBUserStore>(),
-              std::make_shared<sec::TankBPolicyStore>());
-
-    auto matcher = std::make_shared<sec::DefaultPermissionMatcher>();
-    auto resolver = std::make_shared<sec::DefaultACResolvePolicy>();
-
-    ctx.sm = std::make_shared<sec::SecurityManager>(ctx.policyStore, ctx.credentials, ctx.registry,
-                                                    matcher, resolver);
-    ctx.sm->setLoginUi(std::make_shared<sec::ConsoleLogin>(*ctx.sm));
-    ctx.sm->start();
-    return ctx;
-}
-
-OpResult requestOp(DemoContext& ctx, const DeviceSlot& device, const std::string& op) {
-    OpResult result;
-    result.op = op;
-    const auto permIt = kOpPermissions.find(op);
-    if (permIt == kOpPermissions.end()) {
-        result.message = "unknown op: " + op;
-        return result;
-    }
-
-    sec::AccessRequestOptions opts;
-    opts.realmHint = device.realm;
-    opts.allowConsoleInteraction = false;
-    opts.allowGuiInteraction = false;
-    opts.allowAutoLogin = false;
-    opts.reason = "device " + op;
-
-    const sec::Permission permission{permIt->second};
-    if (ctx.sm->checkPermission(permission, opts) == sec::AccessEffect::Allow) {
-        result.allowed = true;
-        result.message = device.name + ": " + op + " OK";
-        return result;
-    }
-    result.message = "DENIED " + device.name + " " + op + " (" + permission.toString() + ")";
-    return result;
-}
-
-bool loginUser(DemoContext& ctx, const DeviceSlot& device, const std::string& user,
-               const std::string& password) {
-    sec::Credential cred;
-    cred.meta.type = "password";
-    cred.meta.subjectHint = user;
-    cred.meta.serviceHint = "bas.identity.user.store";
-    cred.meta.realm = device.realm;
-    cred.secret = sec::SecretValue(password);
-    ctx.credentials->put(std::move(cred));
-
-    sec::AccessRequestOptions opts;
-    opts.realmHint = device.realm;
-    opts.nameHint = user;
-    opts.allowConsoleInteraction = false;
-    opts.allowAutoLogin = false;
-    return ctx.sm->login(opts);
 }
 
 void applySim(TankSim& sim, const std::string& op, bool allowed, const GameLayout& layout) {
@@ -821,9 +532,7 @@ void drawPolicyPanel(WINDOW* win, const DemoContext& ctx, std::size_t active) {
                 break;
             }
             for (const auto& entry : acl.entries) {
-                const char mode = entry.effect.isAllow()   ? 'A'
-                                  : entry.effect.isDeny() ? 'D'
-                                                          : '?';
+                const char mode = entry.effect.isAllow() ? 'A' : entry.effect.isDeny() ? 'D' : '?';
                 std::snprintf(line, sizeof(line), "  %-14s %c",
                               truncStr(entry.permission.toString(), 14).c_str(), mode);
                 const int color = aclActive ? effectColorPair(entry.effect) : 0;
@@ -862,9 +571,7 @@ void drawPolicyPanel(WINDOW* win, const DemoContext& ctx, std::size_t active) {
     if (policy && !policy->grants().empty()) {
         for (const auto& grant : policy->grants()) {
             const bool highlight = shouldHighlightGrant(ctx, device.realm, grant);
-            const char mode = grant.effect.isAllow()   ? 'A'
-                              : grant.effect.isDeny() ? 'D'
-                                                      : '?';
+            const char mode = grant.effect.isAllow() ? 'A' : grant.effect.isDeny() ? 'D' : '?';
             char line[128];
             std::snprintf(line, sizeof(line), "%-*s %-*s %c", idW,
                           truncStr(formatIdentity(grant.identity), idW).c_str(), permW,
@@ -903,9 +610,8 @@ void drawLog(WINDOW* win, const std::deque<std::string>& log, int logLines) {
     wrefresh(win);
 }
 
-void redrawGame(GameWindows& gw, DemoContext& ctx, std::size_t active,
-                std::vector<TankSim>& sims, const std::deque<std::string>& log,
-                const GameLayout& layout) {
+void redrawGame(GameWindows& gw, DemoContext& ctx, std::size_t active, std::vector<TankSim>& sims,
+                const std::deque<std::string>& log, const GameLayout& layout) {
     for (auto& sim : sims) {
         advanceBullets(sim, layout);
     }
@@ -920,33 +626,8 @@ void redrawGame(GameWindows& gw, DemoContext& ctx, std::size_t active,
     doupdate();
 }
 
-struct DemoAccount {
-    const char* user;
-    const char* password;
-    const char* role;
-};
-
-const std::vector<DemoAccount>& demoAccountsFor(const DeviceSlot& device) {
-    static const std::vector<DemoAccount> kTankA = {
-        {"alice", "alice", "operator"},
-        {"bob", "bob", "gunner"},
-        {"admin", "admin", "commander"},
-    };
-    static const std::vector<DemoAccount> kTankB = {
-        {"charlie", "charlie", "cadet"},
-        {"dana", "dana", "instructor"},
-    };
-    if (device.name == "tank-b") {
-        return kTankB;
-    }
-    return kTankA;
-}
-
-enum class FieldReadResult { Ok, Cancelled, Empty };
-
-FieldReadResult readLoginField(WINDOW* dlg, int y, int x, int maxLen, std::string& out,
-                               bool secret,
-                               const std::vector<DemoAccount>* demoAccounts = nullptr) {
+FieldReadResult readLoginField(WINDOW* dlg, int y, int x, int maxLen, std::string& out, bool secret,
+                               const std::vector<DemoAccount>* demoAccounts) {
     out.clear();
     const int fieldW = maxLen;
     int demoPick = -1;
@@ -961,10 +642,10 @@ FieldReadResult readLoginField(WINDOW* dlg, int y, int x, int maxLen, std::strin
         if (ch == '\n' || ch == '\r' || ch == KEY_ENTER) {
             return out.empty() ? FieldReadResult::Empty : FieldReadResult::Ok;
         }
-        if (!secret && demoAccounts && !demoAccounts->empty() &&
-            (out.empty() || demoPick >= 0)) {
+        if (!secret && demoAccounts && !demoAccounts->empty() && (out.empty() || demoPick >= 0)) {
             if (ch == KEY_DOWN) {
-                demoPick = demoPick < 0 ? 0 : (demoPick + 1) % static_cast<int>(demoAccounts->size());
+                demoPick =
+                    demoPick < 0 ? 0 : (demoPick + 1) % static_cast<int>(demoAccounts->size());
                 out = (*demoAccounts)[static_cast<std::size_t>(demoPick)].user;
                 repaintInputField(dlg, y, x, fieldW, out, secret);
                 continue;
@@ -1063,17 +744,6 @@ bool cursesErrorDialog(const std::string& title, const std::string& message) {
     refresh();
     return ch != 27 && ch != 'q' && ch != 'Q';
 }
-
-struct LoginInput {
-    std::string user;
-    std::string pass;
-};
-
-struct LoginFormResult {
-    enum class Status { Submitted, Cancelled };
-    Status status = Status::Cancelled;
-    LoginInput input;
-};
 
 LoginFormResult cursesLoginForm(const DeviceSlot& device) {
     LoginFormResult result;
@@ -1177,8 +847,9 @@ LoginFormResult cursesElevateForm(const DeviceSlot& device, const std::string& m
     mvwprintw(dlg, 2, 2, "%.*s", dlgW - 4, message.c_str());
     mvwprintw(dlg, 4, 2, "user: ");
     mvwprintw(dlg, 5, 2, "pass: ");
-    mvwprintw(dlg, 7, 2, asLogin ? "Up/Down demo user  Enter=login  Esc=cancel"
-                                  : "Up/Down demo user  Enter=authorize  Esc=cancel");
+    mvwprintw(dlg, 7, 2,
+              asLogin ? "Up/Down demo user  Enter=login  Esc=cancel"
+                      : "Up/Down demo user  Enter=authorize  Esc=cancel");
     mvwprintw(dlg, 8, 2, "demo accounts (user/pass):");
     int row = 9;
     for (const auto& acct : accounts) {
@@ -1234,8 +905,7 @@ bool cursesLogin(DemoContext& ctx, const DeviceSlot& device, std::deque<std::str
             return true;
         }
         pushLog(log, "DENIED " + device.name + " login failed for " + form.input.user, logLines);
-        const std::string msg =
-            "Invalid username or password for " + device.name + ".";
+        const std::string msg = "Invalid username or password for " + device.name + ".";
         if (!cursesErrorDialog("Login Failed", msg)) {
             return false;
         }
@@ -1285,8 +955,8 @@ bool tryElevatedOp(DemoContext& ctx, const DeviceSlot& device, const std::string
 
         const sec::Subject subject = sec::Subject::fromIdentitySet(*identities);
         if (ctx.sm->checkSubjectPermission(permission, subject, opts) != sec::AccessEffect::Allow) {
-            const std::string msg = form.input.user + " lacks " + permission.toString() + " on " +
-                                    device.name + ".";
+            const std::string msg =
+                form.input.user + " lacks " + permission.toString() + " on " + device.name + ".";
             if (!cursesErrorDialog("Access Denied", msg)) {
                 return false;
             }
@@ -1409,76 +1079,6 @@ void runGame(DemoContext& ctx) {
             performOp(ctx, active, sims, log, "right", layout);
             break;
         default:
-            break;
-        }
-    }
-}
-
-// ── batch mode (non-curses smoke / CI) ───────────────────────────────────────
-
-std::optional<std::size_t> findDevice(const DemoContext& ctx, const std::string& name) {
-    for (std::size_t i = 0; i < ctx.devices.size(); ++i) {
-        if (ctx.devices[i].name == name || ctx.devices[i].realm.name == name) {
-            return i;
-        }
-    }
-    return std::nullopt;
-}
-
-bool batchLogin(DemoContext& ctx, const DeviceSlot& device, const std::string& user,
-                const std::string& password) {
-    if (loginUser(ctx, device, user, password)) {
-        std::cout << "已登录 " << device.name << " as " << user << '\n';
-        return true;
-    }
-    std::cout << "登录失败\n";
-    return false;
-}
-
-bool batchHandle(DemoContext& ctx, const std::vector<std::string>& args, std::size_t& active) {
-    if (args.empty()) {
-        return true;
-    }
-    const std::string& cmd = args[0];
-    if (cmd == "quit" || cmd == "exit" || cmd == "q") {
-        return false;
-    }
-    if (cmd == "login" && args.size() >= 4) {
-        if (const auto idx = findDevice(ctx, args[1])) {
-            return batchLogin(ctx, ctx.devices[*idx], args[2], args[3]) || true;
-        }
-    }
-    if (const auto devIdx = findDevice(ctx, cmd)) {
-        if (args.size() >= 2) {
-            OpResult res = requestOp(ctx, ctx.devices[*devIdx], args[1]);
-            std::cout << (res.allowed ? "✓ " : "✗ ") << res.message << '\n';
-            return true;
-        }
-    }
-    if (kOpPermissions.count(cmd) != 0) {
-        OpResult res = requestOp(ctx, ctx.devices[active], cmd);
-        std::cout << (res.allowed ? "✓ " : "✗ ") << res.message << '\n';
-        return true;
-    }
-    if (cmd == "whoami") {
-        for (const auto& d : ctx.devices) {
-            std::cout << d.name << " user=" << primaryUser(*ctx.sm, d.realm)
-                      << " role=" << primaryRole(*ctx.sm, d.realm) << '\n';
-        }
-        return true;
-    }
-    return true;
-}
-
-void runBatch(DemoContext& ctx) {
-    std::size_t active = 0;
-    std::string line;
-    while (std::getline(std::cin, line)) {
-        line = trim(line);
-        if (line.empty()) {
-            continue;
-        }
-        if (!batchHandle(ctx, tokenize(line), active)) {
             break;
         }
     }
