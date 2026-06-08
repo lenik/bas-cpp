@@ -24,6 +24,36 @@ class DemoPolicyStore : public DefaultPolicyStore {
     DemoPolicyStore() { populateDemoPolicy(*this); }
 };
 
+/** Built-in users for devdemo tank-a (alice/operator, bob/gunner, admin/commander). */
+void populateTankAUsers(DefaultUserStore& store);
+
+class TankAUserStore : public DefaultUserStore {
+  public:
+    TankAUserStore() { populateTankAUsers(*this); }
+};
+
+void populateTankAPolicy(PolicyStore& store);
+
+class TankAPolicyStore : public DefaultPolicyStore {
+  public:
+    TankAPolicyStore() { populateTankAPolicy(*this); }
+};
+
+/** Built-in users for devdemo tank-b (charlie/cadet, dana/instructor). */
+void populateTankBUsers(DefaultUserStore& store);
+
+class TankBUserStore : public DefaultUserStore {
+  public:
+    TankBUserStore() { populateTankBUsers(*this); }
+};
+
+void populateTankBPolicy(PolicyStore& store);
+
+class TankBPolicyStore : public DefaultPolicyStore {
+  public:
+    TankBPolicyStore() { populateTankBPolicy(*this); }
+};
+
 } // namespace bas::security
 
 #endif // BAS_SECURITY_DEMO_HPP

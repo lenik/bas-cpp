@@ -1,4 +1,5 @@
 #include "Demo.hpp"
+#include "Binding.hpp"
 #include "PasswordDigest.hpp"
 #include "PolicyStore.hpp"
 #include "UserStore.hpp"
@@ -63,6 +64,103 @@ void populateDemoPolicy(PolicyStore& store) {
                                    AccessEffect::Allow));
     store.addGrant(makeAccessGrant(IdentityRef{"role", global, "operator"}, Permission{"file.*"},
                                    AccessEffect::Allow));
+}
+
+namespace {
+
+void addRoleAcl(DefaultPolicyStore& store, const std::string& aclId, const std::string& roleName,
+                const std::vector<std::pair<std::string, AccessEffect>>& entries) {
+    ACList acl;
+    acl.id = aclId;
+    for (const auto& [perm, effect] : entries) {
+        acl.entries.push_back(ACEntry{Permission{perm}, effect});
+    }
+    store.addAcl(std::move(acl));
+    PolicyBinding binding;
+    binding.aclId = aclId;
+    binding.identity = IdentityRef{"role", Realm{}, roleName};
+    store.addBinding(std::move(binding));
+}
+
+} // namespace
+
+void populateTankAUsers(DefaultUserStore& store) {
+    {
+        UserRecord alice;
+        alice.profile.name = "alice";
+        alice.profile.displayName = "Alice Operator";
+        alice.roles = {"operator"};
+        alice.keys.push_back(makePasswordHashKey("pwd-main", "alice"));
+        store.addUser(alice);
+    }
+    {
+        UserRecord bob;
+        bob.profile.name = "bob";
+        bob.profile.displayName = "Bob Gunner";
+        bob.roles = {"gunner"};
+        bob.keys.push_back(makePasswordHashKey("pwd-main", "bob"));
+        store.addUser(bob);
+    }
+    {
+        UserRecord admin;
+        admin.profile.name = "admin";
+        admin.profile.displayName = "Commander";
+        admin.roles = {"commander"};
+        admin.keys.push_back(makePasswordHashKey("pwd-main", "admin"));
+        store.addUser(admin);
+    }
+}
+
+void populateTankAPolicy(PolicyStore& store) {
+    store.clear();
+    auto& policy = static_cast<DefaultPolicyStore&>(store);
+    addRoleAcl(policy, "operator-drive", "operator",
+               {{"device.start", AccessEffect::Allow},
+                {"device.forward", AccessEffect::Allow},
+                {"device.backward", AccessEffect::Allow},
+                {"device.left", AccessEffect::Allow},
+                {"device.right", AccessEffect::Allow},
+                {"device.stop", AccessEffect::Allow}});
+    store.addGrant(makeAccessGrant(IdentityRef{"role", Realm{}, "gunner"}, Permission{"device.fire"},
+                                   AccessEffect::Allow));
+    store.addGrant(makeAccessGrant(IdentityRef{"role", Realm{}, "gunner"}, Permission{"device.stop"},
+                                   AccessEffect::Allow));
+    store.addGrant(makeAccessGrant(IdentityRef{"role", Realm{}, "commander"},
+                                   Permission{"device.**"}, AccessEffect::Allow));
+}
+
+void populateTankBUsers(DefaultUserStore& store) {
+    {
+        UserRecord charlie;
+        charlie.profile.name = "charlie";
+        charlie.profile.displayName = "Charlie Cadet";
+        charlie.roles = {"cadet"};
+        charlie.keys.push_back(makePasswordHashKey("pwd-main", "charlie"));
+        store.addUser(charlie);
+    }
+    {
+        UserRecord dana;
+        dana.profile.name = "dana";
+        dana.profile.displayName = "Dana Instructor";
+        dana.roles = {"instructor"};
+        dana.keys.push_back(makePasswordHashKey("pwd-main", "dana"));
+        store.addUser(dana);
+    }
+}
+
+void populateTankBPolicy(PolicyStore& store) {
+    store.clear();
+    auto& policy = static_cast<DefaultPolicyStore&>(store);
+    addRoleAcl(policy, "cadet-training", "cadet",
+               {{"device.start", AccessEffect::Allow},
+                {"device.forward", AccessEffect::Allow},
+                {"device.backward", AccessEffect::Allow},
+                {"device.left", AccessEffect::Allow},
+                {"device.right", AccessEffect::Allow},
+                {"device.stop", AccessEffect::Allow},
+                {"device.fire", AccessEffect::Deny}});
+    store.addGrant(makeAccessGrant(IdentityRef{"role", Realm{}, "instructor"},
+                                   Permission{"device.**"}, AccessEffect::Allow));
 }
 
 } // namespace bas::security
