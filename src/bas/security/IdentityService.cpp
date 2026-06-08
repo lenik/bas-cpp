@@ -189,7 +189,7 @@ LoginResult StoreIdentityService::login(const LoginRequest& request) {
     }
 
     Identity user =
-        makeIdentity("user", username, realm, displayName, IdentitySource::Direct, id());
+        makeIdentity("user", username, realm, displayName, IdentitySource::Login, id());
 
     IdentitySet set;
     set.primary = user;
@@ -197,7 +197,7 @@ LoginResult StoreIdentityService::login(const LoginRequest& request) {
 
     for (const auto& roleName : roleNames) {
         Identity role =
-            makeIdentity("role", roleName, realm, roleName, IdentitySource::Derived, id());
+            makeIdentity("role", roleName, realm, roleName, IdentitySource::Login, id());
         set.identities.push_back(role);
     }
 

@@ -61,6 +61,11 @@ struct Identity {
     void jsonOut(boost::json::object& o, const JsonFormOptions& opts = JsonFormOptions::DEFAULT) const;
 };
 
+/** True when the identity was established by an interactive or credential login. */
+inline bool isLoginSessionIdentity(const Identity& identity) {
+    return identity.source == IdentitySource::Login;
+}
+
 struct IdentitySet {
     std::optional<Identity> primary;
     std::vector<Identity> identities;

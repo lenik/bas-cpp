@@ -1,15 +1,15 @@
-#include "bas/security/SecurityManager.hpp"
-#include "bas/security/LoginUi.hpp"
 #include "bas/security/AccessDecisionResolver.hpp"
 #include "bas/security/Binding.hpp"
-#include "bas/security/PolicyStore.hpp"
 #include "bas/security/CredentialManager.hpp"
+#include "bas/security/Demo.hpp"
 #include "bas/security/IdentityRegistry.hpp"
 #include "bas/security/IdentityService.hpp"
-#include "bas/security/LoginPolicy.hpp"
-#include "bas/security/Permission.hpp"
-#include "bas/security/Realm.hpp"
+#include "bas/security/LoginUi.hpp"
 #include "bas/security/PasswordDigest.hpp"
+#include "bas/security/Permission.hpp"
+#include "bas/security/PolicyStore.hpp"
+#include "bas/security/Realm.hpp"
+#include "bas/security/SecurityManager.hpp"
 #include "bas/security/UserStore.hpp"
 
 #include <bas/reg/JsonRegistry.hpp>
@@ -20,6 +20,15 @@
 
 using namespace bas::security;
 
+static std::string sessionUser(const SecurityManager& ac, const Realm& realm) {
+    for (const auto& id : ac.currentIdentities()) {
+        if (id.type == "user" && id.realm.scopedEqual(realm) && isLoginSessionIdentity(id)) {
+            return id.name;
+        }
+    }
+    return {};
+}
+
 static void test_permission_matcher() {
     DefaultPermissionMatcher matcher;
     assert(matcher.matches(Permission{"file.*"}, Permission{"file.read"}));
@@ -28,7 +37,8 @@ static void test_permission_matcher() {
     assert(matcher.matches(Permission{"file.**"}, Permission{"file"}));
     assert(matcher.matches(Permission{"file.**"}, Permission{"file.read"}));
     assert(matcher.matches(Permission{"file.**"}, Permission{"file.read.local"}));
-    assert(matcher.specificity(Permission{"file.read"}) > matcher.specificity(Permission{"file.*"}));
+    assert(matcher.specificity(Permission{"file.read"}) >
+           matcher.specificity(Permission{"file.*"}));
     assert(matcher.specificity(Permission{"file.*"}) > matcher.specificity(Permission{"file.**"}));
     assert(!matcher.matches(Permission{"fab.order.modify"}, Permission{"fab.order.delete"}));
 }
@@ -38,21 +48,17 @@ static void test_resolve_tied_permission_specificity() {
     std::vector<ACEMatch> matches;
 
     const Realm global = Realm::GLOBAL;
-    matches.push_back(ACEMatch{
-        ACEntry{Permission{"file.read"}, AccessEffect::Allow}, IdentityRef{"user", global, "a"}, 20,
-        5});
-    matches.push_back(ACEMatch{
-        ACEntry{Permission{"file.*"}, AccessEffect::Deny}, IdentityRef{"user", global, "b"}, 20,
-        3});
+    matches.push_back(ACEMatch{ACEntry{Permission{"file.read"}, AccessEffect::Allow},
+                               IdentityRef{"user", global, "a"}, 20, 5});
+    matches.push_back(ACEMatch{ACEntry{Permission{"file.*"}, AccessEffect::Deny},
+                               IdentityRef{"user", global, "b"}, 20, 3});
     assert(resolver.resolve(matches) == AccessEffect::Deny);
 
     matches.clear();
-    matches.push_back(ACEMatch{
-        ACEntry{Permission{"file.read"}, AccessEffect::Allow}, IdentityRef{"user", global, "low"},
-        20, 2});
-    matches.push_back(ACEMatch{
-        ACEntry{Permission{"file.read"}, AccessEffect::Allow}, IdentityRef{"user", global, "high"},
-        20, 9});
+    matches.push_back(ACEMatch{ACEntry{Permission{"file.read"}, AccessEffect::Allow},
+                               IdentityRef{"user", global, "low"}, 20, 2});
+    matches.push_back(ACEMatch{ACEntry{Permission{"file.read"}, AccessEffect::Allow},
+                               IdentityRef{"user", global, "high"}, 20, 9});
     assert(resolver.resolve(matches) == AccessEffect::Allow);
 }
 
@@ -121,6 +127,109 @@ static void test_credential_layers() {
     assert(listed[0].meta.type == "password");
 }
 
+static void test_one_shot_authenticate() {
+    auto acl = std::make_shared<DefaultPolicyStore>();
+    const Realm deviceRealm{"device", "", "tank-a", "", ""};
+    acl->addGrant(makeAccessGrant(IdentityRef{"role", deviceRealm, "operator"},
+                                  Permission{"device.forward"}, AccessEffect::Allow));
+    acl->addGrant(makeAccessGrant(IdentityRef{"role", deviceRealm, "gunner"},
+                                  Permission{"device.fire"}, AccessEffect::Allow));
+
+    auto userStore = std::make_shared<DefaultUserStore>();
+    {
+        UserRecord alice;
+        alice.profile.name = "alice";
+        alice.roles = {"operator"};
+        alice.keys.push_back(makePasswordHashKey("pwd-main", "alice"));
+        userStore->addUser(alice);
+    }
+    {
+        UserRecord bob;
+        bob.profile.name = "bob";
+        bob.roles = {"gunner"};
+        bob.keys.push_back(makePasswordHashKey("pwd-main", "bob"));
+        userStore->addUser(bob);
+    }
+
+    auto credentialManager = std::make_shared<DefaultCredentialManager>();
+    auto registry = std::make_shared<IdentityRegistry>();
+    registry->add(std::make_shared<AnonymousIdentityService>());
+    registry->add(std::make_shared<StoreIdentityService>(userStore), deviceRealm);
+
+    auto matcher = std::make_shared<DefaultPermissionMatcher>();
+    auto resolver = std::make_shared<DefaultACResolvePolicy>();
+
+    SecurityManager ac(acl, credentialManager, registry, matcher, resolver);
+
+    AccessRequestOptions opts;
+    opts.realmHint = deviceRealm;
+    opts.allowAutoLogin = false;
+    opts.allowConsoleInteraction = false;
+    opts.allowGuiInteraction = false;
+
+    Credential aliceCred;
+    aliceCred.meta.type = "password";
+    aliceCred.meta.subjectHint = "alice";
+    aliceCred.meta.realm = deviceRealm;
+    aliceCred.secret = SecretValue("alice");
+    credentialManager->put(std::move(aliceCred));
+    opts.nameHint = "alice";
+    assert(ac.login(opts));
+    assert(ac.checkPermission(Permission{"device.forward"}, opts) == AccessEffect::Allow);
+    assert(ac.checkPermission(Permission{"device.fire"}, opts) == AccessEffect::Deny);
+
+    Credential bobCred;
+    bobCred.meta.type = "password";
+    bobCred.meta.subjectHint = "bob";
+    bobCred.meta.realm = deviceRealm;
+    bobCred.secret = SecretValue("bob");
+
+    const auto bobIdentities = ac.authenticate(std::move(bobCred), opts);
+    assert(bobIdentities.has_value());
+    const Subject bobSubject = Subject::fromIdentitySet(*bobIdentities);
+    assert(ac.checkSubjectPermission(Permission{"device.fire"}, bobSubject, opts) ==
+           AccessEffect::Allow);
+    assert(ac.checkSubjectPermission(Permission{"device.forward"}, bobSubject, opts) ==
+           AccessEffect::Deny);
+
+    assert(ac.checkPermission(Permission{"device.fire"}, opts) == AccessEffect::Deny);
+    assert(!ac.currentIdentities().empty());
+    assert(sessionUser(ac, deviceRealm) == "alice");
+
+    ac.logoutAll();
+    assert(ac.checkPermission(Permission{"device.forward"}, opts) == AccessEffect::Deny);
+
+    Credential bobCred2;
+    bobCred2.meta.type = "password";
+    bobCred2.meta.subjectHint = "bob";
+    bobCred2.meta.realm = deviceRealm;
+    bobCred2.secret = SecretValue("bob");
+    const auto bobIdentities2 = ac.authenticate(std::move(bobCred2), opts);
+    assert(bobIdentities2.has_value());
+    const Subject bobSubject2 = Subject::fromIdentitySet(*bobIdentities2);
+    assert(ac.checkSubjectPermission(Permission{"device.fire"}, bobSubject2, opts) ==
+           AccessEffect::Allow);
+    ac.activate(*bobIdentities2);
+    assert(ac.checkPermission(Permission{"device.fire"}, opts) == AccessEffect::Allow);
+    assert(sessionUser(ac, deviceRealm) == "bob");
+
+    bool hasOperator = false;
+    bool hasGunner = false;
+    for (const auto& id : ac.currentIdentities()) {
+        if (id.type != "role" || !id.realm.scopedEqual(deviceRealm)) {
+            continue;
+        }
+        if (id.name == "operator") {
+            hasOperator = true;
+        }
+        if (id.name == "gunner") {
+            hasGunner = true;
+        }
+    }
+    assert(!hasOperator);
+    assert(hasGunner);
+}
+
 static void test_acl_and_manager() {
     auto acl = std::make_shared<DefaultPolicyStore>();
     const Realm global = Realm::GLOBAL;
@@ -134,11 +243,10 @@ static void test_acl_and_manager() {
     registry->add(std::make_shared<AnonymousIdentityService>());
     registry->add(std::make_shared<StoreIdentityService>(std::make_shared<DemoUserStore>()));
 
-    auto loginPolicy = std::make_shared<LoginPolicy>();
     auto matcher = std::make_shared<DefaultPermissionMatcher>();
     auto resolver = std::make_shared<DefaultACResolvePolicy>();
 
-    SecurityManager ac(acl, credentialManager, registry, loginPolicy, matcher, resolver);
+    SecurityManager ac(acl, credentialManager, registry, matcher, resolver);
     ac.start();
 
     assert(ac.checkPermission(Permission{"fab.order.modify"}) == AccessEffect::Deny);
@@ -159,33 +267,100 @@ static void test_acl_and_manager() {
     assert(ac.checkPermission(Permission{"fab.order.delete"}) == AccessEffect::Deny);
 }
 
-static void test_login_policy_multi_realm() {
-    LoginPolicy policy;
-    Identity aliceA;
-    aliceA.type = "user";
-    aliceA.name = "alice";
-    aliceA.realm.name = "device-a";
+static void test_login_session_realm_switch() {
+    auto acl = std::make_shared<DefaultPolicyStore>();
+    const Realm deviceA{"device", "", "device-a", "", ""};
+    const Realm deviceB{"device", "", "device-b", "", ""};
 
-    Identity bobB;
-    bobB.type = "user";
-    bobB.name = "bob";
-    bobB.realm.name = "device-b";
+    auto userStoreA = std::make_shared<DefaultUserStore>();
+    {
+        UserRecord alice;
+        alice.profile.name = "alice";
+        alice.roles = {"operator"};
+        alice.keys.push_back(makePasswordHashKey("pwd-main", "alice"));
+        userStoreA->addUser(alice);
+    }
+    {
+        UserRecord carol;
+        carol.profile.name = "carol";
+        carol.roles = {"operator"};
+        carol.keys.push_back(makePasswordHashKey("pwd-main", "carol"));
+        userStoreA->addUser(carol);
+    }
 
-    std::vector<Identity> active{aliceA};
-    assert(policy.canCoexist(active, bobB));
-    assert(policy.resolveConflict(active, bobB) == LoginConflictAction::KeepExisting);
+    auto userStoreB = std::make_shared<DefaultUserStore>();
+    {
+        UserRecord bob;
+        bob.profile.name = "bob";
+        bob.roles = {"operator"};
+        bob.keys.push_back(makePasswordHashKey("pwd-main", "bob"));
+        userStoreB->addUser(bob);
+    }
 
-    Identity aliceB;
-    aliceB.type = "user";
-    aliceB.name = "alice";
-    aliceB.realm.name = "device-b";
-    assert(policy.canCoexist(active, aliceB));
+    auto credentialManager = std::make_shared<DefaultCredentialManager>();
+    auto registry = std::make_shared<IdentityRegistry>();
+    registry->add(std::make_shared<StoreIdentityService>(userStoreA), deviceA);
+    registry->add(std::make_shared<StoreIdentityService>(userStoreB), deviceB);
 
-    Identity carolA;
-    carolA.type = "user";
-    carolA.name = "carol";
-    carolA.realm.name = "device-a";
-    assert(!policy.canCoexist(active, carolA));
+    auto matcher = std::make_shared<DefaultPermissionMatcher>();
+    auto resolver = std::make_shared<DefaultACResolvePolicy>();
+    SecurityManager ac(acl, credentialManager, registry, matcher, resolver);
+
+    AccessRequestOptions optsA;
+    optsA.realmHint = deviceA;
+    optsA.allowAutoLogin = false;
+    optsA.allowConsoleInteraction = false;
+    optsA.allowGuiInteraction = false;
+
+    AccessRequestOptions optsB = optsA;
+    optsB.realmHint = deviceB;
+
+    Credential aliceCred;
+    aliceCred.meta.type = "password";
+    aliceCred.meta.subjectHint = "alice";
+    aliceCred.meta.realm = deviceA;
+    aliceCred.secret = SecretValue("alice");
+    credentialManager->put(std::move(aliceCred));
+    optsA.nameHint = "alice";
+    assert(ac.login(optsA));
+    assert(ac.currentIdentities().size() == 2);
+
+    Credential bobCred;
+    bobCred.meta.type = "password";
+    bobCred.meta.subjectHint = "bob";
+    bobCred.meta.realm = deviceB;
+    bobCred.secret = SecretValue("bob");
+    credentialManager->put(std::move(bobCred));
+    optsB.nameHint = "bob";
+    assert(ac.login(optsB));
+    assert(ac.currentIdentities().size() == 4);
+
+    Credential carolCred;
+    carolCred.meta.type = "password";
+    carolCred.meta.subjectHint = "carol";
+    carolCred.meta.realm = deviceA;
+    carolCred.secret = SecretValue("carol");
+    credentialManager->put(std::move(carolCred));
+    optsA.nameHint = "carol";
+    assert(ac.login(optsA));
+
+    std::size_t deviceAUsers = 0;
+    std::size_t deviceBUsers = 0;
+    for (const auto& id : ac.currentIdentities()) {
+        if (id.type != "user") {
+            continue;
+        }
+        if (id.realm.scopedEqual(deviceA)) {
+            ++deviceAUsers;
+            assert(id.name == "carol");
+        }
+        if (id.realm.scopedEqual(deviceB)) {
+            ++deviceBUsers;
+            assert(id.name == "bob");
+        }
+    }
+    assert(deviceAUsers == 1);
+    assert(deviceBUsers == 1);
 }
 
 static void test_credential_realm_form_defaults() {
@@ -345,8 +520,8 @@ static void test_secret_masked() {
 
 static void test_registry_user_store() {
     auto registry = std::make_shared<bas::reg::JsonRegistry>();
-    auto store = std::make_shared<RegistryUserStore>(
-        registry, "security/users", std::make_shared<DefaultUserStore>());
+    auto store = std::make_shared<RegistryUserStore>(registry, "security/users",
+                                                     std::make_shared<DefaultUserStore>());
 
     UserRecord alice;
     alice.profile.name = "alice";
@@ -359,8 +534,8 @@ static void test_registry_user_store() {
     assert(store->loadedCount() == 1);
     assert(verifyUserPassword(*store, "alice", "alice"));
 
-    auto reloaded = std::make_shared<RegistryUserStore>(
-        registry, "security/users", std::make_shared<DefaultUserStore>());
+    auto reloaded = std::make_shared<RegistryUserStore>(registry, "security/users",
+                                                        std::make_shared<DefaultUserStore>());
     assert(reloaded->hasUser("alice"));
     assert(reloaded->getRoles("alice").size() == 1);
     assert(verifyUserPassword(*reloaded, "alice", "alice"));
@@ -368,8 +543,8 @@ static void test_registry_user_store() {
     reloaded->removeUser("alice");
     assert(!reloaded->hasUser("alice"));
 
-    auto empty = std::make_shared<RegistryUserStore>(
-        registry, "security/users", std::make_shared<DefaultUserStore>());
+    auto empty = std::make_shared<RegistryUserStore>(registry, "security/users",
+                                                     std::make_shared<DefaultUserStore>());
     assert(!empty->hasUser("alice"));
 }
 
@@ -378,7 +553,7 @@ int main() {
     test_resolve_tied_permission_specificity();
     test_credential_from_login_form();
     test_credential_realm_form_defaults();
-    test_login_policy_multi_realm();
+    test_login_session_realm_switch();
     test_realm_type_matching();
     test_credential_layers();
     test_credential_realm_filter();
@@ -386,6 +561,7 @@ int main() {
     test_password_digest_algorithms();
     test_user_record_json_roundtrip();
     test_acl_and_manager();
+    test_one_shot_authenticate();
     test_secret_masked();
     test_registry_user_store();
     std::cout << "bas.security tests passed\n";

@@ -169,7 +169,6 @@ cpp_sources = files(
     './src/bas/security/IdentityRegistry.cpp',
     './src/bas/security/IdentityServiceCommand.cpp',
     './src/bas/security/IdentityService.cpp',
-    './src/bas/security/LoginPolicy.cpp',
     './src/bas/security/LoginUi.cpp',
     './src/bas/security/PasswordDigest.cpp',
     './src/bas/security/Permission.cpp',

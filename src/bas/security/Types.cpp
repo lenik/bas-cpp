@@ -11,6 +11,7 @@ const IdentityState IdentityState::LoggedOut{IdentityState::Value::LOGGED_OUT};
 const IdentitySource IdentitySource::Unknown{IdentitySource::Value::UNKNOWN};
 const IdentitySource IdentitySource::Direct{IdentitySource::Value::DIRECT};
 const IdentitySource IdentitySource::Derived{IdentitySource::Value::DERIVED};
+const IdentitySource IdentitySource::Login{IdentitySource::Value::LOGIN};
 const IdentitySource IdentitySource::Auto{IdentitySource::Value::AUTO};
 const IdentitySource IdentitySource::System{IdentitySource::Value::SYSTEM};
 
@@ -20,14 +21,6 @@ const LoginStatus LoginStatus::NeedCredential{LoginStatus::Value::NEED_CREDENTIA
 const LoginStatus LoginStatus::NeedInteraction{LoginStatus::Value::NEED_INTERACTION};
 const LoginStatus LoginStatus::Failed{LoginStatus::Value::FAILED};
 const LoginStatus LoginStatus::Unsupported{LoginStatus::Value::UNSUPPORTED};
-
-const LoginConflictAction LoginConflictAction::KeepExisting{
-    LoginConflictAction::Value::KEEP_EXISTING};
-const LoginConflictAction LoginConflictAction::ReplaceExisting{
-    LoginConflictAction::Value::REPLACE_EXISTING};
-const LoginConflictAction LoginConflictAction::RejectIncoming{
-    LoginConflictAction::Value::REJECT_INCOMING};
-const LoginConflictAction LoginConflictAction::AskUser{LoginConflictAction::Value::ASK_USER};
 
 const AccessEffect AccessEffect::Unknown{AccessEffect::Value::UNKNOWN};
 const AccessEffect AccessEffect::Allow{AccessEffect::Value::ALLOW};
@@ -68,6 +61,8 @@ int IdentitySource::priority() const noexcept {
     switch (m_val) {
     case Value::DIRECT:
         return 4;
+    case Value::LOGIN:
+        return 4;
     case Value::DERIVED:
         return 3;
     case Value::AUTO:
@@ -86,6 +81,9 @@ IdentitySource IdentitySource::fromString(std::string_view s) {
     if (s == "derived") {
         return Derived;
     }
+    if (s == "login") {
+        return Login;
+    }
     if (s == "auto") {
         return Auto;
     }
@@ -101,6 +99,8 @@ std::string IdentitySource::str() const {
         return "direct";
     case Value::DERIVED:
         return "derived";
+    case Value::LOGIN:
+        return "login";
     case Value::AUTO:
         return "auto";
     case Value::SYSTEM:
@@ -143,37 +143,6 @@ std::string LoginStatus::str() const {
         return "unsupported";
     default:
         return "unknown";
-    }
-}
-
-LoginConflictAction LoginConflictAction::fromString(std::string_view s) {
-    if (s == "keep_existing") {
-        return KeepExisting;
-    }
-    if (s == "replace_existing") {
-        return ReplaceExisting;
-    }
-    if (s == "reject_incoming") {
-        return RejectIncoming;
-    }
-    if (s == "ask_user") {
-        return AskUser;
-    }
-    return KeepExisting;
-}
-
-std::string LoginConflictAction::str() const {
-    switch (m_val) {
-    case Value::KEEP_EXISTING:
-        return "keep_existing";
-    case Value::REPLACE_EXISTING:
-        return "replace_existing";
-    case Value::REJECT_INCOMING:
-        return "reject_incoming";
-    case Value::ASK_USER:
-        return "ask_user";
-    default:
-        return "keep_existing";
     }
 }
 

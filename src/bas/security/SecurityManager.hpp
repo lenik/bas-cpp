@@ -6,7 +6,6 @@
 #include "CommandSupport.hpp"
 #include "CredentialManager.hpp"
 #include "IdentityRegistry.hpp"
-#include "LoginPolicy.hpp"
 #include "LoginUi.hpp"
 #include "Permission.hpp"
 #include "PolicyStore.hpp"
@@ -25,7 +24,6 @@ class SecurityManager : public ICommandSupport {
     SecurityManager(std::shared_ptr<PolicyStore> policyStore,
                     std::shared_ptr<CredentialManager> credentialManager,
                     std::shared_ptr<IdentityRegistry> identityRegistry,
-                    std::shared_ptr<LoginPolicy> loginPolicy,
                     std::shared_ptr<PermissionMatcher> permissionMatcher,
                     std::shared_ptr<ACResolvePolicy> resolvePolicy);
 
@@ -59,6 +57,14 @@ class SecurityManager : public ICommandSupport {
 
     AccessEffect checkPermission(const Permission& permission,
                                  const AccessRequestOptions& options) const;
+
+    /** Verify credentials and return identities without activating a session. */
+    std::optional<IdentitySet> authenticate(Credential credential,
+                                            const AccessRequestOptions& options = {});
+
+    /** Check permission for an explicit subject without changing the active session. */
+    AccessEffect checkSubjectPermission(const Permission& permission, const Subject& subject,
+                                        const AccessRequestOptions& options = {}) const;
 
     AccessEffect requestPermission(const Permission& permission,
                                    const AccessRequestOptions& options = {});
@@ -95,17 +101,16 @@ class SecurityManager : public ICommandSupport {
                                     const std::vector<Identity>& identities) const;
     AccessEffect normalizeResult(AccessEffect mode) const;
     void tryAutoLogin(const Permission& permission, const AccessRequestOptions& options);
-    std::vector<std::shared_ptr<IdentityService>> selectServices(
-        const Permission& permission, const AccessRequestOptions& options) const;
+    std::vector<std::shared_ptr<IdentityService>>
+    selectServices(const Permission& permission, const AccessRequestOptions& options) const;
     bool tryLoginWithService(IdentityService& service, const Permission& permission,
                              const AccessRequestOptions& options);
-    void activateOne(const Identity& incoming);
-    void removeConflicting(const Identity& incoming);
+    void clearLoginSession(const Realm& realm);
+    void removeIdentityRef(const IdentityRef& ref);
 
     std::shared_ptr<PolicyStore> m_policyStore;
     std::shared_ptr<CredentialManager> m_credentialManager;
     std::shared_ptr<IdentityRegistry> m_identityRegistry;
-    std::shared_ptr<LoginPolicy> m_loginPolicy;
     std::shared_ptr<PermissionMatcher> m_permissionMatcher;
     std::shared_ptr<ACResolvePolicy> m_resolvePolicy;
     std::shared_ptr<AccessDecisionResolver> m_decisionResolver;

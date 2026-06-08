@@ -52,6 +52,7 @@ class IdentitySource {
         UNKNOWN = 0,
         DIRECT,
         DERIVED,
+        LOGIN,
         AUTO,
         SYSTEM,
     };
@@ -77,6 +78,7 @@ class IdentitySource {
     static const IdentitySource Unknown;
     static const IdentitySource Direct;
     static const IdentitySource Derived;
+    static const IdentitySource Login;
     static const IdentitySource Auto;
     static const IdentitySource System;
 };
@@ -116,41 +118,6 @@ class LoginStatus {
     static const LoginStatus NeedInteraction;
     static const LoginStatus Failed;
     static const LoginStatus Unsupported;
-};
-
-class LoginConflictAction {
-  public:
-    enum class Value {
-        KEEP_EXISTING = 0,
-        REPLACE_EXISTING,
-        REJECT_INCOMING,
-        ASK_USER,
-    };
-
-  private:
-    Value m_val = Value::KEEP_EXISTING;
-
-  public:
-    constexpr LoginConflictAction() = default;
-    constexpr LoginConflictAction(Value v) : m_val(v) {}
-
-    constexpr operator Value() const noexcept { return m_val; }
-    constexpr Value value() const noexcept { return m_val; }
-
-    static LoginConflictAction fromString(std::string_view s);
-    std::string str() const;
-
-    constexpr bool operator==(LoginConflictAction other) const noexcept {
-        return m_val == other.m_val;
-    }
-    constexpr bool operator!=(LoginConflictAction other) const noexcept {
-        return m_val != other.m_val;
-    }
-
-    static const LoginConflictAction KeepExisting;
-    static const LoginConflictAction ReplaceExisting;
-    static const LoginConflictAction RejectIncoming;
-    static const LoginConflictAction AskUser;
 };
 
 /** Effect of an access control entry. */

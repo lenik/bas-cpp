@@ -2,9 +2,9 @@
 #include <bas/security/AccessDenied.hpp>
 #include <bas/security/CommandSupport.hpp>
 #include <bas/security/CredentialManager.hpp>
+#include <bas/security/Demo.hpp>
 #include <bas/security/IdentityRegistry.hpp>
 #include <bas/security/IdentityService.hpp>
-#include <bas/security/LoginPolicy.hpp>
 #include <bas/security/LoginUi.hpp>
 #include <bas/security/Permission.hpp>
 #include <bas/security/PolicyStore.hpp>
@@ -580,14 +580,13 @@ DemoContext makeContext(const std::filesystem::path& credentialCachePath,
 
     auto policyStore = makePolicyStore(policyStorePath);
     auto registry = makeDemoRegistry(ctx.userStore, defaultRealm);
-    auto loginPolicy = std::make_shared<sec::LoginPolicy>();
     auto matcher = std::make_shared<sec::DefaultPermissionMatcher>();
     auto resolver = std::make_shared<sec::DefaultACResolvePolicy>();
 
     ctx.policyStore = policyStore;
     ctx.registry = registry;
     ctx.sm = std::make_shared<sec::SecurityManager>(policyStore, ctx.credentials, registry,
-                                                    loginPolicy, matcher, resolver);
+                                                    matcher, resolver);
     auto consoleLogin = std::make_shared<sec::ConsoleLogin>(*ctx.sm);
     ctx.sm->setLoginUi(consoleLogin);
     ctx.sm->setCommandDefaults(std::move(defaultRealm), std::move(defaultSubject));
@@ -659,8 +658,8 @@ int main(int argc, char** argv) {
     }
 
     try {
-        DemoContext ctx =
-            makeContext(credentialCachePath, userStorePath, policyStorePath, defaultSubject, defaultRealm);
+        DemoContext ctx = makeContext(credentialCachePath, userStorePath, policyStorePath,
+                                      defaultSubject, defaultRealm);
 
         logdebug_fmt("credential cache: %s", ctx.credentials->credentialPath().c_str());
         logdebug_fmt("user store %s", ctx.userStore->storeLabel().c_str());
