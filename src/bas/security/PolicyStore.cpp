@@ -307,17 +307,227 @@ void FilePolicyStore::saveToDisk() {
     m_file.writeFileString(boost::json::serialize(envelope), "UTF-8");
 }
 
+namespace {
+
+const PolicyStore* resolvePolicyStore(const PolicyStore& store, const IdentityRef& identity) {
+    if (const auto* realmStore = dynamic_cast<const RealmPolicyStore*>(&store)) {
+        if (const auto resolved = realmStore->storeForRealm(identity.realm)) {
+            return resolved.get();
+        }
+    }
+    return &store;
+}
+
+} // namespace
+
+void RealmPolicyStore::addRealmStore(const Realm& realm, std::shared_ptr<PolicyStore> store) {
+    if (!store || !realm.hasKey()) {
+        return;
+    }
+    const std::string key = realm.storageKey();
+    m_byKey[key] = std::move(store);
+    m_keyToRealm[key] = realm;
+    m_realmKeys.clear();
+    for (const auto& [k, r] : m_keyToRealm) {
+        (void)k;
+        m_realmKeys.push_back(r);
+    }
+}
+
+std::shared_ptr<PolicyStore> RealmPolicyStore::storeForRealm(const Realm& realm) const {
+    if (realm.hasKey()) {
+        const auto it = m_byKey.find(realm.storageKey());
+        if (it != m_byKey.end()) {
+            return it->second;
+        }
+    }
+    return m_global;
+}
+
+const PolicyStore* RealmPolicyStore::resolveFor(const IdentityRef& identity) const {
+    if (identity.realm.hasKey()) {
+        const auto it = m_byKey.find(identity.realm.storageKey());
+        if (it != m_byKey.end()) {
+            return it->second.get();
+        }
+    }
+    return m_global.get();
+}
+
+PolicyStore* RealmPolicyStore::resolveFor(const IdentityRef& identity) {
+    if (identity.realm.hasKey()) {
+        const auto it = m_byKey.find(identity.realm.storageKey());
+        if (it != m_byKey.end()) {
+            return it->second.get();
+        }
+    }
+    return m_global.get();
+}
+
+bool RealmPolicyStore::hasAcl(const std::string& aclId) const {
+    for (const auto& [key, store] : m_byKey) {
+        (void)key;
+        if (store && store->hasAcl(aclId)) {
+            return true;
+        }
+    }
+    return m_global && m_global->hasAcl(aclId);
+}
+
+std::optional<ACList> RealmPolicyStore::getAcl(const std::string& aclId) const {
+    for (const auto& [key, store] : m_byKey) {
+        (void)key;
+        if (store) {
+            if (auto acl = store->getAcl(aclId)) {
+                return acl;
+            }
+        }
+    }
+    if (m_global) {
+        return m_global->getAcl(aclId);
+    }
+    return std::nullopt;
+}
+
+std::vector<std::string> RealmPolicyStore::listAcls() const {
+    std::vector<std::string> ids;
+    for (const auto& [key, store] : m_byKey) {
+        (void)key;
+        if (!store) {
+            continue;
+        }
+        for (const auto& id : store->listAcls()) {
+            ids.push_back(id);
+        }
+    }
+    if (m_global) {
+        for (const auto& id : m_global->listAcls()) {
+            ids.push_back(id);
+        }
+    }
+    return ids;
+}
+
+void RealmPolicyStore::addAcl(ACList acl) {
+    if (m_global) {
+        m_global->addAcl(std::move(acl));
+    }
+}
+
+void RealmPolicyStore::updateAcl(ACList acl) {
+    if (m_global) {
+        m_global->updateAcl(std::move(acl));
+    }
+}
+
+void RealmPolicyStore::removeAcl(const std::string& aclId) {
+    for (auto& [key, store] : m_byKey) {
+        (void)key;
+        if (store) {
+            store->removeAcl(aclId);
+        }
+    }
+    if (m_global) {
+        m_global->removeAcl(aclId);
+    }
+}
+
+std::vector<AccessGrant> RealmPolicyStore::grantsOf(const IdentityRef& identity) const {
+    if (const auto* store = resolveFor(identity)) {
+        return store->grantsOf(identity);
+    }
+    return {};
+}
+
+void RealmPolicyStore::addGrant(AccessGrant grant) {
+    if (auto* store = resolveFor(grant.identity)) {
+        store->addGrant(std::move(grant));
+    } else if (m_global) {
+        m_global->addGrant(std::move(grant));
+    }
+}
+
+void RealmPolicyStore::removeGrant(const AccessGrant& grant) {
+    if (auto* store = resolveFor(grant.identity)) {
+        store->removeGrant(grant);
+    } else if (m_global) {
+        m_global->removeGrant(grant);
+    }
+}
+
+std::vector<PolicyBinding> RealmPolicyStore::bindingsOf(const IdentityRef& identity) const {
+    if (const auto* store = resolveFor(identity)) {
+        return store->bindingsOf(identity);
+    }
+    return {};
+}
+
+void RealmPolicyStore::addBinding(PolicyBinding binding) {
+    if (auto* store = resolveFor(binding.identity)) {
+        store->addBinding(std::move(binding));
+    } else if (m_global) {
+        m_global->addBinding(std::move(binding));
+    }
+}
+
+void RealmPolicyStore::removeBinding(const PolicyBinding& binding) {
+    if (auto* store = resolveFor(binding.identity)) {
+        store->removeBinding(binding);
+    } else if (m_global) {
+        m_global->removeBinding(binding);
+    }
+}
+
+std::vector<ACEntry> RealmPolicyStore::effectiveEntriesOf(const IdentityRef& identity) const {
+    if (const auto* store = resolveFor(identity)) {
+        return store->effectiveEntriesOf(identity);
+    }
+    return {};
+}
+
+void RealmPolicyStore::clear() {
+    m_byKey.clear();
+    m_keyToRealm.clear();
+    m_realmKeys.clear();
+    m_grantsCache.clear();
+    if (m_global) {
+        m_global->clear();
+    }
+}
+
+const std::vector<AccessGrant>& RealmPolicyStore::grants() const {
+    m_grantsCache.clear();
+    for (const auto& [key, store] : m_byKey) {
+        (void)key;
+        if (!store) {
+            continue;
+        }
+        const auto& grants = store->grants();
+        m_grantsCache.insert(m_grantsCache.end(), grants.begin(), grants.end());
+    }
+    if (m_global) {
+        const auto& grants = m_global->grants();
+        m_grantsCache.insert(m_grantsCache.end(), grants.begin(), grants.end());
+    }
+    return m_grantsCache;
+}
+
+void RealmPolicyStore::jsonIn(const boost::json::object& /*o*/, const JsonFormOptions& /*opts*/) {}
+
+void RealmPolicyStore::jsonOut(boost::json::object& /*o*/, const JsonFormOptions& /*opts*/) {}
+
 std::vector<ACEMatch> policyFind(const PolicyStore& store, const IdentityRef& identity,
                                 const Permission& permission, const PermissionMatcher& matcher) {
     std::vector<ACEMatch> matches;
-    for (const auto& grant : store.grantsOf(identity)) {
-        if (!matcher.matches(grant.permission, permission)) {
+    const PolicyStore& resolved = *resolvePolicyStore(store, identity);
+    for (const auto& entry : resolved.effectiveEntriesOf(identity)) {
+        if (!matcher.matches(entry.permission, permission)) {
             continue;
         }
         ACEMatch match;
-        match.entry = grant.ace();
-        match.identity = grant.identity;
-        match.permissionSpecificity = matcher.specificity(grant.permission);
+        match.entry = entry;
+        match.identity = identity;
+        match.permissionSpecificity = matcher.specificity(entry.permission);
         match.identitySpecificity = 10;
         matches.push_back(match);
     }

@@ -16,6 +16,7 @@
 #include <memory>
 #include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace bas::security {
@@ -162,6 +163,62 @@ class DecoratedPolicyStore : public PolicyStore {
 
   protected:
     std::shared_ptr<PolicyStore> m_wrapped;
+};
+
+/** Routes policy lookups by identity realm (e.g. per-device ACL files). */
+class RealmPolicyStore : public PolicyStore {
+  public:
+    void setGlobalStore(std::shared_ptr<PolicyStore> store) { m_global = std::move(store); }
+
+    void addRealmStore(const Realm& realm, std::shared_ptr<PolicyStore> store);
+
+    std::shared_ptr<PolicyStore> storeForRealm(const Realm& realm) const;
+
+    const std::vector<Realm>& realms() const { return m_realmKeys; }
+
+    bool hasAcl(const std::string& aclId) const override;
+
+    std::optional<ACList> getAcl(const std::string& aclId) const override;
+
+    std::vector<std::string> listAcls() const override;
+
+    void addAcl(ACList acl) override;
+
+    void updateAcl(ACList acl) override;
+
+    void removeAcl(const std::string& aclId) override;
+
+    std::vector<AccessGrant> grantsOf(const IdentityRef& identity) const override;
+
+    void addGrant(AccessGrant grant) override;
+
+    void removeGrant(const AccessGrant& grant) override;
+
+    std::vector<PolicyBinding> bindingsOf(const IdentityRef& identity) const override;
+
+    void addBinding(PolicyBinding binding) override;
+
+    void removeBinding(const PolicyBinding& binding) override;
+
+    std::vector<ACEntry> effectiveEntriesOf(const IdentityRef& identity) const override;
+
+    void clear() override;
+
+    const std::vector<AccessGrant>& grants() const override;
+
+    void jsonIn(const boost::json::object& o, const JsonFormOptions& opts) override;
+
+    void jsonOut(boost::json::object& o, const JsonFormOptions& opts) override;
+
+  private:
+    const PolicyStore* resolveFor(const IdentityRef& identity) const;
+    PolicyStore* resolveFor(const IdentityRef& identity);
+
+    std::shared_ptr<PolicyStore> m_global;
+    std::unordered_map<std::string, std::shared_ptr<PolicyStore>> m_byKey;
+    std::unordered_map<std::string, Realm> m_keyToRealm;
+    std::vector<Realm> m_realmKeys;
+    mutable std::vector<AccessGrant> m_grantsCache;
 };
 
 class FilePolicyStore : public DecoratedPolicyStore {
