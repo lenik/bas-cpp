@@ -1,3 +1,27 @@
+bas-cpp (1.0.2) testing; urgency=medium
+
+  * Security and access-control demo:
+    - Add tanks_game: ncurses dual-device tank demo with per-realm login,
+      ACL policy panel, one-shot elevation, and batch mode for scripts.
+    - Split tanks_rbac (SecurityManager wiring, permission checks, batch CLI)
+      from tanks_game UI; built-in TankA/TankB user and policy stores
+      (no external JSON fixtures).
+    - Add RealmPolicyStore for per-realm ACL routing with global fallback.
+    - Remove LoginPolicy; mark login identities with IdentitySource::Login
+      and clear them on realm logout / session switch.
+    - Add SecurityManager::authenticate() and checkSubjectPermission()
+      for credential checks without changing the active session.
+  * Volume backend fixes:
+    - MemDevice: rename OwnType::NONE to VIEW (read-only buffer) and add
+      BORROWED for writable non-owning buffers.
+    - exFAT: parse boot sector via explicit little-endian byte fields.
+    - ext4: use shared directory node refs; fix cache invalidation,
+      getBaseName, and file/directory creation write ordering.
+    - FAT32: improve rename/remove bookkeeping; Fat32_test mounts images
+      via BlockDevice instead of read-only MemDevice views.
+
+ -- Lenik (谢继雷) <lenik@bodz.net>  Fri, 05 Jun 2026 12:00:00 +0800
+
 bas-cpp (1.0.1) testing; urgency=medium
 
   * Refactor volume backends into dedicated modules:
