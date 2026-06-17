@@ -10,7 +10,8 @@
 #include <string>
 
 enum OwnType {
-    NONE,
+    VIEW,     // read-only external buffer (e.g. embedded rodata)
+    BORROWED, // writable external buffer, non-owning
     AUTO,
     ARRAY,
     MALLOC,

@@ -11,7 +11,7 @@ MemDevice::MemDevice(const void* data, size_t size, std::string_view name, OwnTy
     : m_name(name), m_size(size) {
     if (ownType == OwnType::AUTO) {
         if (data) {
-            ownType = OwnType::NONE;
+            ownType = OwnType::VIEW;
         } else {
             ownType = OwnType::MALLOC;
             void* mallocData = malloc(size);
@@ -66,7 +66,7 @@ bool MemDevice::read(uint64_t offset, uint8_t* dst, size_t len) {
 }
 
 bool MemDevice::write(uint64_t offset, const uint8_t* src, size_t len) {
-    if (m_ownType == OwnType::NONE) {
+    if (m_ownType == OwnType::VIEW) {
         return false; // read-only backing (e.g., embedded assets in rodata)
     }
     if (!m_data || !src || len == 0 || offset + len > m_size) {
