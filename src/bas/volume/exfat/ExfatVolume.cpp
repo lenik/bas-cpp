@@ -78,22 +78,26 @@ void ExfatVolume::parseBootSector() {
         throw IOException("ExfatVolume", m_device->name(), "Failed to read boot sector");
     }
 
-    const ExfatBootSector* bs = reinterpret_cast<const ExfatBootSector*>(boot.data());
-
-    // Validate boot signature
-    if (bs->bootSignature != 0xAA55) {
+    // Validate boot signature (bytes 510-511 of the boot sector)
+    if (boot[510] != 0x55 || boot[511] != 0xAA) {
         throw IOException("ExfatVolume", m_device->name(), "Invalid boot signature");
     }
 
-    m_bytesPerSector = 1 << bs->bytesPerSectorShift;
-    m_sectorsPerCluster = 1 << bs->sectorsPerClusterShift;
+    auto le32 = [&](size_t off) -> uint32_t {
+        return static_cast<uint32_t>(boot[off]) | (static_cast<uint32_t>(boot[off + 1]) << 8) |
+               (static_cast<uint32_t>(boot[off + 2]) << 16) |
+               (static_cast<uint32_t>(boot[off + 3]) << 24);
+    };
+
+    m_bytesPerSector = 1u << boot[0x6C];
+    m_sectorsPerCluster = 1u << boot[0x6D];
     m_clusterSize = m_bytesPerSector * m_sectorsPerCluster;
-    m_fatOffset = bs->fatOffset;
-    m_fatLength = bs->fatLength;
-    m_clusterHeapOffset = bs->clusterHeapOffset;
-    m_clusterCount = bs->clusterCount;
-    m_rootCluster = bs->firstClusterOfRootDirectory;
-    m_volumeSerial = bs->volumeSerialNumber;
+    m_fatOffset = le32(0x50);
+    m_fatLength = le32(0x54);
+    m_clusterHeapOffset = le32(0x58);
+    m_clusterCount = le32(0x5C);
+    m_rootCluster = le32(0x60);
+    m_volumeSerial = le32(0x64);
 
     if (m_bytesPerSector == 0 || m_sectorsPerCluster == 0) {
         throw IOException("ExfatVolume", m_device->name(), "Invalid exFAT boot parameters");
