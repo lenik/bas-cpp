@@ -121,8 +121,8 @@ void Ext4Volume::readDir_inplace(DirNode& context, std::string_view path, bool r
     const auto& rtnode = getDirectoryEntries(parentNode.ino);
     if (!recursive) {
         for (const auto& [name, childRef] : rtnode->children) {
-            if (auto child = childRef.lock()) {
-                appendChild(name, *child);
+            if (childRef) {
+                appendChild(name, *childRef);
             }
         }
         return;
@@ -136,16 +136,16 @@ void Ext4Volume::readDir_inplace(DirNode& context, std::string_view path, bool r
         }
         const auto& rtnode = getDirectoryEntries(inode.ino);
         for (const auto& [name, childRef] : rtnode->children) {
-            if (auto child = childRef.lock()) {
+            if (childRef) {
                 std::string absPath = (basePath == "/") ? ("/" + name) : (basePath + "/" + name);
                 std::string relPath =
                     (parent == "/") ? absPath.substr(1) : absPath.substr(parent.size() + 1);
 
-                appendChild(relPath, *child);
+                appendChild(relPath, *childRef);
 
-                m_files[absPath] = child->ino;
-                if (child->isDirectory) {
-                    walk(absPath, *child);
+                m_files[absPath] = childRef->ino;
+                if (childRef->isDirectory) {
+                    walk(absPath, *childRef);
                 }
             }
         }
@@ -321,16 +321,16 @@ bool Ext4Volume::resolveNode(std::string_view path, Inode* out) const {
             return false;
         }
 
-        if (auto child = it->second.lock()) {
-            curIno = child->ino;
-            curPath = (curPath == "/") ? ("/" + part) : (curPath + "/" + part);
-
-            // Cache the resolved node
-            m_nodes[curIno] = *child;
-            m_files[curPath] = curIno;
-        } else {
+        const RtNodeObj& childRef = it->second;
+        if (!childRef) {
             return false;
         }
+        curIno = childRef->ino;
+        curPath = (curPath == "/") ? ("/" + part) : (curPath + "/" + part);
+
+        // Cache the resolved node
+        m_nodes[curIno] = *childRef;
+        m_files[curPath] = curIno;
 
         if (slash == std::string::npos)
             break;
@@ -474,7 +474,7 @@ std::string Ext4Volume::getBaseName(std::string_view path) const {
     }
 
     size_t lastSlash = normalized.find_last_of('/');
-    if (lastSlash == std::string::npos || lastSlash == 0) {
+    if (lastSlash == std::string::npos) {
         return normalized;
     }
 
@@ -498,8 +498,11 @@ void Ext4Volume::invalidateCache(std::string_view path) {
     }
 
     // Also invalidate parent directory cache
-    const std::string parent = normalized.substr(0, normalized.find_last_of('/'));
-    if (!parent.empty() && parent != "/") {
+    const size_t lastSlash = normalized.find_last_of('/');
+    if (lastSlash == std::string::npos || lastSlash == 0) {
+        m_rtnodes.erase(kRootInode);
+    } else {
+        const std::string parent = normalized.substr(0, lastSlash);
         auto pit = m_files.find(parent);
         if (pit != m_files.end()) {
             m_rtnodes.erase(pit->second);

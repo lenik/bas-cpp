@@ -63,7 +63,7 @@ class Ext4Volume : public Volume {
     // Runtime node for directory traversal
     struct RtNode : public Inode {
         RtNodeRef parent;
-        std::unordered_map<std::string, RtNodeRef> children;
+        std::unordered_map<std::string, RtNodeObj> children;
 
         RtNode() = default;
         RtNode(bool isDirectory, uint64_t size, ino_t ino, uint16_t mode, uint32_t uid,

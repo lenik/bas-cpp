@@ -41,14 +41,15 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
 
     // Try to find existing inode
     Inode existingNode;
-    if (resolveNode(normalized, &existingNode)) {
+    const bool existed = resolveNode(normalized, &existingNode);
+    if (existed) {
         ino = static_cast<ext2_ino_t>(existingNode.ino);
         if (ext2fs_read_inode(fs, ino, &inode) != 0) {
             ext2fs_close(fs);
             throw IOException("writeFile", std::string(path), "Failed to read inode");
         }
     } else {
-        // Create new file
+        // Create new file inode and directory entry before opening for write
         rc = ext2fs_new_inode(fs, parentIno, 0100644, nullptr, &ino);
         if (rc) {
             ext2fs_close(fs);
@@ -60,11 +61,39 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
         inode.i_uid = m_contextUid;
         inode.i_gid = m_contextGid;
         inode.i_atime = inode.i_mtime = inode.i_ctime = time(nullptr);
+
+        rc = ext2fs_write_inode(fs, ino, &inode);
+        if (rc) {
+            ext2fs_close(fs);
+            throw IOException("writeFile", std::string(path), "Failed to write inode");
+        }
+
+        const std::string baseName = getBaseName(normalized);
+        rc = ext2fs_link(fs, parentIno, baseName.c_str(), ino, 0100644);
+        if (rc == EXT2_ET_DIR_NO_SPACE) {
+            rc = ext2fs_expand_dir(fs, parentIno);
+            if (!rc) {
+                rc = ext2fs_link(fs, parentIno, baseName.c_str(), ino, 0100644);
+            }
+        }
+        if (rc) {
+            ext2fs_close(fs);
+            throw IOException("writeFile", std::string(path),
+                              "Failed to create directory entry: " +
+                                  std::string(error_message(rc)));
+        }
+
+        ext2fs_inode_alloc_stats(fs, ino, +1);
+        rc = ext2fs_write_bitmaps(fs);
+        if (rc) {
+            ext2fs_close(fs);
+            throw IOException("writeFile", std::string(path), "Failed to write inode bitmaps");
+        }
     }
 
     // Write file data
     ext2_file_t file;
-    rc = ext2fs_file_open(fs, ino, EXT2_FILE_WRITE | EXT2_FILE_CREATE, &file);
+    rc = ext2fs_file_open(fs, ino, EXT2_FILE_WRITE, &file);
     if (rc) {
         ext2fs_close(fs);
         throw IOException("writeFile", std::string(path), "Failed to open file for write");
@@ -96,26 +125,6 @@ void Ext4Volume::writeFileUnchecked(std::string_view path, const ByteArray& data
         if (rc) {
             ext2fs_close(fs);
             throw IOException("writeFile", std::string(path), "Failed to update inode size");
-        }
-    }
-
-    // Create directory entry if file doesn't exist
-    if (!existingNode.ino) {
-        std::string baseName = getBaseName(normalized);
-        rc = ext2fs_link(fs, parentIno, baseName.c_str(), ino, 0100644);
-        if (rc == EXT2_ET_DIR_NO_SPACE) {
-            rc = ext2fs_expand_dir(fs, parentIno);
-            if (rc) {
-                ext2fs_close(fs);
-                throw IOException("writeFile", std::string(path), "Failed to expand directory");
-            }
-            rc = ext2fs_link(fs, parentIno, baseName.c_str(), ino, 0100644);
-        }
-        if (rc) {
-            ext2fs_close(fs);
-            throw IOException("writeFile", std::string(path),
-                              "Failed to create directory entry: " +
-                                  std::string(error_message(rc)));
         }
     }
 
@@ -232,6 +241,7 @@ void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
 
     // Get parent inode
     uint32_t parentIno = resolveParentInode(normalized);
+    const std::string baseName = getBaseName(normalized);
 
     // Open filesystem with write flag
     ext2_filsys fs = nullptr;
@@ -248,7 +258,6 @@ void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
         throw IOException("createDirectory", std::string(path), "Failed to read bitmaps");
     }
 
-    // Allocate new inode for directory
     ext2_ino_t ino;
     rc = ext2fs_new_inode(fs, parentIno, 040755, nullptr, &ino);
     if (rc) {
@@ -256,37 +265,24 @@ void Ext4Volume::createDirectoryThrowsUnchecked(std::string_view path) {
         throw IOException("createDirectory", std::string(path), "Failed to allocate inode");
     }
 
-    // Initialize directory inode
-    struct ext2_inode inode{};
-    memset(&inode, 0, sizeof(inode));
-    inode.i_mode = 040755; // Directory, rwxr-xr-x
-    inode.i_uid = m_contextUid;
-    inode.i_gid = m_contextGid;
-    const time_t now = time(nullptr);
-    inode.i_atime = inode.i_mtime = inode.i_ctime = now;
-
-    // Write inode
-    rc = ext2fs_write_inode(fs, ino, &inode);
-    if (rc) {
-        ext2fs_close(fs);
-        throw IOException("createDirectory", std::string(path), "Failed to write inode");
-    }
-
-    // Create directory entry in parent
-    std::string baseName = getBaseName(normalized);
-    rc = ext2fs_link(fs, parentIno, baseName.c_str(), ino, 040755);
+    rc = ext2fs_mkdir(fs, parentIno, ino, baseName.c_str());
     if (rc == EXT2_ET_DIR_NO_SPACE) {
         rc = ext2fs_expand_dir(fs, parentIno);
-        if (rc) {
-            ext2fs_close(fs);
-            throw IOException("createDirectory", std::string(path), "Failed to expand directory");
+        if (!rc) {
+            rc = ext2fs_mkdir(fs, parentIno, ino, baseName.c_str());
         }
-        rc = ext2fs_link(fs, parentIno, baseName.c_str(), ino, 040755);
     }
     if (rc) {
         ext2fs_close(fs);
         throw IOException("createDirectory", std::string(path),
-                          "Failed to create directory entry: " + std::string(error_message(rc)));
+                          "Failed to create directory: " + std::string(error_message(rc)));
+    }
+
+    ext2fs_inode_alloc_stats(fs, ino, +1);
+    rc = ext2fs_write_bitmaps(fs);
+    if (rc) {
+        ext2fs_close(fs);
+        throw IOException("createDirectory", std::string(path), "Failed to write inode bitmaps");
     }
 
     // Flush to ensure directory entry is written
@@ -398,6 +394,18 @@ void Ext4Volume::removeFileThrowsUnchecked(std::string_view path) {
         throw IOException("removeFile", std::string(path), "Failed to unlink file");
     }
 
+    rc = ext2fs_write_bitmaps(fs);
+    if (rc) {
+        ext2fs_close(fs);
+        throw IOException("removeFile", std::string(path), "Failed to write inode bitmaps");
+    }
+
+    rc = ext2fs_flush(fs);
+    if (rc) {
+        ext2fs_close(fs);
+        throw IOException("removeFile", std::string(path), "Failed to flush filesystem");
+    }
+
     ext2fs_close(fs);
 
     // Update cache
@@ -445,21 +453,23 @@ void Ext4Volume::moveFileThrowsUnchecked(std::string_view src, std::string_view 
         throw IOException("moveFile", std::string(dest), "Destination already exists");
     }
 
-    // Open filesystem with write flag
+    // Read source data and write destination (opens its own filesystem handle)
+    auto data = readFile(src);
+    writeFileUnchecked(destNormalized, data);
+
+    // Open a fresh filesystem handle for unlink (writeFileUnchecked closes its own)
     ext2_filsys fs = nullptr;
-    const std::string imagePath = m_device->uri();
     int rc = ext4io::openFsFromBlockDevice(m_device, EXT2_FLAG_64BITS | EXT2_FLAG_RW, &fs);
     if (rc) {
         throw IOException("moveFile", std::string(src), "ext2fs_open failed");
     }
 
-    // Read source data
-    auto data = readFile(src);
+    rc = ext2fs_read_bitmaps(fs);
+    if (rc) {
+        ext2fs_close(fs);
+        throw IOException("moveFile", std::string(src), "Failed to read bitmaps");
+    }
 
-    // Write to destination
-    writeFileUnchecked(destNormalized, data);
-
-    // Remove source
     const std::string srcParent = srcNormalized.substr(0, srcNormalized.find_last_of('/'));
     uint32_t srcParentIno = resolveParentInode(srcNormalized);
     std::string srcBaseName = getBaseName(srcNormalized);
@@ -470,11 +480,23 @@ void Ext4Volume::moveFileThrowsUnchecked(std::string_view src, std::string_view 
         throw IOException("moveFile", std::string(src), "Failed to unlink source file");
     }
 
+    rc = ext2fs_write_bitmaps(fs);
+    if (rc) {
+        ext2fs_close(fs);
+        throw IOException("moveFile", std::string(src), "Failed to write inode bitmaps");
+    }
+
+    rc = ext2fs_flush(fs);
+    if (rc) {
+        ext2fs_close(fs);
+        throw IOException("moveFile", std::string(src), "Failed to flush filesystem");
+    }
+
     ext2fs_close(fs);
 
-    // Update cache
+    // Update cache: writeFileUnchecked already cached the destination
     invalidateCache(srcNormalized);
-    invalidateCache(destNormalized);
+    m_rtnodes.erase(m_files.at("/"));
 }
 
 void Ext4Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::string_view newPath) {
@@ -494,7 +516,10 @@ void Ext4Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::string
     }
 
     // Check if parent directory exists for new path
-    const std::string newParent = newNormalized.substr(0, newNormalized.find_last_of('/'));
+    std::string newParent = newNormalized.substr(0, newNormalized.find_last_of('/'));
+    if (newParent.empty()) {
+        newParent = "/";
+    }
     Inode parentNode;
     if (!resolveNode(newParent, &parentNode) || !parentNode.isDirectory) {
         throw IOException("renameFile", std::string(newPath), "Parent directory does not exist");
@@ -535,9 +560,41 @@ void Ext4Volume::renameFileThrowsUnchecked(std::string_view oldPath, std::string
         throw IOException("renameFile", std::string(newPath), "Failed to create new entry");
     }
 
+    rc = ext2fs_write_bitmaps(fs);
+    if (rc) {
+        ext2fs_close(fs);
+        throw IOException("renameFile", std::string(newPath), "Failed to write inode bitmaps");
+    }
+
+    rc = ext2fs_flush(fs);
+    if (rc) {
+        ext2fs_close(fs);
+        throw IOException("renameFile", std::string(newPath), "Failed to flush filesystem");
+    }
+
     ext2fs_close(fs);
 
     // Update cache
     invalidateCache(oldNormalized);
-    invalidateCache(newNormalized);
+    m_files[newNormalized] = oldNode.ino;
+    m_nodes[oldNode.ino] = oldNode;
+
+    const std::string oldParentPath =
+        oldNormalized.substr(0, oldNormalized.find_last_of('/'));
+    if (!oldParentPath.empty()) {
+        auto pit = m_files.find(oldParentPath);
+        if (pit != m_files.end()) {
+            m_rtnodes.erase(pit->second);
+        }
+    } else {
+        m_rtnodes.erase(2);
+    }
+    if (!newParent.empty()) {
+        auto pit = m_files.find(newParent);
+        if (pit != m_files.end()) {
+            m_rtnodes.erase(pit->second);
+        }
+    } else {
+        m_rtnodes.erase(2);
+    }
 }
