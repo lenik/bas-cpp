@@ -6,7 +6,6 @@
 #include "Realm.hpp"
 
 #include <functional>
-#include <memory>
 #include <optional>
 #include <string>
 
@@ -14,7 +13,8 @@ namespace bas::security {
 
 class SecurityManager;
 
-/** Build a credential from form field values supplied by @a readField (return nullopt to cancel). */
+/** Build a credential from form field values supplied by @a readField (return nullopt to cancel).
+ */
 std::optional<Credential> credentialFromLoginForm(
     const LoginFormSpec& form, const CredentialRequest& request,
     const std::function<std::optional<std::string>(const LoginField& field)>& readField);
