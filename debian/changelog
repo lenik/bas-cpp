@@ -1,3 +1,12 @@
+bas-cpp (1.0.3) testing; urgency=medium
+
+  * bas-cpp-static.pc: link libbas-cpp.a by path; chain bas-c-static and icu-uc
+    in Requires for one-line static linking.
+  * Debian libbas-cpp-dev: ship libbas-cpp.a and bas-cpp-static.pc.
+  * icu-config: default icu_major to auto via bas-c subproject.
+
+ -- Lenik (谢继雷) <lenik@bodz.net>  Tue, 07 Jul 2026 23:15:00 +0800
+
 bas-cpp (1.0.2) testing; urgency=medium
 
   * Security and access-control demo:

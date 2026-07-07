@@ -1,7 +1,7 @@
 project(
     'bas-cpp',
     'cpp',
-    version: '1.0.1',
+    version: '1.0.3',
     default_options: [
         #        'warning_level=0',
         'cpp_std=c++17',
@@ -35,7 +35,7 @@ cpp_nowarn = []
 #cpp_nowarn += cpp.get_supported_arguments(['-w', '/w'])
 
 if fs.is_dir('subprojects/bas-c')
-    subproject('bas-c')
+    subproject('bas-c', default_options: ['icu-config:icu_major=auto'])
 endif
 
 # libbas-c
@@ -368,13 +368,18 @@ pkgconfig.generate(
     requires: ['bas-c', 'glib-2.0', 'libcurl', 'openssl', 'zlib'],
 )
 
+# Static .pc: explicit .a path; chain bas-c-static for one-line static linking.
 pkgconfig.generate(
-    lib_bas_cpp_static,
     name: 'bas-cpp-static',
+    filebase: 'bas-cpp-static',
     description: 'C++ base library: I/O, network, volume, formatting, scripting',
     version: meson.project_version(),
     subdirs: 'bas',
-    requires: ['glib-2.0', 'libcurl', 'openssl', 'zlib'],
+    install_dir: get_option('libdir') / 'pkgconfig',
+    requires: ['bas-c-static', 'glib-2.0', 'libcurl', 'openssl', 'zlib', 'icu-uc'],
+    libraries: ['${bas_cpp_static_lib}'],
+    variables: ['bas_cpp_static_lib=${libdir}/libbas-cpp.a'],
+    uninstalled_variables: ['bas_cpp_static_lib=${prefix}/libbas-cpp.a'],
 )
 
 # ---- Headers for libbas-c package (includedir/bas-c) ----

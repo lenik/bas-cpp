@@ -1,4 +1,5 @@
 usr/include/bas
 usr/lib/*/libbas-cpp.so
+usr/lib/*/libbas-cpp.a
 usr/lib/*/pkgconfig/bas-cpp.pc
-
+usr/lib/*/pkgconfig/bas-cpp-static.pc
