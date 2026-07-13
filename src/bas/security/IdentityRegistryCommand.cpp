@@ -2,6 +2,8 @@
 
 #include "CommandSupport.hpp"
 
+#include <bas/locale/i18n.h>
+
 #include <iostream>
 
 namespace bas::security {
@@ -9,17 +11,17 @@ namespace bas::security {
 namespace {
 
 void printRegistryHelp(std::ostream& out) {
-    out << "identity registry commands:\n"
-           "  list                   list registered identity services\n"
-           "  realms                 list realm → service bindings\n"
-           "  service ID [SUBCMD …]  run commands on a service by id\n"
-           "  help                   show this help\n";
+    out << _("identity registry commands:\n"
+             "  list                   list registered identity services\n"
+             "  realms                 list realm → service bindings\n"
+             "  service ID [SUBCMD …]  run commands on a service by id\n"
+             "  help                   show this help\n");
 }
 
 void printRegistryServices(const IdentityRegistry& registry) {
     const auto services = registry.list();
     if (services.empty()) {
-        std::cout << "no identity services registered\n";
+        std::cout << _("no identity services registered\n");
         return;
     }
     for (const auto& service : services) {
@@ -28,7 +30,7 @@ void printRegistryServices(const IdentityRegistry& registry) {
         }
         std::cout << "  " << service->id() << " type=" << service->identityType();
         if (service->canAutoLogin()) {
-            std::cout << " [auto-login]";
+            std::cout << _(" [auto-login]");
         }
         std::cout << '\n';
     }
@@ -37,14 +39,14 @@ void printRegistryServices(const IdentityRegistry& registry) {
 void printRegistryRealms(const IdentityRegistry& registry) {
     const auto& realms = registry.realms();
     if (realms.empty()) {
-        std::cout << "no realms registered\n";
+        std::cout << _("no realms registered\n");
         return;
     }
     for (const auto& realm : realms) {
         const auto service = registry.load(realm);
         std::cout << "  " << realm.displayLabel() << " ->";
         if (!service) {
-            std::cout << " (no service)\n";
+            std::cout << _(" (no service)\n");
         } else {
             std::cout << ' ' << service->id() << '\n';
         }
@@ -87,19 +89,19 @@ int IdentityRegistry::invoke(std::vector<std::string>& args) {
     }
     if (sub == "service") {
         if (args.empty()) {
-            std::cerr << "usage: service ID [SUBCMD …]\n";
+            std::cerr << _("usage: service ID [SUBCMD …]\n");
             return commandFailure();
         }
         const std::string serviceId = shiftArg(args);
         auto service = findById(serviceId);
         if (!service) {
-            std::cerr << "identity service not found: " << serviceId << '\n';
+            std::cerr << _("identity service not found: ") << serviceId << '\n';
             return commandFailure();
         }
         return service->invoke(args);
     }
 
-    std::cerr << "unknown registry subcommand: " << sub << " (try: help)\n";
+    std::cerr << _("unknown registry subcommand: ") << sub << _(" (try: help)\n");
     return commandFailure();
 }
 

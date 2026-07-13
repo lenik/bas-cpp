@@ -3,6 +3,8 @@
 #include "ACList.hpp"
 #include "CommandSupport.hpp"
 
+#include <bas/locale/i18n.h>
+
 #include <iostream>
 
 namespace bas::security {
@@ -10,20 +12,20 @@ namespace bas::security {
 namespace {
 
 void printAclHelp(std::ostream& out) {
-    out << "acl commands:\n"
-           "  list                   list ACL grants\n"
-           "  clear                  remove all grants\n"
-           "  path                   show ACL file path\n"
-           "  reload                 reload file ACL from disk\n"
-           "  save                   write file ACL to disk\n"
-           "  help                   show this help\n"
-           "  -h, --help             show this help\n";
+    out << _("acl commands:\n"
+             "  list                   list ACL grants\n"
+             "  clear                  remove all grants\n"
+             "  path                   show ACL file path\n"
+             "  reload                 reload file ACL from disk\n"
+             "  save                   write file ACL to disk\n"
+             "  help                   show this help\n"
+             "  -h, --help             show this help\n");
 }
 
 void printAclGrants(const PolicyStore& store) {
     const auto& grants = store.grants();
     if (grants.empty()) {
-        std::cout << "no ACL grants\n";
+        std::cout << _("no ACL grants\n");
         return;
     }
     for (const auto& grant : grants) {
@@ -58,7 +60,7 @@ int PolicyStore::invoke(std::vector<std::string>& args) {
     }
     if (head == "list") {
         if (takeHelpRequest(args)) {
-            std::cout << "usage: list [-h]\n  List ACL grants.\n";
+            std::cout << _("usage: list [-h]\n  List ACL grants.\n");
             return commandSuccess();
         }
         printAclGrants(*this);
@@ -66,50 +68,50 @@ int PolicyStore::invoke(std::vector<std::string>& args) {
     }
     if (head == "clear") {
         if (takeHelpRequest(args)) {
-            std::cout << "usage: clear [-h]\n  Remove all ACL grants.\n";
+            std::cout << _("usage: clear [-h]\n  Remove all ACL grants.\n");
             return commandSuccess();
         }
         clear();
-        std::cout << "cleared ACL\n";
+        std::cout << _("cleared ACL\n");
         return commandSuccess();
     }
     if (head == "path") {
         if (takeHelpRequest(args)) {
-            std::cout << "usage: path [-h]\n  Show ACL file path.\n";
+            std::cout << _("usage: path [-h]\n  Show ACL file path.\n");
             return commandSuccess();
         }
         const auto path = storePath();
         if (path.empty()) {
-            std::cout << "acl: in-memory\n";
+            std::cout << _("acl: in-memory\n");
         } else {
-            std::cout << "acl file: " << path << '\n';
+            std::cout << _("acl file: ") << path << '\n';
         }
         return commandSuccess();
     }
     if (head == "reload") {
         if (takeHelpRequest(args)) {
-            std::cout << "usage: reload [-h]\n  Reload file ACL from disk.\n";
+            std::cout << _("usage: reload [-h]\n  Reload file ACL from disk.\n");
             return commandSuccess();
         }
         if (!canPersistToDisk()) {
-            std::cerr << "reload only applies to file ACL (-a/--acl FILE)\n";
+            std::cerr << _("reload only applies to file ACL (-a/--acl FILE)\n");
             return commandFailure();
         }
         reloadFromDisk();
-        std::cout << "reloaded ACL from " << storePath() << '\n';
+        std::cout << _("reloaded ACL from ") << storePath() << '\n';
         return commandSuccess();
     }
     if (head == "save") {
         if (takeHelpRequest(args)) {
-            std::cout << "usage: save [-h]\n  Write file ACL to disk.\n";
+            std::cout << _("usage: save [-h]\n  Write file ACL to disk.\n");
             return commandSuccess();
         }
         if (!canPersistToDisk()) {
-            std::cerr << "save only applies to file ACL (-a/--acl FILE)\n";
+            std::cerr << _("save only applies to file ACL (-a/--acl FILE)\n");
             return commandFailure();
         }
         persistToDisk();
-        std::cout << "saved ACL to " << storePath() << '\n';
+        std::cout << _("saved ACL to ") << storePath() << '\n';
         return commandSuccess();
     }
 
@@ -118,7 +120,7 @@ int PolicyStore::invoke(std::vector<std::string>& args) {
         return commandSuccess();
     }
 
-    std::cerr << "unknown acl command: " << head << " (try: help)\n";
+    std::cerr << _("unknown acl command: ") << head << _(" (try: help)\n");
     return commandFailure();
 }
 

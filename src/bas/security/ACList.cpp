@@ -4,6 +4,8 @@
 
 #include "bas/script/json.hpp"
 
+#include <bas/locale/i18n.h>
+
 #include <iostream>
 
 namespace bas::security {
@@ -21,15 +23,15 @@ void ACEntry::jsonOut(boost::json::object& o, const JsonFormOptions& /*opts*/) c
 namespace {
 
 void printAclListHelp(std::ostream& out) {
-    out << "aclist commands:\n"
-           "  list                   list ACE rows\n"
-           "  help                   show this help\n"
-           "  -h, --help             show this help\n";
+    out << _("aclist commands:\n"
+             "  list                   list ACE rows\n"
+             "  help                   show this help\n"
+             "  -h, --help             show this help\n");
 }
 
 void printEntries(const ACList& acl) {
     if (acl.entries.empty()) {
-        std::cout << "no ACE rows\n";
+        std::cout << _("no ACE rows\n");
         return;
     }
     for (const auto& entry : acl.entries) {
@@ -96,7 +98,7 @@ int ACList::invoke(std::vector<std::string>& args) {
     }
     if (head == "list") {
         if (takeHelpRequest(args)) {
-            std::cout << "usage: list [-h]\n  List ACE rows.\n";
+            std::cout << _("usage: list [-h]\n  List ACE rows.\n");
             return commandSuccess();
         }
         printEntries(*this);
@@ -108,7 +110,7 @@ int ACList::invoke(std::vector<std::string>& args) {
         return commandSuccess();
     }
 
-    std::cerr << "unknown aclist command: " << head << " (try: help)\n";
+    std::cerr << _("unknown aclist command: ") << head << _(" (try: help)\n");
     return commandFailure();
 }
 

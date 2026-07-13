@@ -3,6 +3,8 @@
 #include "CommandSupport.hpp"
 #include "UserStore.hpp"
 
+#include <bas/locale/i18n.h>
+
 #include <iostream>
 
 namespace bas::security {
@@ -10,30 +12,30 @@ namespace bas::security {
 namespace {
 
 void printIdentityServiceHelp(std::ostream& out) {
-    out << "identity service commands:\n"
-           "  info                   show service id, type, credentials, realms\n"
-           "  help                   show this help\n"
-           "  store SUBCMD …         (store service) user-store commands\n";
+    out << _("identity service commands:\n"
+             "  info                   show service id, type, credentials, realms\n"
+             "  help                   show this help\n"
+             "  store SUBCMD …         (store service) user-store commands\n");
 }
 
 void printIdentityServiceInfo(const IdentityService& service) {
-    std::cout << "  id: " << service.id() << '\n';
-    std::cout << "  type: " << service.identityType() << '\n';
-    std::cout << "  auto-login: " << (service.canAutoLogin() ? "yes" : "no") << '\n';
-    std::cout << "  credentials:";
+    std::cout << _("  id: ") << service.id() << '\n';
+    std::cout << _("  type: ") << service.identityType() << '\n';
+    std::cout << _("  auto-login: ") << (service.canAutoLogin() ? _("yes") : _("no")) << '\n';
+    std::cout << _("  credentials:");
     const auto credTypes = service.supportedCredentialTypes();
     if (credTypes.empty()) {
-        std::cout << " (none)\n";
+        std::cout << _(" (none)\n");
     } else {
         for (const auto& type : credTypes) {
             std::cout << ' ' << type;
         }
         std::cout << '\n';
     }
-    std::cout << "  realm-types:";
+    std::cout << _("  realm-types:");
     const auto realmTypes = service.supportedRealmTypes();
     if (realmTypes.empty()) {
-        std::cout << " (any)\n";
+        std::cout << _(" (any)\n");
     } else {
         for (const auto& type : realmTypes) {
             std::cout << ' ' << type;
@@ -42,7 +44,7 @@ void printIdentityServiceInfo(const IdentityService& service) {
     }
     const auto stores = service.getBackedStores();
     if (!stores.empty()) {
-        std::cout << "  backed-stores: " << stores.size() << '\n';
+        std::cout << _("  backed-stores: ") << stores.size() << '\n';
     }
 }
 
@@ -66,7 +68,7 @@ int IdentityService::invoke(std::vector<std::string>& args) {
         return commandSuccess();
     }
 
-    std::cerr << "unknown identity service subcommand: " << sub << " (try: help)\n";
+    std::cerr << _("unknown identity service subcommand: ") << sub << _(" (try: help)\n");
     return commandFailure();
 }
 
@@ -83,7 +85,7 @@ int StoreIdentityService::invoke(std::vector<std::string>& args) {
     if (!args.empty() && args[0] == "store") {
         args.erase(args.begin());
         if (!m_userStore) {
-            std::cerr << "user store not configured\n";
+            std::cerr << _("user store not configured\n");
             return commandFailure();
         }
         return m_userStore->invoke(args);

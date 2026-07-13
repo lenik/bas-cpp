@@ -1,6 +1,8 @@
 #include "IdentityService.hpp"
 #include "UserStore.hpp"
 
+#include <bas/locale/i18n.h>
+
 #include <unordered_set>
 
 namespace bas::security {
@@ -101,11 +103,11 @@ LoginResult StoreIdentityService::login(const LoginRequest& request) {
 
     if (!request.credential.has_value()) {
         LoginFormSpec form;
-        form.title = "User Login";
+        form.title = _("User Login");
         LoginField realmType;
         realmType.name = "realm_type";
         realmType.type = "text";
-        realmType.label = "Realm type";
+        realmType.label = _("Realm type");
         realmType.required = false;
         if (!request.realmHint.type.empty()) {
             realmType.options["value"] = request.realmHint.type;
@@ -115,7 +117,7 @@ LoginResult StoreIdentityService::login(const LoginRequest& request) {
         LoginField realmName;
         realmName.name = "realm";
         realmName.type = "text";
-        realmName.label = "Realm name";
+        realmName.label = _("Realm name");
         realmName.required = false;
         if (!request.realmHint.name.empty()) {
             realmName.options["value"] = request.realmHint.name;
@@ -123,7 +125,7 @@ LoginResult StoreIdentityService::login(const LoginRequest& request) {
         LoginField realmUuid;
         realmUuid.name = "realm_uuid";
         realmUuid.type = "text";
-        realmUuid.label = "Realm UUID";
+        realmUuid.label = _("Realm UUID");
         realmUuid.required = false;
         if (!request.realmHint.uuid.empty()) {
             realmUuid.options["value"] = request.realmHint.uuid;
@@ -131,12 +133,12 @@ LoginResult StoreIdentityService::login(const LoginRequest& request) {
         LoginField username;
         username.name = "username";
         username.type = "text";
-        username.label = "Username";
+        username.label = _("Username");
         username.required = true;
         LoginField password;
         password.name = "password";
         password.type = "password";
-        password.label = "Password";
+        password.label = _("Password");
         password.required = true;
         form.fields.push_back(realmType);
         form.fields.push_back(realmName);

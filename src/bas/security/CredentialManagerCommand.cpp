@@ -2,6 +2,8 @@
 
 #include "CommandSupport.hpp"
 
+#include <bas/locale/i18n.h>
+
 #include <iostream>
 
 namespace bas::security {
@@ -9,21 +11,21 @@ namespace bas::security {
 namespace {
 
 void printCredentialHelp(std::ostream& out) {
-    out << "credential commands:\n"
-           "  list [-v]              list cached credentials (no secrets)\n"
-           "  del STORE ID           remove credential by ref\n"
-           "  clear                  remove all credentials\n"
-           "  path                   show credential file path\n"
-           "  reload                 reload from disk\n"
-           "  save                   write credentials to disk\n"
-           "  help                   show this help\n";
+    out << _("credential commands:\n"
+             "  list [-v]              list cached credentials (no secrets)\n"
+             "  del STORE ID           remove credential by ref\n"
+             "  clear                  remove all credentials\n"
+             "  path                   show credential file path\n"
+             "  reload                 reload from disk\n"
+             "  save                   write credentials to disk\n"
+             "  help                   show this help\n");
 }
 
 void printCredentials(const CredentialManager& credentials, bool verbose) {
     CredentialRequest req;
     const auto infos = credentials.list(req);
     if (infos.empty()) {
-        std::cout << "no cached credentials\n";
+        std::cout << _("no cached credentials\n");
         return;
     }
     for (const auto& info : infos) {
@@ -35,7 +37,7 @@ void printCredentials(const CredentialManager& credentials, bool verbose) {
         }
         std::cout << '\n';
         if (verbose) {
-            std::cout << "    (use login/request to verify; secrets not printed)\n";
+            std::cout << _("    (use login/request to verify; secrets not printed)\n");
         }
     }
 }
@@ -70,46 +72,46 @@ int CredentialManager::invoke(std::vector<std::string>& args) {
     if (head == "path") {
         const auto path = credentialPath();
         if (path.empty()) {
-            std::cout << "credential store: in-memory\n";
+            std::cout << _("credential store: in-memory\n");
         } else {
-            std::cout << "credential file: " << path << '\n';
+            std::cout << _("credential file: ") << path << '\n';
         }
         return commandSuccess();
     }
     if (head == "reload") {
         if (!canReloadCredentials()) {
-            std::cerr << "reload only applies to file credential store\n";
+            std::cerr << _("reload only applies to file credential store\n");
             return commandFailure();
         }
         reloadCredentials();
-        std::cout << "reloaded " << credentialPersistedCount() << " credential(s) from "
+        std::cout << _("reloaded ") << credentialPersistedCount() << _(" credential(s) from ")
                   << credentialPath() << '\n';
         return commandSuccess();
     }
     if (head == "save") {
         if (!canSaveCredentials()) {
-            std::cerr << "save only applies to file credential store\n";
+            std::cerr << _("save only applies to file credential store\n");
             return commandFailure();
         }
         saveCredentials();
-        std::cout << "saved credentials to " << credentialPath() << '\n';
+        std::cout << _("saved credentials to ") << credentialPath() << '\n';
         return commandSuccess();
     }
     if (head == "clear") {
         clear();
-        std::cout << "cleared all credentials\n";
+        std::cout << _("cleared all credentials\n");
         return commandSuccess();
     }
     if (head == "del") {
         if (args.size() < 2) {
-            std::cerr << "usage: del STORE ID\n";
+            std::cerr << _("usage: del STORE ID\n");
             return commandFailure();
         }
         CredentialRef ref;
         ref.store = args[0];
         ref.id = args[1];
         remove(ref);
-        std::cout << "removed credential [" << ref.store << "] " << ref.id << '\n';
+        std::cout << _("removed credential [") << ref.store << "] " << ref.id << '\n';
         return commandSuccess();
     }
 
@@ -118,7 +120,7 @@ int CredentialManager::invoke(std::vector<std::string>& args) {
         return commandSuccess();
     }
 
-    std::cerr << "unknown credential command: " << head << " (try: help)\n";
+    std::cerr << _("unknown credential command: ") << head << _(" (try: help)\n");
     return commandFailure();
 }
 

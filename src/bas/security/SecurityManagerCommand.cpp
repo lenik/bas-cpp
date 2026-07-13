@@ -3,6 +3,8 @@
 #include "ACList.hpp"
 #include "CommandSupport.hpp"
 
+#include <bas/locale/i18n.h>
+
 #include <iostream>
 
 namespace bas::security {
@@ -10,15 +12,15 @@ namespace bas::security {
 namespace {
 
 void printAcHelp(std::ostream& out) {
-    out << "access control commands:\n"
-           "  whoami                         list active identities\n"
-           "  logout                         clear all active identities\n"
-           "  logout-realm [@realm|NAME]     clear identities in a realm\n"
-           "  check [@realm] PERMISSION      check permission\n"
-           "  request [@realm] PERM [USER]   request permission (login if needed)\n"
-           "  login [@realm] [USER]          interactive login\n"
-           "  reload-creds                   reload credential file and restore logins\n"
-           "  help                           show this help\n";
+    out << _("access control commands:\n"
+             "  whoami                         list active identities\n"
+             "  logout                         clear all active identities\n"
+             "  logout-realm [@realm|NAME]     clear identities in a realm\n"
+             "  check [@realm] PERMISSION      check permission\n"
+             "  request [@realm] PERM [USER]   request permission (login if needed)\n"
+             "  login [@realm] [USER]          interactive login\n"
+             "  reload-creds                   reload credential file and restore logins\n"
+             "  help                           show this help\n");
 }
 
 static std::vector<std::string> registeredRealmCompletions(const SecurityManager& ac,
@@ -35,7 +37,7 @@ static std::vector<std::string> registeredRealmCompletions(const SecurityManager
 void printIdentities(const SecurityManager& ac) {
     const auto identities = ac.currentIdentities();
     if (identities.empty()) {
-        std::cout << "no active identities\n";
+        std::cout << _("no active identities\n");
         return;
     }
     for (const auto& id : identities) {
@@ -44,7 +46,7 @@ void printIdentities(const SecurityManager& ac) {
         if (!id.displayName.empty() && id.displayName != id.name) {
             std::cout << " (" << id.displayName << ')';
         }
-        std::cout << " via " << id.serviceId << '\n';
+        std::cout << _(" via ") << id.serviceId << '\n';
     }
 }
 
@@ -106,7 +108,7 @@ int SecurityManager::invoke(std::vector<std::string>& args) {
     }
     if (cmd == "logout") {
         logoutAll();
-        std::cout << "logged out all identities (auto-login suppressed until next login)\n";
+        std::cout << _("logged out all identities (auto-login suppressed until next login)\n");
         return commandSuccess();
     }
     if (cmd == "logout-realm") {
@@ -119,21 +121,21 @@ int SecurityManager::invoke(std::vector<std::string>& args) {
             }
         }
         if (realm.empty()) {
-            std::cerr << "usage: logout-realm [@realm|NAME]\n";
+            std::cerr << _("usage: logout-realm [@realm|NAME]\n");
             return commandFailure();
         }
         logoutRealm(realm);
-        std::cout << "logged out identities in realm " << realm.displayLabel() << '\n';
+        std::cout << _("logged out identities in realm ") << realm.displayLabel() << '\n';
         return commandSuccess();
     }
     if (cmd == "reload-creds") {
         if (!m_credentialManager->canReloadCredentials()) {
-            std::cerr << "no file credential store configured\n";
+            std::cerr << _("no file credential store configured\n");
             return commandFailure();
         }
         m_credentialManager->reloadCredentials();
-        std::cout << "reloaded " << m_credentialManager->credentialPersistedCount()
-                  << " credential(s) from " << m_credentialManager->credentialPath() << '\n';
+        std::cout << _("reloaded ") << m_credentialManager->credentialPersistedCount()
+                  << _(" credential(s) from ") << m_credentialManager->credentialPath() << '\n';
         AccessRequestOptions options;
         activateCachedCredentials(options);
         printIdentities(*this);
@@ -151,7 +153,7 @@ int SecurityManager::invoke(std::vector<std::string>& args) {
 
     if (cmd == "check") {
         if (args.empty()) {
-            std::cerr << "usage: check [@realm] PERMISSION\n";
+            std::cerr << _("usage: check [@realm] PERMISSION\n");
             return commandFailure();
         }
         AccessRequestOptions options;
@@ -161,7 +163,7 @@ int SecurityManager::invoke(std::vector<std::string>& args) {
     }
     if (cmd == "request") {
         if (args.empty()) {
-            std::cerr << "usage: request [@realm] PERMISSION [USER]\n";
+            std::cerr << _("usage: request [@realm] PERMISSION [USER]\n");
             return commandFailure();
         }
         AccessRequestOptions options;
@@ -191,19 +193,19 @@ int SecurityManager::invoke(std::vector<std::string>& args) {
             options.nameHint = m_cmdDefaultSubject;
         }
         if (login(options)) {
-            std::cout << "login ok";
+            std::cout << _("login ok");
             if (!realm.empty()) {
-                std::cout << " realm=" << realm.displayLabel();
+                std::cout << _(" realm=") << realm.displayLabel();
             }
             std::cout << '\n';
             printIdentities(*this);
             return commandSuccess();
         }
-        std::cerr << "login failed\n";
+        std::cerr << _("login failed\n");
         return commandFailure();
     }
 
-    std::cerr << "unknown command: " << cmd << " (try: help)\n";
+    std::cerr << _("unknown command: ") << cmd << _(" (try: help)\n");
     return commandFailure();
 }
 

@@ -6,6 +6,8 @@
 #include "../reg/Registry.hpp"
 #include "../reg/Sub.hpp"
 
+#include <bas/locale/i18n.h>
+
 #include <boost/json.hpp>
 
 #include <chrono>
@@ -29,132 +31,132 @@ struct UserWriteOptions {
 };
 
 void printUserStoreHelp(std::ostream& out) {
-    out << "user store commands:\n"
-           "  user list                       list usernames\n"
-           "  user show USER                  show profile, roles, keys\n"
-           "  user add [options] USER [PASSWORD]\n"
-           "  user update [options] USER [PASSWORD]\n"
-           "      -a/--avatar NAME   -d/--display NAME   -e/--email EMAIL\n"
-           "      -p/--password PASS  [PASSWORD] positional\n"
-           "      -H/--hash ALGO      plain (default), sha256, sha1, md5\n"
-           "      -h/--help           show command help\n"
-           "      -r/--roles ROLES    comma-separated role names\n"
-           "      password from stdin when -p and [PASSWORD] are both omitted\n"
-           "  user check USER [PASSWORD]        validate password (exit 1 on failure)\n"
-           "  user del USER                   remove user\n"
-           "  user enable USER | user disable USER\n"
-           "  user roles USER | user roles set USER R…\n"
-           "  user role add USER ROLE | user role del USER ROLE\n"
-           "  user keys USER | user key add/del …\n"
-           "  path | reload | save | help\n"
-           "  commands may be abbreviated by unique prefix\n"
-           "  -h/--help on any subcommand shows its usage\n";
+    out << _("user store commands:\n"
+             "  user list                       list usernames\n"
+             "  user show USER                  show profile, roles, keys\n"
+             "  user add [options] USER [PASSWORD]\n"
+             "  user update [options] USER [PASSWORD]\n"
+             "      -a/--avatar NAME   -d/--display NAME   -e/--email EMAIL\n"
+             "      -p/--password PASS  [PASSWORD] positional\n"
+             "      -H/--hash ALGO      plain (default), sha256, sha1, md5\n"
+             "      -h/--help           show command help\n"
+             "      -r/--roles ROLES    comma-separated role names\n"
+             "      password from stdin when -p and [PASSWORD] are both omitted\n"
+             "  user check USER [PASSWORD]        validate password (exit 1 on failure)\n"
+             "  user del USER                   remove user\n"
+             "  user enable USER | user disable USER\n"
+             "  user roles USER | user roles set USER R…\n"
+             "  user role add USER ROLE | user role del USER ROLE\n"
+             "  user keys USER | user key add/del …\n"
+             "  path | reload | save | help\n"
+             "  commands may be abbreviated by unique prefix\n"
+             "  -h/--help on any subcommand shows its usage\n");
 }
 
 void printUserListHelp(std::ostream& out) {
-    out << "usage: user list [-h]\n"
-           "  List all usernames in the store.\n";
+    out << _("usage: user list [-h]\n"
+             "  List all usernames in the store.\n");
 }
 
 void printUserShowHelp(std::ostream& out) {
-    out << "usage: user show [-h] USER\n"
-           "  Show profile, roles, and auth keys for USER.\n";
+    out << _("usage: user show [-h] USER\n"
+             "  Show profile, roles, and auth keys for USER.\n");
 }
 
 void printUserAddHelp(std::ostream& out) {
-    out << "usage: user add [-h] [options] USER [PASSWORD]\n"
-           "  Create a new user record.\n"
-           "options:\n"
-           "  -a, --avatar NAME     profile.attributes.avatar\n"
-           "  -d, --display NAME    display name\n"
-           "  -e, --email EMAIL     email address\n"
-           "  -p, --password PASS   password (or positional PASSWORD)\n"
-           "  -H, --hash ALGO       plain (default), sha256, sha1, md5\n"
-           "  -r, --roles ROLES     comma-separated role names (default: operator)\n"
-           "  -h, --help            show this help\n"
-           "  If neither -p nor PASSWORD is given, password is read from stdin.\n";
+    out << _("usage: user add [-h] [options] USER [PASSWORD]\n"
+             "  Create a new user record.\n"
+             "options:\n"
+             "  -a, --avatar NAME     profile.attributes.avatar\n"
+             "  -d, --display NAME    display name\n"
+             "  -e, --email EMAIL     email address\n"
+             "  -p, --password PASS   password (or positional PASSWORD)\n"
+             "  -H, --hash ALGO       plain (default), sha256, sha1, md5\n"
+             "  -r, --roles ROLES     comma-separated role names (default: operator)\n"
+             "  -h, --help            show this help\n"
+             "  If neither -p nor PASSWORD is given, password is read from stdin.\n");
 }
 
 void printUserUpdateHelp(std::ostream& out) {
-    out << "usage: user update [-h] [options] USER [PASSWORD]\n"
-           "  Update an existing user; only specified fields are changed.\n"
-           "options: same as user add\n";
+    out << _("usage: user update [-h] [options] USER [PASSWORD]\n"
+             "  Update an existing user; only specified fields are changed.\n"
+             "options: same as user add\n");
 }
 
 void printUserCheckHelp(std::ostream& out) {
-    out << "usage: user check [-h] USER [PASSWORD]\n"
-           "  Validate PASSWORD against USER's stored keys (exit 1 on failure).\n"
-           "  PASSWORD from stdin when omitted.\n";
+    out << _("usage: user check [-h] USER [PASSWORD]\n"
+             "  Validate PASSWORD against USER's stored keys (exit 1 on failure).\n"
+             "  PASSWORD from stdin when omitted.\n");
 }
 
 void printUserDelHelp(std::ostream& out) {
-    out << "usage: user del|rm [-h] USER\n"
-           "  Remove USER from the store.\n";
+    out << _("usage: user del|rm [-h] USER\n"
+             "  Remove USER from the store.\n");
 }
 
 void printUserEnableHelp(std::ostream& out) {
-    out << "usage: user enable|disable [-h] USER\n"
-           "  Enable or disable USER login.\n";
+    out << _("usage: user enable|disable [-h] USER\n"
+             "  Enable or disable USER login.\n");
 }
 
 void printUserRolesHelp(std::ostream& out) {
-    out << "usage: user roles [-h] USER\n"
-           "       user roles set [-h] USER ROLE…\n"
-           "  List roles, or replace the role list for USER.\n";
+    out << _("usage: user roles [-h] USER\n"
+             "       user roles set [-h] USER ROLE…\n"
+             "  List roles, or replace the role list for USER.\n");
 }
 
 void printUserRoleHelp(std::ostream& out) {
-    out << "usage: user role add [-h] USER ROLE\n"
-           "       user role del [-h] USER ROLE\n"
-           "  Add or remove a single role name on USER.\n";
+    out << _("usage: user role add [-h] USER ROLE\n"
+             "       user role del [-h] USER ROLE\n"
+             "  Add or remove a single role name on USER.\n");
 }
 
 void printUserKeysHelp(std::ostream& out) {
-    out << "usage: user keys [-h] USER\n"
-           "  List authentication keys for USER.\n";
+    out << _("usage: user keys [-h] USER\n"
+             "  List authentication keys for USER.\n");
 }
 
 void printUserKeyHelp(std::ostream& out) {
-    out << "usage: user key add [-h] USER ID TYPE [options]\n"
-           "       user key del [-h] USER ID\n"
-           "options for add:\n"
-           "  -p, --password PASS   key secret\n"
-           "  -H, --hash ALGO       for password-hash (default plain → password-plain)\n"
-           "  --name LABEL          key display name\n"
-           "  -h, --help            show this help\n";
+    out << _("usage: user key add [-h] USER ID TYPE [options]\n"
+             "       user key del [-h] USER ID\n"
+             "options for add:\n"
+             "  -p, --password PASS   key secret\n"
+             "  -H, --hash ALGO       for password-hash (default plain → password-plain)\n"
+             "  --name LABEL          key display name\n"
+             "  -h, --help            show this help\n");
 }
 
 void printUserRecord(const UserRecord& record) {
     const auto& p = record.profile;
-    std::cout << "  name: " << p.name << '\n';
+    std::cout << _("  name: ") << p.name << '\n';
     if (!p.displayName.empty()) {
-        std::cout << "  display: " << p.displayName << '\n';
+        std::cout << _("  display: ") << p.displayName << '\n';
     }
     if (!p.email.empty()) {
-        std::cout << "  email: " << p.email << '\n';
+        std::cout << _("  email: ") << p.email << '\n';
     }
     if (auto* avatar = p.attributes.if_contains("avatar")) {
         if (avatar->is_string()) {
-            std::cout << "  avatar: " << avatar->as_string().c_str() << '\n';
+            std::cout << _("  avatar: ") << avatar->as_string().c_str() << '\n';
         }
     }
-    std::cout << "  enabled: " << (p.enabled ? "yes" : "no") << '\n';
-    std::cout << "  roles:";
+    std::cout << _("  enabled: ") << (p.enabled ? _("yes") : _("no")) << '\n';
+    std::cout << _("  roles:");
     if (record.roles.empty()) {
-        std::cout << " (none)\n";
+        std::cout << _(" (none)\n");
     } else {
         for (const auto& role : record.roles) {
             std::cout << ' ' << role;
         }
         std::cout << '\n';
     }
-    std::cout << "  keys:\n";
+    std::cout << _("  keys:\n");
     if (record.keys.empty()) {
-        std::cout << "    (none)\n";
+        std::cout << _("    (none)\n");
     } else {
         for (const auto& key : record.keys) {
             std::cout << "    " << key.id << " type=" << key.type << " name=" << key.name
-                      << " enabled=" << (key.enabled ? "yes" : "no");
+                      << " enabled=" << (key.enabled ? _("yes") : _("no"));
             if (key.type == "password-hash") {
                 if (auto* algo = key.data.if_contains("algorithm")) {
                     if (algo->is_string()) {
@@ -239,7 +241,7 @@ bool resolvePasswordInput(UserWriteOptions& opts, std::string& error) {
     }
     std::string fromStdin;
     if (!readPasswordFromStdin(fromStdin)) {
-        error = "failed to read password from stdin";
+        error = _("failed to read password from stdin");
         return false;
     }
     opts.password = std::move(fromStdin);
@@ -252,7 +254,7 @@ bool parseUserWriteOptions(std::vector<std::string>& args, UserWriteOptions& opt
         const std::string& token = args[i];
         auto takeValue = [&](std::string& out) -> bool {
             if (i + 1 >= args.size()) {
-                error = "missing value for " + token;
+                error = std::string(_("missing value for ")) + token;
                 return false;
             }
             out = args[i + 1];
@@ -308,7 +310,7 @@ bool parseUserWriteOptions(std::vector<std::string>& args, UserWriteOptions& opt
             continue;
         }
         if (!token.empty() && token.front() == '-') {
-            error = "unknown option: " + token;
+            error = std::string(_("unknown option: ")) + token;
             return false;
         }
         ++i;
@@ -328,11 +330,11 @@ bool parseUserWriteOptions(std::vector<std::string>& args, UserWriteOptions& opt
         }
     }
     if (!args.empty()) {
-        error = "unexpected argument: " + args.front();
+        error = std::string(_("unexpected argument: ")) + args.front();
         return false;
     }
     if (requireUser && opts.userName.empty()) {
-        error = "USER name required";
+        error = _("USER name required");
         return false;
     }
     if (readStdinIfMissing && !opts.password.has_value()) {
@@ -348,7 +350,7 @@ bool parseUserWriteOptions(std::vector<std::string>& args, UserWriteOptions& opt
 
 bool parseCheckOptions(std::vector<std::string>& args, UserWriteOptions& opts, std::string& error) {
     if (args.empty()) {
-        error = "USER name required";
+        error = _("USER name required");
         return false;
     }
     opts.userName = args.front();
@@ -361,7 +363,7 @@ bool parseCheckOptions(std::vector<std::string>& args, UserWriteOptions& opts, s
         opts.wantPassword = true;
     }
     if (!args.empty()) {
-        error = "unexpected argument: " + args.front();
+        error = std::string(_("unexpected argument: ")) + args.front();
         return false;
     }
     return resolvePasswordInput(opts, error);
@@ -406,12 +408,12 @@ int runUserAdd(UserStore& store, std::vector<std::string> args) {
         return commandFailure();
     }
     if (store.hasUser(opts.userName)) {
-        std::cerr << "user already exists: " << opts.userName << '\n';
+        std::cerr << _("user already exists: ") << opts.userName << '\n';
         return commandFailure();
     }
     if (opts.password.has_value() && !isPasswordStorageAlgorithm(opts.hashAlgo)) {
-        std::cerr << "unsupported hash algorithm: " << opts.hashAlgo
-                  << " (use plain, sha256, sha1, or md5)\n";
+        std::cerr << _("unsupported hash algorithm: ") << opts.hashAlgo
+                  << _(" (use plain, sha256, sha1, or md5)\n");
         return commandFailure();
     }
 
@@ -431,7 +433,7 @@ int runUserAdd(UserStore& store, std::vector<std::string> args) {
             makePasswordKeyForAlgorithm("pwd-main", *opts.password, opts.hashAlgo));
     }
     store.addUser(record);
-    std::cout << "added user " << opts.userName << '\n';
+    std::cout << _("added user ") << opts.userName << '\n';
     return commandSuccess();
 }
 
@@ -451,18 +453,18 @@ int runUserUpdate(UserStore& store, std::vector<std::string> args) {
         return commandFailure();
     }
     if (!store.hasUser(opts.userName)) {
-        std::cerr << "user not found: " << opts.userName << '\n';
+        std::cerr << _("user not found: ") << opts.userName << '\n';
         return commandFailure();
     }
     if (opts.password.has_value() && !isPasswordStorageAlgorithm(opts.hashAlgo)) {
-        std::cerr << "unsupported hash algorithm: " << opts.hashAlgo
-                  << " (use plain, sha256, sha1, or md5)\n";
+        std::cerr << _("unsupported hash algorithm: ") << opts.hashAlgo
+                  << _(" (use plain, sha256, sha1, or md5)\n");
         return commandFailure();
     }
 
     auto record = store.getUserRecord(opts.userName);
     if (!record.has_value()) {
-        std::cerr << "user not found: " << opts.userName << '\n';
+        std::cerr << _("user not found: ") << opts.userName << '\n';
         return commandFailure();
     }
 
@@ -480,7 +482,7 @@ int runUserUpdate(UserStore& store, std::vector<std::string> args) {
     if (opts.password.has_value()) {
         setMainPasswordKey(store, opts.userName, *opts.password, opts.hashAlgo);
     }
-    std::cout << "updated user " << opts.userName << '\n';
+    std::cout << _("updated user ") << opts.userName << '\n';
     return commandSuccess();
 }
 
@@ -496,18 +498,18 @@ int runUserCheck(const UserStore& store, std::vector<std::string> args) {
         return commandFailure();
     }
     if (!opts.password.has_value()) {
-        std::cerr << "password required\n";
+        std::cerr << _("password required\n");
         return commandFailure();
     }
     if (!store.hasUser(opts.userName)) {
-        std::cerr << "user not found: " << opts.userName << '\n';
+        std::cerr << _("user not found: ") << opts.userName << '\n';
         return commandFailure();
     }
     if (verifyUserPassword(store, opts.userName, *opts.password)) {
-        std::cout << "password ok for " << opts.userName << '\n';
+        std::cout << _("password ok for ") << opts.userName << '\n';
         return commandSuccess();
     }
-    std::cerr << "invalid password for " << opts.userName << '\n';
+    std::cerr << _("invalid password for ") << opts.userName << '\n';
     return commandFailure();
 }
 
@@ -515,11 +517,11 @@ bool resolveSubcommand(const std::vector<std::string>& commands, const std::stri
                        std::string& resolved) {
     const ResolvedCommand match = resolveCommandByPrefix(commands, token);
     if (match.match == CommandMatch::Ambiguous) {
-        std::cerr << "ambiguous command: " << token << '\n';
+        std::cerr << _("ambiguous command: ") << token << '\n';
         return false;
     }
     if (match.match == CommandMatch::NotFound) {
-        std::cerr << "unknown command: " << token << '\n';
+        std::cerr << _("unknown command: ") << token << '\n';
         return false;
     }
     resolved = match.value;
@@ -554,7 +556,7 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
         }
         const auto users = listUsers();
         if (users.empty()) {
-            std::cout << "no users in store\n";
+            std::cout << _("no users in store\n");
             return commandSuccess();
         }
         for (const auto& name : users) {
@@ -565,7 +567,7 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
                     std::cout << " (" << profile->displayName << ')';
                 }
                 if (!profile->enabled) {
-                    std::cout << " [disabled]";
+                    std::cout << _(" [disabled]");
                 }
             }
             std::cout << '\n';
@@ -583,7 +585,7 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
         }
         const auto record = getUserRecord(args[0]);
         if (!record.has_value()) {
-            std::cerr << "user not found: " << args[0] << '\n';
+            std::cerr << _("user not found: ") << args[0] << '\n';
             return commandFailure();
         }
         printUserRecord(*record);
@@ -608,11 +610,11 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
             return commandFailure();
         }
         if (!hasUser(args[0])) {
-            std::cerr << "user not found: " << args[0] << '\n';
+            std::cerr << _("user not found: ") << args[0] << '\n';
             return commandFailure();
         }
         removeUser(args[0]);
-        std::cout << "removed user " << args[0] << '\n';
+        std::cout << _("removed user ") << args[0] << '\n';
         return commandSuccess();
     }
     if (sub == "enable" || sub == "disable") {
@@ -625,15 +627,16 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
             return commandFailure();
         }
         if (!hasUser(args[0])) {
-            std::cerr << "user not found: " << args[0] << '\n';
+            std::cerr << _("user not found: ") << args[0] << '\n';
             return commandFailure();
         }
         if (sub == "enable") {
             enableUser(args[0]);
+            std::cout << _("enabled user ") << args[0] << '\n';
         } else {
             disableUser(args[0]);
+            std::cout << _("disabled user ") << args[0] << '\n';
         }
-        std::cout << sub << "d user " << args[0] << '\n';
         return commandSuccess();
     }
     if (sub == "roles") {
@@ -654,25 +657,25 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
                 return commandSuccess();
             }
             if (args.empty()) {
-                std::cerr << "usage: user roles set USER R…\n";
+                std::cerr << _("usage: user roles set USER R…\n");
                 return commandFailure();
             }
             const std::string userName = args[0];
             if (!hasUser(userName)) {
-                std::cerr << "user not found: " << userName << '\n';
+                std::cerr << _("user not found: ") << userName << '\n';
                 return commandFailure();
             }
             const std::vector<std::string> roles(args.begin() + 1, args.end());
             setRoles(userName, roles);
-            std::cout << "roles updated for " << userName << '\n';
+            std::cout << _("roles updated for ") << userName << '\n';
             return commandSuccess();
         }
         if (!hasUser(args[0])) {
-            std::cerr << "user not found: " << args[0] << '\n';
+            std::cerr << _("user not found: ") << args[0] << '\n';
             return commandFailure();
         }
         for (const auto& role : getRoles(args[0])) {
-            std::cout << "  role:" << role << '\n';
+            std::cout << _("  role:") << role << '\n';
         }
         return commandSuccess();
     }
@@ -692,7 +695,7 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
         const std::string& userName = args[1];
         const std::string& role = args[2];
         if (!hasUser(userName)) {
-            std::cerr << "user not found: " << userName << '\n';
+            std::cerr << _("user not found: ") << userName << '\n';
             return commandFailure();
         }
         if (op == "add") {
@@ -700,7 +703,7 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
         } else {
             removeRole(userName, role);
         }
-        std::cout << "role " << op << ' ' << role << " for " << userName << '\n';
+        std::cout << _("role ") << op << ' ' << role << _(" for ") << userName << '\n';
         return commandSuccess();
     }
     if (sub == "keys") {
@@ -713,12 +716,12 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
             return commandFailure();
         }
         if (!hasUser(args[0])) {
-            std::cerr << "user not found: " << args[0] << '\n';
+            std::cerr << _("user not found: ") << args[0] << '\n';
             return commandFailure();
         }
         for (const auto& key : getKeys(args[0])) {
             std::cout << "  " << key.id << " type=" << key.type << " name=" << key.name
-                      << " enabled=" << (key.enabled ? "yes" : "no") << '\n';
+                      << " enabled=" << (key.enabled ? _("yes") : _("no")) << '\n';
         }
         return commandSuccess();
     }
@@ -745,7 +748,7 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
                 return commandFailure();
             }
             removeKey(args[1], args[2]);
-            std::cout << "removed key " << args[2] << " from " << args[1] << '\n';
+            std::cout << _("removed key ") << args[2] << _(" from ") << args[1] << '\n';
             return commandSuccess();
         }
         if (takeHelpRequest(args)) {
@@ -761,7 +764,7 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
         const std::string keyType = args[3];
         std::vector<std::string> rest(args.begin() + 4, args.end());
         if (!hasUser(userName)) {
-            std::cerr << "user not found: " << userName << '\n';
+            std::cerr << _("user not found: ") << userName << '\n';
             return commandFailure();
         }
         UserWriteOptions keyOpts;
@@ -782,12 +785,12 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
                 const std::string algo =
                     keyType == "password-plain" ? "plain" : keyOpts.hashAlgo;
                 if (!isPasswordStorageAlgorithm(algo)) {
-                    std::cerr << "unsupported hash algorithm: " << algo << '\n';
+                    std::cerr << _("unsupported hash algorithm: ") << algo << '\n';
                     return commandFailure();
                 }
                 key = makePasswordKeyForAlgorithm(keyId, *keyOpts.password, algo);
             } else {
-                std::cerr << "password flags require key type password-hash or password-plain\n";
+                std::cerr << _("password flags require key type password-hash or password-plain\n");
                 return commandFailure();
             }
             key.name = keyName;
@@ -799,11 +802,11 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
             key.createdAt = std::chrono::system_clock::now();
         }
         addKey(userName, key);
-        std::cout << "added key " << keyId << " to " << userName << '\n';
+        std::cout << _("added key ") << keyId << _(" to ") << userName << '\n';
         return commandSuccess();
     }
 
-    std::cerr << "unknown user subcommand: " << sub << '\n';
+    std::cerr << _("unknown user subcommand: ") << sub << '\n';
     return commandFailure();
 }
 
@@ -831,42 +834,42 @@ int UserStore::invoke(std::vector<std::string>& args) {
 
     if (head == "path") {
         if (takeHelpRequest(args)) {
-            std::cout << "usage: path [-h]\n  Show user store file path and label.\n";
+            std::cout << _("usage: path [-h]\n  Show user store file path and label.\n");
             return commandSuccess();
         }
-        std::cout << "user store: " << storeLabel() << '\n';
+        std::cout << _("user store: ") << storeLabel() << '\n';
         const auto path = storePath();
         if (!path.empty()) {
-            std::cout << "  file: " << path << '\n';
+            std::cout << _("  file: ") << path << '\n';
         } else {
-            std::cout << "  kind: in-memory\n";
+            std::cout << _("  kind: in-memory\n");
         }
         return commandSuccess();
     }
     if (head == "reload") {
         if (takeHelpRequest(args)) {
-            std::cout << "usage: reload [-h]\n  Reload user store from disk.\n";
+            std::cout << _("usage: reload [-h]\n  Reload user store from disk.\n");
             return commandSuccess();
         }
         if (!canReloadFromDisk()) {
-            std::cerr << "reload only applies to file store (-d/--store FILE)\n";
+            std::cerr << _("reload only applies to file store (-d/--store FILE)\n");
             return commandFailure();
         }
         reloadFromDisk();
-        std::cout << "reloaded user store from " << storePath() << '\n';
+        std::cout << _("reloaded user store from ") << storePath() << '\n';
         return commandSuccess();
     }
     if (head == "save") {
         if (takeHelpRequest(args)) {
-            std::cout << "usage: save [-h]\n  Write user store to disk.\n";
+            std::cout << _("usage: save [-h]\n  Write user store to disk.\n");
             return commandSuccess();
         }
         if (!canSaveToDisk()) {
-            std::cerr << "save only applies to file store (-d/--store FILE)\n";
+            std::cerr << _("save only applies to file store (-d/--store FILE)\n");
             return commandFailure();
         }
         saveToDisk();
-        std::cout << "saved user store to " << storePath() << '\n';
+        std::cout << _("saved user store to ") << storePath() << '\n';
         return commandSuccess();
     }
     if (head == "user") {
