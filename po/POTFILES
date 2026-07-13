@@ -1,0 +1,13 @@
+app/acdemo.cpp
+app/reg.cpp
+app/tanks_game.cpp
+app/vols.cpp
+src/bas/security/ACList.cpp
+src/bas/security/CredentialManagerCommand.cpp
+src/bas/security/IdentityRegistryCommand.cpp
+src/bas/security/IdentityServiceCommand.cpp
+src/bas/security/IdentityService.cpp
+src/bas/security/PolicyStoreCommand.cpp
+src/bas/security/SecurityManagerCommand.cpp
+src/bas/security/UserStoreCommand.cpp
+src/bas/volume/Volume_utils.cpp

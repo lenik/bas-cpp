@@ -9,6 +9,7 @@ project(
 )
 
 pkgdatadir = get_option('datadir') / meson.project_name()
+localedir = get_option('prefix') / get_option('localedir')
 
 fs = import('fs')
 
@@ -76,7 +77,12 @@ zlib_dep = dependency('zlib', required: true)
 # Precompiled header for wxWidgets
 cpp_pch = 'src/bulk.h'
 
-cpp_args = cpp_nowarn + ['-DLOGGER_NAME=cpp', '-DASSETS_NAME=bas_cpp']
+cpp_args = cpp_nowarn + [
+    '-DLOGGER_NAME=cpp',
+    '-DASSETS_NAME=bas_cpp',
+    '-DTEXT_DOMAIN=bas_cpp',
+    '-DLOCALEDIR="@0@"'.format(localedir),
+]
 
 cpp_sources = files(
     './src/bas/fmt/FileUtility.cpp',
@@ -409,5 +415,30 @@ install_subdir(
     strip_directory: true,
 )
 
+subdir('po')
 subdir('app')
 subdir('tests')
+
+run_target(
+    'posync',
+    command: [
+        'bash',
+        '-euc', '''
+            cd "@SOURCE_ROOT@/po"
+            poflags=(--no-wrap)
+            xgettext "${poflags[@]}" --from-code=UTF-8 --keyword=_ --keyword=N_ --language=C++ --directory=.. --output=bas_cpp.pot --files-from=POTFILES
+            while IFS= read -r lang; do
+                [ -n "$lang" ] || continue
+                case "$lang" in
+                    '#'* ) continue ;;
+                esac
+                po_file="$lang.po"
+                if [ ! -f "$po_file" ]; then
+                    msginit "${poflags[@]}" --no-translator --input=bas_cpp.pot --locale="$lang" --output-file="$po_file"
+                fi
+                msgmerge "${poflags[@]}" --update --backup=none "$po_file" bas_cpp.pot
+                msgattrib "${poflags[@]}" --no-obsolete --output-file="$po_file" "$po_file"
+            done < LINGUAS
+        ''',
+    ],
+)

@@ -4,6 +4,15 @@ exe_inc = include_directories('../src', '..')
 ncurses_dep = dependency('ncurses', required: true)
 ncursesw_dep = dependency('ncursesw', required: true)
 
+# Dev runtime: bas-c init_i18n prefers <exe_dir>/po (binaries live in build/app/).
+run_command(
+    'ln',
+    '-sfn',
+    '../po',
+    meson.current_build_dir() / 'po',
+    check: true,
+)
+
 app_cpp_list = [
     'asl.cpp',
     'reg.cpp',
@@ -28,7 +37,12 @@ foreach app_cpp : app_cpp_list
         link_with: lib_bas_cpp,
         dependencies: exe_deps,
         cpp_args: cpp_nowarn
-        + ['-DLOGGER_NAME=' + app_logger, '-DASSETS_NAME=bas_cpp'],
+        + [
+            '-DLOGGER_NAME=' + app_logger,
+            '-DASSETS_NAME=bas_cpp',
+            '-DTEXT_DOMAIN=bas_cpp',
+            '-DLOCALEDIR="@0@"'.format(localedir),
+        ],
         #cpp_pch: cpp_pch,
         install: true,
         install_dir: install_dir,
@@ -42,7 +56,14 @@ executable(
     include_directories: exe_inc,
     link_with: lib_bas_cpp,
     dependencies: exe_deps + [ncursesw_dep],
-    cpp_args: cpp_nowarn + ['-DLOGGER_NAME=cpp', '-DASSETS_NAME=bas_cpp', '-DNCURSES_WIDECHAR=1'],
+    cpp_args: cpp_nowarn
+    + [
+        '-DLOGGER_NAME=cpp',
+        '-DASSETS_NAME=bas_cpp',
+        '-DTEXT_DOMAIN=bas_cpp',
+        '-DLOCALEDIR="@0@"'.format(localedir),
+        '-DNCURSES_WIDECHAR=1',
+    ],
     install: true,
     install_dir: get_option('bindir'),
 )
