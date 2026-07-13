@@ -13,6 +13,7 @@
 #include <bas/security/UserStore.hpp>
 
 #include <bas/cli/opt_parser.h>
+#include <bas/locale/i18n.h>
 #include <bas/log/uselog.h>
 #include <bas/util/repl.hpp>
 
@@ -98,46 +99,46 @@ std::filesystem::path defaultAclPath() {
 }
 
 void printUsage(std::ostream& out) {
-    out << "acdemo — bas.security permissions, credentials, and console login demo\n\n"
-           "usage: acdemo [options] [command [args...]]\n\n"
-           "  If no command is given, starts an interactive shell.\n\n"
-           "commands:\n"
-           "  check [@realm] PERMISSION       check permission (optional realm scope)\n"
-           "  request [@realm] PERMISSION [USER]  request permission (login if needed)\n"
-           "  login [@realm] [USER]             interactive login → active identities\n"
-           "  whoami                            list active identities\n"
-           "  creds [-v]                        list cached credentials (no secrets)\n"
-           "  sm                                enter security manager shell\n"
-           "  us                                enter user store shell\n"
-           "  cm                                enter credential manager shell\n"
-           "  ps                                enter policy store shell\n"
-           "  reg                               enter identity registry shell\n"
-           "  id                                enter identity service shell (current realm)\n"
-           "  realm show|NAME|@realm            show or switch current realm\n"
-           "  realms                            list registered realms\n"
-           "  logout                            clear all active identities\n"
-           "  logout-realm [NAME]               clear identities in a realm\n"
-           "  reload-creds                      reload credentials and restore cached logins\n"
-           "  help                              show this help\n\n"
-           "  Interactive shells: sm, store, acl, cm, reg, id (exit or Ctrl-D to leave)\n"
-           "  One-shot: store SUBCMD … | cm SUBCMD … | creds [-v]\n\n"
-           "  @realm syntax:\n"
-           "    @factory-a          realm name\n"
-           "    @device:tablet-1    realm type + name (types: global, device, app)\n"
-           "    @device             realm type only\n\n"
-           "options:\n"
-           "  (global options must appear before the subcommand, e.g. acdemo -d user.db store …)\n"
-           "  -f, --credential-db PATH          credential cache file\n"
-           "  -d, --user-db FILE                user store JSON file (default: built-in demo)\n"
-           "  -p, --policy-db FILE              policy store JSON file (default: built-in demo)\n"
-           "  -u, --subject USER                default subject hint\n"
-           "  -r, --realm NAME                  default realm name\n"
-           "      --realm-type TYPE             default realm type (global|device|app)\n"
-           "      --realm-uuid UUID             default realm uuid\n"
-           "      --version                     print version and exit\n"
-           "  -h, --help                        show help and exit\n\n"
-           "demo permissions (ACL is built-in):\n"
-           "  fab.order.view / fab.order.modify / fab.order.delete / file.save\n";
+    out << _("acdemo — bas.security permissions, credentials, and console login demo\n\n"
+             "usage: acdemo [options] [command [args...]]\n\n"
+             "  If no command is given, starts an interactive shell.\n\n"
+             "commands:\n"
+             "  check [@realm] PERMISSION       check permission (optional realm scope)\n"
+             "  request [@realm] PERMISSION [USER]  request permission (login if needed)\n"
+             "  login [@realm] [USER]             interactive login → active identities\n"
+             "  whoami                            list active identities\n"
+             "  creds [-v]                        list cached credentials (no secrets)\n"
+             "  sm                                enter security manager shell\n"
+             "  us                                enter user store shell\n"
+             "  cm                                enter credential manager shell\n"
+             "  ps                                enter policy store shell\n"
+             "  reg                               enter identity registry shell\n"
+             "  id                                enter identity service shell (current realm)\n"
+             "  realm show|NAME|@realm            show or switch current realm\n"
+             "  realms                            list registered realms\n"
+             "  logout                            clear all active identities\n"
+             "  logout-realm [NAME]               clear identities in a realm\n"
+             "  reload-creds                      reload credentials and restore cached logins\n"
+             "  help                              show this help\n\n"
+             "  Interactive shells: sm, store, acl, cm, reg, id (exit or Ctrl-D to leave)\n"
+             "  One-shot: store SUBCMD … | cm SUBCMD … | creds [-v]\n\n"
+             "  @realm syntax:\n"
+             "    @factory-a          realm name\n"
+             "    @device:tablet-1    realm type + name (types: global, device, app)\n"
+             "    @device             realm type only\n\n"
+             "options:\n"
+             "  (global options must appear before the subcommand, e.g. acdemo -d user.db store …)\n"
+             "  -f, --credential-db PATH          credential cache file\n"
+             "  -d, --user-db FILE                user store JSON file (default: built-in demo)\n"
+             "  -p, --policy-db FILE              policy store JSON file (default: built-in demo)\n"
+             "  -u, --subject USER                default subject hint\n"
+             "  -r, --realm NAME                  default realm name\n"
+             "      --realm-type TYPE             default realm type (global|device|app)\n"
+             "      --realm-uuid UUID             default realm uuid\n"
+             "      --version                     print version and exit\n"
+             "  -h, --help                        show help and exit\n\n"
+             "demo permissions (ACL is built-in):\n"
+             "  fab.order.view / fab.order.modify / fab.order.delete / file.save\n");
 }
 
 std::size_t restoreCachedLogins(sec::SecurityManager& ac, const sec::Realm& realmFilter) {
@@ -206,24 +207,24 @@ std::shared_ptr<sec::IdentityService> identityServiceForCurrentRealm(const DemoC
 
 void printRealmInfo(const sec::Realm& realm, bool current) {
     if (realm.empty()) {
-        std::cout << "  (none)\n";
+        std::cout << _("  (none)\n");
         return;
     }
-    std::cout << "  label: " << realm.displayLabel() << '\n';
+    std::cout << _("  label: ") << realm.displayLabel() << '\n';
     if (!realm.type.empty()) {
-        std::cout << "  type: " << realm.type << '\n';
+        std::cout << _("  type: ") << realm.type << '\n';
     }
     if (!realm.name.empty()) {
-        std::cout << "  name: " << realm.name << '\n';
+        std::cout << _("  name: ") << realm.name << '\n';
     }
     if (!realm.uuid.empty()) {
-        std::cout << "  uuid: " << realm.uuid << '\n';
+        std::cout << _("  uuid: ") << realm.uuid << '\n';
     }
     if (!realm.description.empty()) {
-        std::cout << "  description: " << realm.description << '\n';
+        std::cout << _("  description: ") << realm.description << '\n';
     }
     if (current) {
-        std::cout << "  (current)\n";
+        std::cout << _("  (current)\n");
     }
 }
 
@@ -232,7 +233,7 @@ bool switchCurrentRealm(DemoContext& ctx, const std::string& token) {
     if (!token.empty() && token.front() == '@') {
         const auto parsed = sec::parseAtRealmToken(token);
         if (!parsed) {
-            std::cerr << "invalid realm token: " << token << '\n';
+            std::cerr << _("invalid realm token: ") << token << '\n';
             return false;
         }
         realm = ctx.sm->resolveRealmHint(*parsed);
@@ -246,7 +247,7 @@ bool switchCurrentRealm(DemoContext& ctx, const std::string& token) {
         realm = ctx.sm->resolveRealmHint(realm);
     }
     ctx.sm->setCommandDefaultRealm(realm);
-    std::cout << "current realm: " << realm.displayLabel() << '\n';
+    std::cout << _("current realm: ") << realm.displayLabel() << '\n';
     return true;
 }
 
@@ -272,12 +273,12 @@ bool isMarkedCurrentRealm(const DemoContext& ctx, const sec::Realm& realm) {
 
 bool runRealmCommand(DemoContext& ctx, std::vector<std::string>& args) {
     if (args.empty()) {
-        std::cerr << "usage: realm show | realm NAME | realm @token\n";
+        std::cerr << _("usage: realm show | realm NAME | realm @token\n");
         return false;
     }
     const std::string head = sec::shiftArg(args);
     if (head == "show" || head == "?") {
-        std::cout << "current realm:\n";
+        std::cout << _("current realm:\n");
         printRealmInfo(effectiveCurrentRealm(ctx), true);
         return true;
     }
@@ -287,14 +288,14 @@ bool runRealmCommand(DemoContext& ctx, std::vector<std::string>& args) {
 bool runRealmsCommand(const DemoContext& ctx) {
     const auto& realms = ctx.sm->realms();
     if (realms.empty()) {
-        std::cout << "no registered realms\n";
+        std::cout << _("no registered realms\n");
         return true;
     }
-    std::cout << "registered realms:\n";
+    std::cout << _("registered realms:\n");
     for (const auto& realm : realms) {
         std::cout << "  " << realm.displayLabel();
         if (isMarkedCurrentRealm(ctx, realm)) {
-            std::cout << " (current)";
+            std::cout << _(" (current)");
         }
         std::cout << '\n';
     }
@@ -389,7 +390,7 @@ std::vector<std::string> tokenize(std::string_view line);
 
 bool runSubShell(sec::ICommandSupport& target, const std::string& name, const std::string& prompt,
                  std::vector<std::string>& history, bool& replExiting) {
-    std::cout << "entered " << name << " (exit or Ctrl-D to leave)\n";
+    std::cout << _("entered ") << name << _(" (exit or Ctrl-D to leave)\n");
     const bas::util::repl::CompleteFn completer = [&target](const std::vector<std::string>& args,
                                                             std::size_t index) {
         return target.complete(args, index);
@@ -439,7 +440,7 @@ bool enterSubShell(DemoContext& ctx, const std::string& cmd, std::vector<std::st
     if (cmd == "id" || cmd == "identity-service") {
         const auto service = identityServiceForCurrentRealm(ctx);
         if (!service) {
-            std::cerr << "no identity service for current realm\n";
+            std::cerr << _("no identity service for current realm\n");
             return true;
         }
         return runSubShell(*service, "id", "identity service> ", history, replExiting);
@@ -494,7 +495,7 @@ bool runCommand(DemoContext& ctx, std::vector<std::string> args) {
     if (cmd == "id" || cmd == "identity-service") {
         const auto service = identityServiceForCurrentRealm(ctx);
         if (!service) {
-            std::cerr << "no identity service for current realm\n";
+            std::cerr << _("no identity service for current realm\n");
             return false;
         }
         return service->invoke(args) == sec::commandSuccess();
@@ -517,16 +518,16 @@ std::vector<std::string> tokenize(std::string_view line) {
 }
 
 int runRepl(DemoContext& ctx, const std::filesystem::path& historyPath) {
-    std::cout << "acdemo interactive mode. Type help for commands.\n";
-    std::cout << "  Tab: complete   Up/Down: history   Emacs keys: Ctrl-A/E/F/B, Alt-F/B\n";
-    std::cout << "  Ctrl-arrows: word   Ctrl-K/U/W Alt-BS: kill word   Ctrl-L: redraw\n";
-    std::cout << "  Shells: con, store, acl, man, reg, id (exit or Ctrl-D to leave)\n";
+    std::cout << _("acdemo interactive mode. Type help for commands.\n");
+    std::cout << _("  Tab: complete   Up/Down: history   Emacs keys: Ctrl-A/E/F/B, Alt-F/B\n");
+    std::cout << _("  Ctrl-arrows: word   Ctrl-K/U/W Alt-BS: kill word   Ctrl-L: redraw\n");
+    std::cout << _("  Shells: con, store, acl, man, reg, id (exit or Ctrl-D to leave)\n");
     std::vector<std::string> whoami{"whoami"};
     ctx.sm->invoke(whoami);
     std::vector<std::string> credList;
     ctx.credentials->invoke(credList);
-    std::cout << "credential file: " << ctx.credentials->credentialPath() << '\n';
-    std::cout << "user store: " << ctx.userStore->storeLabel() << "\n\n";
+    std::cout << _("credential file: ") << ctx.credentials->credentialPath() << '\n';
+    std::cout << _("user store: ") << ctx.userStore->storeLabel() << "\n\n";
     // std::cout << "policy store: " << ctx.policyStore->storeLabel() << "\n\n";
 
     std::vector<std::string> history = loadHistory(historyPath);
@@ -594,6 +595,8 @@ DemoContext makeContext(const std::filesystem::path& credentialCachePath,
 }
 
 int main(int argc, char** argv) {
+    init_i18n(LOCALEDIR);
+
     std::filesystem::path credentialCachePath = defaultCredentialPath();
     std::optional<std::filesystem::path> userStorePath;
     std::optional<std::filesystem::path> policyStorePath;

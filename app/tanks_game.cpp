@@ -2,6 +2,8 @@
 
 #include <bas/security/AccessDenied.hpp>
 
+#include <bas/locale/i18n.h>
+
 #include <algorithm>
 #include <clocale>
 #include <iostream>
@@ -202,16 +204,16 @@ void drawTitleBar() {
     (void)rows;
     attron(COLOR_PAIR(4));
     mvhline(0, 0, ' ', cols);
-    mvprintw(0, 2, " TANK AC - dual device access control demo ");
+    mvprintw(0, 2, _(" TANK AC - dual device access control demo "));
     attroff(COLOR_PAIR(4));
     refresh();
 }
 
 bool showTerminalSizeError(int rows, int cols) {
     clear();
-    mvprintw(2, 2, "Terminal too small for tanks_game.");
-    mvprintw(3, 2, "Need at least %dx%d, have %dx%d.", kMinGameCols, kMinGameRows, cols, rows);
-    mvprintw(5, 2, "Resize the terminal and try again. Press any key to exit.");
+    mvprintw(2, 2, _("Terminal too small for tanks_game."));
+    mvprintw(3, 2, _("Need at least %dx%d, have %dx%d."), kMinGameCols, kMinGameRows, cols, rows);
+    mvprintw(5, 2, _("Resize the terminal and try again. Press any key to exit."));
     refresh();
     getch();
     return false;
@@ -406,10 +408,10 @@ void drawField(WINDOW* win, const TankSim& sim, bool active, const GameLayout& l
 
     if (sim.running) {
         wattron(win, COLOR_PAIR(2));
-        mvwprintw(win, layout.fieldH + 1, 2, "ENGINE ON ");
+        mvwprintw(win, layout.fieldH + 1, 2, _("ENGINE ON "));
         wattroff(win, COLOR_PAIR(2));
     } else {
-        mvwprintw(win, layout.fieldH + 1, 2, "ENGINE OFF");
+        mvwprintw(win, layout.fieldH + 1, 2, _("ENGINE OFF"));
     }
     wrefresh(win);
 }
@@ -418,10 +420,10 @@ void drawHud(WINDOW* win, const DemoContext& ctx, std::size_t active,
              const std::vector<TankSim>& sims) {
     werase(win);
     drawBox(win, 4);
-    mvwprintw(win, 0, 2, " Controls ");
-    mvwPrintClipped(win, 1, 2, "TAB device  L login  F1/F2 engine  Q quit");
-    mvwPrintClipped(win, 2, 2, "Arrows move/turn  Space fire");
-    mvwprintw(win, 3, 2, "Active: %s", ctx.devices[active].name.c_str());
+    mvwprintw(win, 0, 2, _(" Controls "));
+    mvwPrintClipped(win, 1, 2, _("TAB device  L login  F1/F2 engine  Q quit"));
+    mvwPrintClipped(win, 2, 2, _("Arrows move/turn  Space fire"));
+    mvwprintw(win, 3, 2, _("Active: %s"), ctx.devices[active].name.c_str());
     for (std::size_t i = 0; i < ctx.devices.size(); ++i) {
         const auto& d = ctx.devices[i];
         const std::string user = truncStr(primaryUser(*ctx.sm, d.realm), 10);
@@ -445,7 +447,7 @@ void drawPolicyPanel(WINDOW* win, const DemoContext& ctx, std::size_t active) {
 
     werase(win);
     drawBox(win, 1);
-    mvwprintw(win, 0, 2, " Policy %s ", truncStr(device.name, maxCols - 12).c_str());
+    mvwprintw(win, 0, 2, _(" Policy %s "), truncStr(device.name, maxCols - 12).c_str());
 
     const auto* policy = defaultPolicyFor(ctx, device.realm);
     int row = 1;
@@ -486,11 +488,11 @@ void drawPolicyPanel(WINDOW* win, const DemoContext& ctx, std::size_t active) {
         return printRow(text, has_colors() ? 2 : 0, false);
     };
 
-    if (!printHeader("BINDINGS")) {
+    if (!printHeader(_("BINDINGS"))) {
         wrefresh(win);
         return;
     }
-    if (!printRow("identity      aclId")) {
+    if (!printRow(_("identity      aclId"))) {
         wrefresh(win);
         return;
     }
@@ -508,7 +510,7 @@ void drawPolicyPanel(WINDOW* win, const DemoContext& ctx, std::size_t active) {
                 break;
             }
         }
-    } else if (!printRow("(none)")) {
+    } else if (!printRow(_("(none)"))) {
         wrefresh(win);
         return;
     }
@@ -517,7 +519,7 @@ void drawPolicyPanel(WINDOW* win, const DemoContext& ctx, std::size_t active) {
         wrefresh(win);
         return;
     }
-    if (!printHeader("ACLS")) {
+    if (!printHeader(_("ACLS"))) {
         wrefresh(win);
         return;
     }
@@ -526,7 +528,7 @@ void drawPolicyPanel(WINDOW* win, const DemoContext& ctx, std::size_t active) {
         for (const auto& acl : policy->acls()) {
             const bool aclActive = isAclActiveForCurrent(ctx, device.realm, policy, acl.id);
             char line[64];
-            std::snprintf(line, sizeof(line), "%-10s %zu entries", truncStr(acl.id, 10).c_str(),
+            std::snprintf(line, sizeof(line), _("%-10s %zu entries"), truncStr(acl.id, 10).c_str(),
                           acl.entries.size());
             if (!printRow(line, 0, aclActive)) {
                 break;
@@ -543,7 +545,7 @@ void drawPolicyPanel(WINDOW* win, const DemoContext& ctx, std::size_t active) {
                 }
             }
         }
-    } else if (!printRow("(none)")) {
+    } else if (!printRow(_("(none)"))) {
         wrefresh(win);
         return;
     }
@@ -552,7 +554,7 @@ void drawPolicyPanel(WINDOW* win, const DemoContext& ctx, std::size_t active) {
         wrefresh(win);
         return;
     }
-    if (!printHeader("GRANTS")) {
+    if (!printHeader(_("GRANTS"))) {
         wrefresh(win);
         return;
     }
@@ -561,7 +563,7 @@ void drawPolicyPanel(WINDOW* win, const DemoContext& ctx, std::size_t active) {
     const int permW = std::max(6, contentW - idW - 3);
     {
         char header[64];
-        std::snprintf(header, sizeof(header), "%-*s %-*s M", idW, "identity", permW, "permission");
+        std::snprintf(header, sizeof(header), "%-*s %-*s M", idW, _("identity"), permW, _("permission"));
         if (!printRow(header)) {
             wrefresh(win);
             return;
@@ -583,7 +585,7 @@ void drawPolicyPanel(WINDOW* win, const DemoContext& ctx, std::size_t active) {
             }
         }
     } else {
-        printRow("(none)");
+        printRow(_("(none)"));
     }
     wrefresh(win);
 }
@@ -591,7 +593,7 @@ void drawPolicyPanel(WINDOW* win, const DemoContext& ctx, std::size_t active) {
 void drawLog(WINDOW* win, const std::deque<std::string>& log, int logLines) {
     werase(win);
     drawBox(win, 4);
-    mvwprintw(win, 0, 2, " Event log ");
+    mvwprintw(win, 0, 2, _(" Event log "));
     int row = 1;
     for (const auto& line : log) {
         if (row > logLines) {
@@ -698,7 +700,7 @@ bool cursesNoticeDialog(const std::string& title, const std::string& message) {
     wattron(dlg, COLOR_PAIR(6));
     mvwprintw(dlg, 0, 2, " %s ", title.c_str());
     mvwprintw(dlg, 2, 2, "%.*s", dlgW - 4, message.c_str());
-    mvwprintw(dlg, dlgH - 2, 2, "Enter/Esc=OK");
+    mvwprintw(dlg, dlgH - 2, 2, _("Enter/Esc=OK"));
     wattroff(dlg, COLOR_PAIR(6));
     wrefresh(dlg);
 
@@ -734,7 +736,7 @@ bool cursesErrorDialog(const std::string& title, const std::string& message) {
     wattron(dlg, COLOR_PAIR(6));
     mvwprintw(dlg, 0, 2, " %s ", title.c_str());
     mvwprintw(dlg, 2, 2, "%.*s", dlgW - 4, message.c_str());
-    mvwprintw(dlg, dlgH - 2, 2, "Enter=retry   Esc=cancel");
+    mvwprintw(dlg, dlgH - 2, 2, _("Enter=retry   Esc=cancel"));
     wattroff(dlg, COLOR_PAIR(6));
     wrefresh(dlg);
 
@@ -765,11 +767,11 @@ LoginFormResult cursesLoginForm(const DeviceSlot& device) {
     paintModalWindow(dlg, 5);
     drawBox(dlg, 5);
     wattron(dlg, COLOR_PAIR(5));
-    mvwprintw(dlg, 0, 2, " Login %s ", device.name.c_str());
-    mvwprintw(dlg, 2, 2, "user: ");
-    mvwprintw(dlg, 3, 2, "pass: ");
-    mvwprintw(dlg, 5, 2, "Up/Down demo user  Enter=OK  Esc=cancel");
-    mvwprintw(dlg, 6, 2, "demo accounts (user/pass):");
+    mvwprintw(dlg, 0, 2, _(" Login %s "), device.name.c_str());
+    mvwprintw(dlg, 2, 2, _("user: "));
+    mvwprintw(dlg, 3, 2, _("pass: "));
+    mvwprintw(dlg, 5, 2, _("Up/Down demo user  Enter=OK  Esc=cancel"));
+    mvwprintw(dlg, 6, 2, _("demo accounts (user/pass):"));
     int row = 7;
     for (const auto& acct : accounts) {
         mvwprintw(dlg, row++, 4, "%s / %s  (%s)", acct.user, acct.password, acct.role);
@@ -843,14 +845,14 @@ LoginFormResult cursesElevateForm(const DeviceSlot& device, const std::string& m
     paintModalWindow(dlg, 6);
     drawBox(dlg, 6);
     wattron(dlg, COLOR_PAIR(6));
-    mvwprintw(dlg, 0, 2, asLogin ? " Login %s " : " Elevate %s ", device.name.c_str());
+    mvwprintw(dlg, 0, 2, asLogin ? _(" Login %s ") : _(" Elevate %s "), device.name.c_str());
     mvwprintw(dlg, 2, 2, "%.*s", dlgW - 4, message.c_str());
-    mvwprintw(dlg, 4, 2, "user: ");
-    mvwprintw(dlg, 5, 2, "pass: ");
+    mvwprintw(dlg, 4, 2, _("user: "));
+    mvwprintw(dlg, 5, 2, _("pass: "));
     mvwprintw(dlg, 7, 2,
-              asLogin ? "Up/Down demo user  Enter=login  Esc=cancel"
-                      : "Up/Down demo user  Enter=authorize  Esc=cancel");
-    mvwprintw(dlg, 8, 2, "demo accounts (user/pass):");
+              asLogin ? _("Up/Down demo user  Enter=login  Esc=cancel")
+                      : _("Up/Down demo user  Enter=authorize  Esc=cancel"));
+    mvwprintw(dlg, 8, 2, _("demo accounts (user/pass):"));
     int row = 9;
     for (const auto& acct : accounts) {
         mvwprintw(dlg, row++, 4, "%s / %s  (%s)", acct.user, acct.password, acct.role);
@@ -897,16 +899,16 @@ bool cursesLogin(DemoContext& ctx, const DeviceSlot& device, std::deque<std::str
     while (true) {
         const LoginFormResult form = cursesLoginForm(device);
         if (form.status != LoginFormResult::Status::Submitted) {
-            pushLog(log, device.name + ": login cancelled", logLines);
+            pushLog(log, device.name + _(": login cancelled"), logLines);
             return false;
         }
         if (loginUser(ctx, device, form.input.user, form.input.pass)) {
-            pushLog(log, device.name + ": logged in as " + form.input.user, logLines);
+            pushLog(log, device.name + _(": logged in as ") + form.input.user, logLines);
             return true;
         }
-        pushLog(log, "DENIED " + device.name + " login failed for " + form.input.user, logLines);
-        const std::string msg = "Invalid username or password for " + device.name + ".";
-        if (!cursesErrorDialog("Login Failed", msg)) {
+        pushLog(log, "DENIED " + device.name + _(" login failed for ") + form.input.user, logLines);
+        const std::string msg = _("Invalid username or password for ") + device.name + ".";
+        if (!cursesErrorDialog(_("Login Failed"), msg)) {
             return false;
         }
     }
@@ -946,8 +948,8 @@ bool tryElevatedOp(DemoContext& ctx, const DeviceSlot& device, const std::string
         opts.nameHint = form.input.user;
         const auto identities = ctx.sm->authenticate(std::move(cred), opts);
         if (!identities.has_value()) {
-            if (!cursesErrorDialog("Auth Failed",
-                                   "Invalid username or password for " + device.name + ".")) {
+            if (!cursesErrorDialog(_("Auth Failed"),
+                                   _("Invalid username or password for ") + device.name + ".")) {
                 return false;
             }
             continue;
@@ -956,8 +958,8 @@ bool tryElevatedOp(DemoContext& ctx, const DeviceSlot& device, const std::string
         const sec::Subject subject = sec::Subject::fromIdentitySet(*identities);
         if (ctx.sm->checkSubjectPermission(permission, subject, opts) != sec::AccessEffect::Allow) {
             const std::string msg =
-                form.input.user + " lacks " + permission.toString() + " on " + device.name + ".";
-            if (!cursesErrorDialog("Access Denied", msg)) {
+                form.input.user + _(" lacks ") + permission.toString() + _(" on ") + device.name + ".";
+            if (!cursesErrorDialog(_("Access Denied"), msg)) {
                 return false;
             }
             continue;
@@ -966,7 +968,7 @@ bool tryElevatedOp(DemoContext& ctx, const DeviceSlot& device, const std::string
         result.allowed = true;
         if (sessionEmpty) {
             ctx.sm->activate(*identities);
-            pushLog(log, device.name + ": logged in as " + form.input.user, logLines);
+            pushLog(log, device.name + _(": logged in as ") + form.input.user, logLines);
             result.message = device.name + ": " + op + " OK";
         } else {
             result.message = device.name + ": " + op + " OK (elevated as " + form.input.user + ")";
@@ -1019,10 +1021,10 @@ void runGame(DemoContext& ctx) {
     std::deque<std::string> log;
     std::size_t active = 0;
 
-    pushLog(log, "Tank AC demo - per-device user store & ACL", layout.logLines);
-    pushLog(log, "L login  arrows move  space fire  denied=elevate/login", layout.logLines);
-    pushLog(log, "tank-a: alice=operator(ACL) bob=gunner(grants) admin=commander", layout.logLines);
-    pushLog(log, "tank-b: charlie=cadet(ACL) dana=instructor(grants)", layout.logLines);
+    pushLog(log, _("Tank AC demo - per-device user store & ACL"), layout.logLines);
+    pushLog(log, _("L login  arrows move  space fire  denied=elevate/login"), layout.logLines);
+    pushLog(log, _("tank-a: alice=operator(ACL) bob=gunner(grants) admin=commander"), layout.logLines);
+    pushLog(log, _("tank-b: charlie=cadet(ACL) dana=instructor(grants)"), layout.logLines);
 
     redrawGame(gw, ctx, active, sims, log, layout);
 
@@ -1046,7 +1048,7 @@ void runGame(DemoContext& ctx) {
 #endif
         case '\t':
             active = (active + 1) % ctx.devices.size();
-            pushLog(log, "switch -> " + ctx.devices[active].name, layout.logLines);
+            pushLog(log, _("switch -> ") + ctx.devices[active].name, layout.logLines);
             break;
         case 'q':
         case 'Q':
@@ -1085,12 +1087,13 @@ void runGame(DemoContext& ctx) {
 }
 
 void printUsage(const char* prog) {
-    std::cerr << "usage: " << prog << " [--batch]\n"
-              << "  default: ncurses tank game (TAB switch, arrows, F1/F2, space)\n"
-              << "  --batch: line-oriented mode for scripts\n";
+    std::cerr << _("usage: ") << prog << _(" [--batch]\n")
+              << _("  default: ncurses tank game (TAB switch, arrows, F1/F2, space)\n")
+              << _("  --batch: line-oriented mode for scripts\n");
 }
 
 int main(int argc, char** argv) {
+    init_i18n(LOCALEDIR);
     bool batch = false;
 
     for (int i = 1; i < argc; ++i) {
@@ -1101,7 +1104,7 @@ int main(int argc, char** argv) {
             printUsage(argv[0]);
             return 0;
         } else {
-            std::cerr << "unknown argument: " << arg << '\n';
+            std::cerr << _("unknown argument: ") << arg << '\n';
             printUsage(argv[0]);
             return 1;
         }
@@ -1116,10 +1119,10 @@ int main(int argc, char** argv) {
         }
         return 0;
     } catch (const sec::AccessDenied& e) {
-        std::cerr << "access denied: " << e.what() << '\n';
+        std::cerr << _("access denied: ") << e.what() << '\n';
         return 1;
     } catch (const std::exception& e) {
-        std::cerr << "error: " << e.what() << '\n';
+        std::cerr << _("error: ") << e.what() << '\n';
         return 1;
     }
 }

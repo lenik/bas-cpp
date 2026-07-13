@@ -1,6 +1,7 @@
 #include "bas/volume/LocalVolume.hpp"
 #include "bas/volume/VolumeManager.hpp"
 
+#include <bas/locale/i18n.h>
 #include <bas/log/logger.h>
 #include <bas/log/uselog.h>
 
@@ -35,27 +36,27 @@ constexpr unsigned kAllFields = FMount | FRoot | FDevice | FType | FLabel | FUui
     | FVfsOpts | FSuperOpts;
 
 void printUsage(std::ostream& out) {
-    out << "usage: vols [options]\n"
-           "  Field selection (default without any: -mdtlu; with -v: -mdtlurLD):\n"
-           "    -a, --all            all columns\n"
-           "    -c, --compact        same columns as -mdtlu (merges with explicit field flags)\n"
-           "    -m, --mountpoint     mount point column\n"
-           "    -d, --device         device column\n"
-           "    -t, --type           type column\n"
-           "    -l, --label          label column\n"
-           "    -u, --uuid           UUID column\n"
-           "    -r, --read-only      read-only (ro/rw) column\n"
-           "    -L, --logical-type   logical type column\n"
-           "    -D, --loop-device    loop device column\n"
-           "    -o, --opts           per-mount (VFS) options from mountinfo\n"
-           "    -O, --superopts      superblock options from mountinfo\n"
-           "    -z, --root           root path within filesystem (mountinfo field)\n"
-           "  Other:\n"
-           "    -s, --symbols        include overlay filesystems in the scan (bind mounts always on)\n"
-           "    -h, --help           show this help and exit\n"
-           "    -w, --writable       list only writable mounts; implies -r\n"
-           "    -v, --verbose        more log detail; default columns include logical type\n"
-           "    -q, --quiet          only errors on stderr\n";
+    out << _("usage: vols [options]\n"
+             "  Field selection (default without any: -mdtlu; with -v: -mdtlurLD):\n"
+             "    -a, --all            all columns\n"
+             "    -c, --compact        same columns as -mdtlu (merges with explicit field flags)\n"
+             "    -m, --mountpoint     mount point column\n"
+             "    -d, --device         device column\n"
+             "    -t, --type           type column\n"
+             "    -l, --label          label column\n"
+             "    -u, --uuid           UUID column\n"
+             "    -r, --read-only      read-only (ro/rw) column\n"
+             "    -L, --logical-type   logical type column\n"
+             "    -D, --loop-device    loop device column\n"
+             "    -o, --opts           per-mount (VFS) options from mountinfo\n"
+             "    -O, --superopts      superblock options from mountinfo\n"
+             "    -z, --root           root path within filesystem (mountinfo field)\n"
+             "  Other:\n"
+             "    -s, --symbols        include overlay filesystems in the scan (bind mounts always on)\n"
+             "    -h, --help           show this help and exit\n"
+             "    -w, --writable       list only writable mounts; implies -r\n"
+             "    -v, --verbose        more log detail; default columns include logical type\n"
+             "    -q, --quiet          only errors on stderr\n");
 }
 
 const char* logicalTypeLabel(LocalLogicalType t) {
@@ -115,22 +116,24 @@ struct ColDef {
 };
 
 constexpr std::array<ColDef, 11> kColumnOrder = {{
-    {FMount, "Mount Point"},
-    {FRoot, "Root"},
-    {FDevice, "Device"},
-    {FType, "Type"},
-    {FLabel, "Label"},
-    {FUuid, "UUID"},
-    {FReadOnly, "Read-Only"},
-    {FLogical, "Logical Type"},
-    {FLoop, "Loop Device"},
-    {FVfsOpts, "VFS opts"},
-    {FSuperOpts, "Super opts"},
+    {FMount, N_("Mount Point")},
+    {FRoot, N_("Root")},
+    {FDevice, N_("Device")},
+    {FType, N_("Type")},
+    {FLabel, N_("Label")},
+    {FUuid, N_("UUID")},
+    {FReadOnly, N_("Read-Only")},
+    {FLogical, N_("Logical Type")},
+    {FLoop, N_("Loop Device")},
+    {FVfsOpts, N_("VFS opts")},
+    {FSuperOpts, N_("Super opts")},
 }};
 
 } // namespace
 
 int main(int argc, char** argv) {
+    init_i18n(LOCALEDIR);
+
     bool wantHelp = false;
     bool verbose = false;
     bool quiet = false;
@@ -241,7 +244,7 @@ int main(int argc, char** argv) {
     }
 
     if (optind < argc) {
-        std::cerr << "vols: unexpected argument: " << argv[optind] << '\n';
+        std::cerr << _("vols: unexpected argument: ") << argv[optind] << '\n';
         printUsage(std::cerr);
         return 2;
     }
@@ -252,12 +255,12 @@ int main(int argc, char** argv) {
     }
 
     if (verbose && quiet) {
-        std::cerr << "vols: -v/--verbose and -q/--quiet are mutually exclusive\n";
+        std::cerr << _("vols: -v/--verbose and -q/--quiet are mutually exclusive\n");
         return 2;
     }
 
     if (allOpt && compactOpt) {
-        std::cerr << "vols: -a/--all and -c/--compact are mutually exclusive\n";
+        std::cerr << _("vols: -a/--all and -c/--compact are mutually exclusive\n");
         return 2;
     }
 
@@ -297,7 +300,7 @@ int main(int argc, char** argv) {
     }
 
     if (active.empty()) {
-        std::cerr << "vols: no columns selected\n";
+        std::cerr << _("vols: no columns selected\n");
         return 2;
     }
 
@@ -305,7 +308,7 @@ int main(int argc, char** argv) {
     for (size_t i = 0; i < active.size(); ++i) {
         for (const ColDef& c : kColumnOrder) {
             if (c.bit == active[i]) {
-                widths[i] = std::char_traits<char>::length(c.title);
+                widths[i] = std::char_traits<char>::length(_(c.title));
                 break;
             }
         }
@@ -328,7 +331,7 @@ int main(int argc, char** argv) {
                 if (i) {
                     std::cout << '\t';
                 }
-                std::cout << std::setw(static_cast<int>(widths[i])) << std::left << c.title;
+                std::cout << std::setw(static_cast<int>(widths[i])) << std::left << _(c.title);
                 break;
             }
         }

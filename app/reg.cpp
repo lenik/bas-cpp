@@ -1,5 +1,6 @@
 #include "bas/reg/Registry.hpp"
 #include <bas/fmt/JsonForm.hpp>
+#include <bas/locale/i18n.h>
 #include <bas/log/logger.h>
 #include <bas/log/uselog.h>
 #include <bas/reg/JsonRegistry.hpp>
@@ -29,18 +30,18 @@ namespace bas::reg {
 constexpr const char* kVersion = "1.0.1";
 
 void printUsage(std::ostream& out) {
-    out << "usage: reg [options]\n"
-           "  -r, --root DIR|FILE   registry root (directory → LocalRegistry, file → "
-           "JsonRegistry)\n"
-           "  -d, --dump PATH       list all keys under PATH (path=value lines)\n"
-           "  -g, --get PATH        print registry value (valueToString)\n"
-           "  -s, --set PATH VALUE  set registry value (parseOption)\n"
-           "  -e, --export PATH     export subtree at PATH as JSON to stdout\n"
-           "  -i, --import PATH     read JSON from stdin and merge at PATH\n"
-           "  -v, --verbose         debug logging\n"
-           "  -q, --quiet           errors only on stderr\n"
-           "      --version         print version and exit\n"
-           "  -h, --help            show this help and exit\n";
+    out << _("usage: reg [options]\n"
+             "  -r, --root DIR|FILE   registry root (directory → LocalRegistry, file → "
+             "JsonRegistry)\n"
+             "  -d, --dump PATH       list all keys under PATH (path=value lines)\n"
+             "  -g, --get PATH        print registry value (valueToString)\n"
+             "  -s, --set PATH VALUE  set registry value (parseOption)\n"
+             "  -e, --export PATH     export subtree at PATH as JSON to stdout\n"
+             "  -i, --import PATH     read JSON from stdin and merge at PATH\n"
+             "  -v, --verbose         debug logging\n"
+             "  -q, --quiet           errors only on stderr\n"
+             "      --version         print version and exit\n"
+             "  -h, --help            show this help and exit\n");
 }
 
 std::string joinDir(std::string_view base, std::string_view name) {
@@ -176,12 +177,12 @@ bool openRegistry(const std::string& rootOpt, RegistryContext& ctx) {
         if (rootPath.extension() == ".json") {
             std::ofstream create(rootPath);
             if (!create) {
-                std::cerr << "reg: cannot create " << rootOpt << '\n';
+                std::cerr << _("reg: cannot create ") << rootOpt << '\n';
                 return false;
             }
             create << "{}";
         } else if (!fs::create_directories(rootPath, ec) || ec) {
-            std::cerr << "reg: cannot create directory " << rootOpt << '\n';
+            std::cerr << _("reg: cannot create directory ") << rootOpt << '\n';
             return false;
         }
     }
@@ -197,18 +198,20 @@ bool openRegistry(const std::string& rootOpt, RegistryContext& ctx) {
         try {
             ctx.json = JsonRegistry::load(rootPath);
         } catch (const std::exception& e) {
-            std::cerr << "reg: " << e.what() << '\n';
+            std::cerr << _("reg: ") << e.what() << '\n';
             return false;
         }
         ctx.reg = ctx.json.get();
         return true;
     }
 
-    std::cerr << "reg: root is neither a directory nor a regular file: " << rootOpt << '\n';
+    std::cerr << _("reg: root is neither a directory nor a regular file: ") << rootOpt << '\n';
     return false;
 }
 
 int main(int argc, char** argv) {
+    init_i18n(LOCALEDIR);
+
     bool wantHelp = false;
     bool wantVersion = false;
     bool verbose = false;
@@ -255,7 +258,7 @@ int main(int argc, char** argv) {
         case 's':
             setPath = optarg;
             if (optind >= argc) {
-                std::cerr << "reg: --set requires a value argument\n";
+                std::cerr << _("reg: --set requires a value argument\n");
                 printUsage(std::cerr);
                 return 2;
             }
@@ -285,7 +288,7 @@ int main(int argc, char** argv) {
     }
 
     if (optind < argc) {
-        std::cerr << "reg: unexpected argument: " << argv[optind] << '\n';
+        std::cerr << _("reg: unexpected argument: ") << argv[optind] << '\n';
         printUsage(std::cerr);
         return 2;
     }
@@ -301,7 +304,7 @@ int main(int argc, char** argv) {
     }
 
     if (verbose && quiet) {
-        std::cerr << "reg: -v/--verbose and -q/--quiet are mutually exclusive\n";
+        std::cerr << _("reg: -v/--verbose and -q/--quiet are mutually exclusive\n");
         return 2;
     }
 
@@ -322,7 +325,7 @@ int main(int argc, char** argv) {
         return 2;
     }
     if (actions > 1) {
-        std::cerr << "reg: specify only one of --dump, --get, --set, --export, or --import\n";
+        std::cerr << _("reg: specify only one of --dump, --get, --set, --export, or --import\n");
         return 2;
     }
 
@@ -343,7 +346,7 @@ int main(int argc, char** argv) {
         if (dumpPath.has_value()) {
             auto info = registry.stat(*dumpPath);
             if (!info.has_value()) {
-                std::cerr << "reg: invalid path " << *dumpPath << '\n';
+                std::cerr << _("reg: invalid path ") << *dumpPath << '\n';
                 rc = 1;
             } else {
                 dumpTree(registry, *dumpPath, *info, std::cout, "");
@@ -351,7 +354,7 @@ int main(int argc, char** argv) {
         } else if (!getPath.empty()) {
             auto opt = registry.getOption(getPath);
             if (!opt.has_value()) {
-                std::cerr << "reg: no value at " << getPath << '\n';
+                std::cerr << _("reg: no value at ") << getPath << '\n';
                 rc = 1;
             } else {
                 std::cout << valueToString(*opt) << '\n';
@@ -360,7 +363,7 @@ int main(int argc, char** argv) {
             auto parsed = parseOption(setValue);
             registry.setOption(setPath, parsed);
             if (!registry.has(setPath)) {
-                std::cerr << "reg: failed to set " << setPath << '\n';
+                std::cerr << _("reg: failed to set ") << setPath << '\n';
                 rc = 1;
             } else {
                 ctx.markDirty();
@@ -376,14 +379,14 @@ int main(int argc, char** argv) {
             ctx.markDirty();
         }
     } catch (const std::exception& e) {
-        std::cerr << "reg: " << e.what() << '\n';
+        std::cerr << _("reg: ") << e.what() << '\n';
         rc = 1;
     }
 
     try {
         ctx.flush();
     } catch (const std::exception& e) {
-        std::cerr << "reg: " << e.what() << '\n';
+        std::cerr << _("reg: ") << e.what() << '\n';
         rc = 1;
     }
 
