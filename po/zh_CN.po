@@ -1,0 +1,1425 @@
+# Chinese translations for PACKAGE package
+# PACKAGE 软件包的简体中文翻译.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: bas-cpp 1.0.3\n"
+"Report-Msgid-Bugs-To: bas-cpp@bodz.net\n"
+"POT-Creation-Date: 2026-07-13 16:39+0800\n"
+"PO-Revision-Date: 2026-07-13 16:18+0800\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: zh_CN\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#: app/acdemo.cpp:102
+msgid ""
+"acdemo — bas.security permissions, credentials, and console login demo\n"
+"\n"
+"usage: acdemo [options] [command [args...]]\n"
+"\n"
+"  If no command is given, starts an interactive shell.\n"
+"\n"
+"commands:\n"
+"  check [@realm] PERMISSION       check permission (optional realm scope)\n"
+"  request [@realm] PERMISSION [USER]  request permission (login if needed)\n"
+"  login [@realm] [USER]             interactive login → active identities\n"
+"  whoami                            list active identities\n"
+"  creds [-v]                        list cached credentials (no secrets)\n"
+"  sm                                enter security manager shell\n"
+"  us                                enter user store shell\n"
+"  cm                                enter credential manager shell\n"
+"  ps                                enter policy store shell\n"
+"  reg                               enter identity registry shell\n"
+"  id                                enter identity service shell (current realm)\n"
+"  realm show|NAME|@realm            show or switch current realm\n"
+"  realms                            list registered realms\n"
+"  logout                            clear all active identities\n"
+"  logout-realm [NAME]               clear identities in a realm\n"
+"  reload-creds                      reload credentials and restore cached logins\n"
+"  help                              show this help\n"
+"\n"
+"  Interactive shells: sm, store, acl, cm, reg, id (exit or Ctrl-D to leave)\n"
+"  One-shot: store SUBCMD … | cm SUBCMD … | creds [-v]\n"
+"\n"
+"  @realm syntax:\n"
+"    @factory-a          realm name\n"
+"    @device:tablet-1    realm type + name (types: global, device, app)\n"
+"    @device             realm type only\n"
+"\n"
+"options:\n"
+"  (global options must appear before the subcommand, e.g. acdemo -d user.db store …)\n"
+"  -f, --credential-db PATH          credential cache file\n"
+"  -d, --user-db FILE                user store JSON file (default: built-in demo)\n"
+"  -p, --policy-db FILE              policy store JSON file (default: built-in demo)\n"
+"  -u, --subject USER                default subject hint\n"
+"  -r, --realm NAME                  default realm name\n"
+"      --realm-type TYPE             default realm type (global|device|app)\n"
+"      --realm-uuid UUID             default realm uuid\n"
+"      --version                     print version and exit\n"
+"  -h, --help                        show help and exit\n"
+"\n"
+"demo permissions (ACL is built-in):\n"
+"  fab.order.view / fab.order.modify / fab.order.delete / file.save\n"
+msgstr ""
+"acdemo — bas.security 权限、凭据与控制台登录演示\n"
+"\n"
+"用法：acdemo [options] [command [args...]]\n"
+"\n"
+"  未给出命令时，启动交互式 shell。\n"
+"\n"
+"commands：\n"
+"  check [@realm] PERMISSION       检查权限（可选领域范围）\n"
+"  request [@realm] PERMISSION [USER]  请求权限（必要时登录）\n"
+"  login [@realm] [USER]             交互式登录 → 活动身份\n"
+"  whoami                            列出活动身份\n"
+"  creds [-v]                        列出缓存的凭据（不含机密）\n"
+"  sm                                进入安全管理器 shell\n"
+"  us                                进入用户存储 shell\n"
+"  cm                                进入凭据管理器 shell\n"
+"  ps                                进入策略存储 shell\n"
+"  reg                               进入身份注册表 shell\n"
+"  id                                进入身份服务 shell（当前领域）\n"
+"  realm show|NAME|@realm            显示或切换当前领域\n"
+"  realms                            列出已注册领域\n"
+"  logout                            清除全部活动身份\n"
+"  logout-realm [NAME]               清除某领域中的身份\n"
+"  reload-creds                      重新加载凭据并恢复缓存的登录\n"
+"  help                              显示此帮助\n"
+"\n"
+"  交互式 shell：sm, store, acl, cm, reg, id（exit 或 Ctrl-D 退出）\n"
+"  一次性：store SUBCMD … | cm SUBCMD … | creds [-v]\n"
+"\n"
+"  @realm 语法：\n"
+"    @factory-a          领域名称\n"
+"    @device:tablet-1    领域类型 + 名称（类型：global, device, app）\n"
+"    @device             仅领域类型\n"
+"\n"
+"options：\n"
+"  （全局选项必须出现在子命令之前，例如 acdemo -d user.db store …）\n"
+"  -f, --credential-db PATH          凭据缓存文件\n"
+"  -d, --user-db FILE                用户存储 JSON 文件（默认：内置演示）\n"
+"  -p, --policy-db FILE              策略存储 JSON 文件（默认：内置演示）\n"
+"  -u, --subject USER                默认主体提示\n"
+"  -r, --realm NAME                  默认领域名称\n"
+"      --realm-type TYPE             默认领域类型（global|device|app）\n"
+"      --realm-uuid UUID             默认领域 uuid\n"
+"      --version                     打印版本并退出\n"
+"  -h, --help                        显示帮助并退出\n"
+"\n"
+"演示权限（ACL 内置）：\n"
+"  fab.order.view / fab.order.modify / fab.order.delete / file.save\n"
+
+#: app/acdemo.cpp:210
+msgid "  (none)\n"
+msgstr "  (无)\n"
+
+#: app/acdemo.cpp:213
+msgid "  label: "
+msgstr "  标签： "
+
+#: app/acdemo.cpp:215 src/bas/security/IdentityServiceCommand.cpp:23
+msgid "  type: "
+msgstr "  类型: "
+
+#: app/acdemo.cpp:218 src/bas/security/UserStoreCommand.cpp:131
+msgid "  name: "
+msgstr "  名称: "
+
+#: app/acdemo.cpp:221
+msgid "  uuid: "
+msgstr "  UUID: "
+
+#: app/acdemo.cpp:224
+msgid "  description: "
+msgstr "  描述: "
+
+#: app/acdemo.cpp:227
+msgid "  (current)\n"
+msgstr "  (当前)\n"
+
+#: app/acdemo.cpp:236
+msgid "invalid realm token: "
+msgstr "无效的领域令牌: "
+
+#: app/acdemo.cpp:250
+msgid "current realm: "
+msgstr "当前领域: "
+
+#: app/acdemo.cpp:276
+msgid "usage: realm show | realm NAME | realm @token\n"
+msgstr "用法：realm show | realm NAME | realm @token\n"
+
+#: app/acdemo.cpp:281
+msgid "current realm:\n"
+msgstr "当前领域:\n"
+
+#: app/acdemo.cpp:291
+msgid "no registered realms\n"
+msgstr "没有已注册的领域\n"
+
+#: app/acdemo.cpp:294
+msgid "registered realms:\n"
+msgstr "已注册领域:\n"
+
+#: app/acdemo.cpp:298
+msgid " (current)"
+msgstr " (当前)"
+
+#: app/acdemo.cpp:393
+msgid "entered "
+msgstr "已进入 "
+
+#: app/acdemo.cpp:393
+msgid " (exit or Ctrl-D to leave)\n"
+msgstr " (exit 或 Ctrl-D 退出)\n"
+
+#: app/acdemo.cpp:443 app/acdemo.cpp:498
+msgid "no identity service for current realm\n"
+msgstr "当前领域没有身份服务\n"
+
+#: app/acdemo.cpp:521
+msgid "acdemo interactive mode. Type help for commands.\n"
+msgstr "acdemo 交互模式。输入 help 查看命令。\n"
+
+#: app/acdemo.cpp:522
+msgid "  Tab: complete   Up/Down: history   Emacs keys: Ctrl-A/E/F/B, Alt-F/B\n"
+msgstr "  Tab: 补全   上下: 历史   Emacs 键: Ctrl-A/E/F/B, Alt-F/B\n"
+
+#: app/acdemo.cpp:523
+msgid "  Ctrl-arrows: word   Ctrl-K/U/W Alt-BS: kill word   Ctrl-L: redraw\n"
+msgstr "  Ctrl-方向键: 按词移动   Ctrl-K/U/W Alt-BS: 删除词   Ctrl-L: 重绘\n"
+
+#: app/acdemo.cpp:524
+msgid "  Shells: con, store, acl, man, reg, id (exit or Ctrl-D to leave)\n"
+msgstr "  子壳: con, store, acl, man, reg, id (exit 或 Ctrl-D 退出)\n"
+
+#: app/acdemo.cpp:529 src/bas/security/CredentialManagerCommand.cpp:77
+msgid "credential file: "
+msgstr "凭据文件: "
+
+#: app/acdemo.cpp:530 src/bas/security/UserStoreCommand.cpp:840
+msgid "user store: "
+msgstr "用户存储: "
+
+#: app/reg.cpp:33
+msgid ""
+"usage: reg [options]\n"
+"  -r, --root DIR|FILE   registry root (directory → LocalRegistry, file → JsonRegistry)\n"
+"  -d, --dump PATH       list all keys under PATH (path=value lines)\n"
+"  -g, --get PATH        print registry value (valueToString)\n"
+"  -s, --set PATH VALUE  set registry value (parseOption)\n"
+"  -e, --export PATH     export subtree at PATH as JSON to stdout\n"
+"  -i, --import PATH     read JSON from stdin and merge at PATH\n"
+"  -v, --verbose         debug logging\n"
+"  -q, --quiet           errors only on stderr\n"
+"      --version         print version and exit\n"
+"  -h, --help            show this help and exit\n"
+msgstr ""
+"用法：reg [options]\n"
+"  -r, --root DIR|FILE   注册表根（目录 → LocalRegistry，文件 → JsonRegistry）\n"
+"  -d, --dump PATH       列出 PATH 下的全部键（path=value 行）\n"
+"  -g, --get PATH        打印注册表值（valueToString）\n"
+"  -s, --set PATH VALUE  设置注册表值（parseOption）\n"
+"  -e, --export PATH     将 PATH 处的子树以 JSON 导出到 stdout\n"
+"  -i, --import PATH     从标准输入读取 JSON 并在 PATH 处合并\n"
+"  -v, --verbose         调试日志\n"
+"  -q, --quiet           仅将错误输出到 stderr\n"
+"      --version         打印版本并退出\n"
+"  -h, --help            显示此帮助并退出\n"
+
+#: app/reg.cpp:180
+msgid "reg: cannot create "
+msgstr "reg: 无法创建 "
+
+#: app/reg.cpp:185
+msgid "reg: cannot create directory "
+msgstr "reg: 无法创建目录 "
+
+#: app/reg.cpp:201 app/reg.cpp:382 app/reg.cpp:389
+msgid "reg: "
+msgstr "reg: "
+
+#: app/reg.cpp:208
+msgid "reg: root is neither a directory nor a regular file: "
+msgstr "reg: 根既不是目录也不是普通文件: "
+
+#: app/reg.cpp:261
+msgid "reg: --set requires a value argument\n"
+msgstr "reg: --set 需要一个值参数\n"
+
+#: app/reg.cpp:291
+msgid "reg: unexpected argument: "
+msgstr "reg: 意外的参数: "
+
+#: app/reg.cpp:307
+msgid "reg: -v/--verbose and -q/--quiet are mutually exclusive\n"
+msgstr "reg: -v/--verbose 与 -q/--quiet 不能同时使用\n"
+
+#: app/reg.cpp:328
+msgid "reg: specify only one of --dump, --get, --set, --export, or --import\n"
+msgstr "reg: 只能指定 --dump、--get、--set、--export 或 --import 之一\n"
+
+#: app/reg.cpp:349
+msgid "reg: invalid path "
+msgstr "reg: 无效路径 "
+
+#: app/reg.cpp:357
+msgid "reg: no value at "
+msgstr "reg: 此处无值 "
+
+#: app/reg.cpp:366
+msgid "reg: failed to set "
+msgstr "reg: 设置失败 "
+
+#: app/tanks_game.cpp:207
+msgid " TANK AC - dual device access control demo "
+msgstr " 坦克访问控制 - 双设备演示 "
+
+#: app/tanks_game.cpp:214
+msgid "Terminal too small for tanks_game."
+msgstr "终端太小，无法运行 tanks_game。"
+
+#: app/tanks_game.cpp:215
+#, c-format
+msgid "Need at least %dx%d, have %dx%d."
+msgstr "至少需要 %dx%d，当前为 %dx%d。"
+
+#: app/tanks_game.cpp:216
+msgid "Resize the terminal and try again. Press any key to exit."
+msgstr "请调整终端大小后重试。按任意键退出。"
+
+#: app/tanks_game.cpp:411
+msgid "ENGINE ON "
+msgstr "引擎开 "
+
+#: app/tanks_game.cpp:414
+msgid "ENGINE OFF"
+msgstr "引擎关"
+
+#: app/tanks_game.cpp:423
+msgid " Controls "
+msgstr " 控制 "
+
+#: app/tanks_game.cpp:424
+msgid "TAB device  L login  F1/F2 engine  Q quit"
+msgstr "TAB 切换设备  L 登录  F1/F2 引擎  Q 退出"
+
+#: app/tanks_game.cpp:425
+msgid "Arrows move/turn  Space fire"
+msgstr "方向键移动/转向  空格开火"
+
+#: app/tanks_game.cpp:426
+#, c-format
+msgid "Active: %s"
+msgstr "当前: %s"
+
+#: app/tanks_game.cpp:450
+#, c-format
+msgid " Policy %s "
+msgstr " 策略 %s "
+
+#: app/tanks_game.cpp:491
+msgid "BINDINGS"
+msgstr "绑定"
+
+#: app/tanks_game.cpp:495
+msgid "identity      aclId"
+msgstr "身份         ACL"
+
+#: app/tanks_game.cpp:513 app/tanks_game.cpp:548 app/tanks_game.cpp:588
+msgid "(none)"
+msgstr "(无)"
+
+#: app/tanks_game.cpp:522
+msgid "ACLS"
+msgstr "ACL"
+
+#: app/tanks_game.cpp:531
+#, c-format
+msgid "%-10s %zu entries"
+msgstr "%-10s %zu 条"
+
+#: app/tanks_game.cpp:557
+msgid "GRANTS"
+msgstr "授权"
+
+#: app/tanks_game.cpp:566
+msgid "identity"
+msgstr "身份"
+
+#: app/tanks_game.cpp:566
+msgid "permission"
+msgstr "权限"
+
+#: app/tanks_game.cpp:596
+msgid " Event log "
+msgstr " 事件日志 "
+
+#: app/tanks_game.cpp:703
+msgid "Enter/Esc=OK"
+msgstr "Enter/Esc=确定"
+
+#: app/tanks_game.cpp:739
+msgid "Enter=retry   Esc=cancel"
+msgstr "Enter=重试   Esc=取消"
+
+#: app/tanks_game.cpp:770 app/tanks_game.cpp:848
+#, c-format
+msgid " Login %s "
+msgstr " 登录 %s "
+
+#: app/tanks_game.cpp:771 app/tanks_game.cpp:850
+msgid "user: "
+msgstr "用户: "
+
+#: app/tanks_game.cpp:772 app/tanks_game.cpp:851
+msgid "pass: "
+msgstr "密码: "
+
+#: app/tanks_game.cpp:773
+msgid "Up/Down demo user  Enter=OK  Esc=cancel"
+msgstr "上下键选择演示用户  Enter=确定  Esc=取消"
+
+#: app/tanks_game.cpp:774 app/tanks_game.cpp:855
+msgid "demo accounts (user/pass):"
+msgstr "演示账号（用户/密码）:"
+
+#: app/tanks_game.cpp:848
+#, c-format
+msgid " Elevate %s "
+msgstr " 提权 %s "
+
+#: app/tanks_game.cpp:853
+msgid "Up/Down demo user  Enter=login  Esc=cancel"
+msgstr "上下键选择演示用户  Enter=登录  Esc=取消"
+
+#: app/tanks_game.cpp:854
+msgid "Up/Down demo user  Enter=authorize  Esc=cancel"
+msgstr "上下键选择演示用户  Enter=授权  Esc=取消"
+
+#: app/tanks_game.cpp:902
+msgid ": login cancelled"
+msgstr ": 已取消登录"
+
+#: app/tanks_game.cpp:906 app/tanks_game.cpp:971
+msgid ": logged in as "
+msgstr ": 已登录为 "
+
+#: app/tanks_game.cpp:909
+msgid " login failed for "
+msgstr " 登录失败："
+
+#: app/tanks_game.cpp:910 app/tanks_game.cpp:952
+msgid "Invalid username or password for "
+msgstr "用户名或密码无效："
+
+#: app/tanks_game.cpp:911
+msgid "Login Failed"
+msgstr "登录失败"
+
+#: app/tanks_game.cpp:951
+msgid "Auth Failed"
+msgstr "认证失败"
+
+#: app/tanks_game.cpp:961
+msgid " lacks "
+msgstr " 缺少权限 "
+
+#: app/tanks_game.cpp:961
+msgid " on "
+msgstr " 于 "
+
+#: app/tanks_game.cpp:962
+msgid "Access Denied"
+msgstr "访问被拒绝"
+
+#: app/tanks_game.cpp:1024
+msgid "Tank AC demo - per-device user store & ACL"
+msgstr "坦克访问控制演示 - 每设备用户库与 ACL"
+
+#: app/tanks_game.cpp:1025
+msgid "L login  arrows move  space fire  denied=elevate/login"
+msgstr "L 登录  方向键移动  空格开火  拒绝=提权/登录"
+
+#: app/tanks_game.cpp:1026
+msgid "tank-a: alice=operator(ACL) bob=gunner(grants) admin=commander"
+msgstr "tank-a: alice=操作员(ACL) bob=炮手(授权) admin=指挥官"
+
+#: app/tanks_game.cpp:1027
+msgid "tank-b: charlie=cadet(ACL) dana=instructor(grants)"
+msgstr "tank-b: charlie=学员(ACL) dana=教官(授权)"
+
+#: app/tanks_game.cpp:1051
+msgid "switch -> "
+msgstr "切换 -> "
+
+#: app/tanks_game.cpp:1090
+msgid "usage: "
+msgstr "用法: "
+
+#: app/tanks_game.cpp:1090
+msgid " [--batch]\n"
+msgstr " [--batch]\n"
+
+#: app/tanks_game.cpp:1091
+msgid "  default: ncurses tank game (TAB switch, arrows, F1/F2, space)\n"
+msgstr "  默认: ncurses 坦克游戏（TAB 切换，方向键，F1/F2，空格）\n"
+
+#: app/tanks_game.cpp:1092
+msgid "  --batch: line-oriented mode for scripts\n"
+msgstr "  --batch: 面向脚本的行模式\n"
+
+#: app/tanks_game.cpp:1107
+msgid "unknown argument: "
+msgstr "未知参数: "
+
+#: app/tanks_game.cpp:1122
+msgid "access denied: "
+msgstr "访问被拒绝: "
+
+#: app/tanks_game.cpp:1125
+msgid "error: "
+msgstr "错误: "
+
+#: app/vols.cpp:39
+msgid ""
+"usage: vols [options]\n"
+"  Field selection (default without any: -mdtlu; with -v: -mdtlurLD):\n"
+"    -a, --all            all columns\n"
+"    -c, --compact        same columns as -mdtlu (merges with explicit field flags)\n"
+"    -m, --mountpoint     mount point column\n"
+"    -d, --device         device column\n"
+"    -t, --type           type column\n"
+"    -l, --label          label column\n"
+"    -u, --uuid           UUID column\n"
+"    -r, --read-only      read-only (ro/rw) column\n"
+"    -L, --logical-type   logical type column\n"
+"    -D, --loop-device    loop device column\n"
+"    -o, --opts           per-mount (VFS) options from mountinfo\n"
+"    -O, --superopts      superblock options from mountinfo\n"
+"    -z, --root           root path within filesystem (mountinfo field)\n"
+"  Other:\n"
+"    -s, --symbols        include overlay filesystems in the scan (bind mounts always on)\n"
+"    -h, --help           show this help and exit\n"
+"    -w, --writable       list only writable mounts; implies -r\n"
+"    -v, --verbose        more log detail; default columns include logical type\n"
+"    -q, --quiet          only errors on stderr\n"
+msgstr ""
+"用法：vols [options]\n"
+"  字段选择（未指定时默认：-mdtlu；带 -v 时：-mdtlurLD）：\n"
+"    -a, --all            全部列\n"
+"    -c, --compact        与 -mdtlu 相同的列（与显式字段标志合并）\n"
+"    -m, --mountpoint     挂载点列\n"
+"    -d, --device         设备列\n"
+"    -t, --type           类型列\n"
+"    -l, --label          标签列\n"
+"    -u, --uuid           UUID 列\n"
+"    -r, --read-only      只读（ro/rw）列\n"
+"    -L, --logical-type   逻辑类型列\n"
+"    -D, --loop-device    回环设备列\n"
+"    -o, --opts           来自 mountinfo 的每挂载（VFS）选项\n"
+"    -O, --superopts      来自 mountinfo 的超级块选项\n"
+"    -z, --root           文件系统内的根路径（mountinfo 字段）\n"
+"  其他：\n"
+"    -s, --symbols        扫描时包含 overlay 文件系统（绑定挂载始终开启）\n"
+"    -h, --help           显示此帮助并退出\n"
+"    -w, --writable       仅列出可写挂载；隐含 -r\n"
+"    -v, --verbose        更多日志细节；默认列包含逻辑类型\n"
+"    -q, --quiet          仅将错误输出到 stderr\n"
+
+#: app/vols.cpp:119
+msgid "Mount Point"
+msgstr "挂载点"
+
+#: app/vols.cpp:120
+msgid "Root"
+msgstr "根路径"
+
+#: app/vols.cpp:121
+msgid "Device"
+msgstr "设备"
+
+#: app/vols.cpp:122
+msgid "Type"
+msgstr "类型"
+
+#: app/vols.cpp:123
+msgid "Label"
+msgstr "标签"
+
+#: app/vols.cpp:124
+msgid "UUID"
+msgstr "UUID"
+
+#: app/vols.cpp:125
+msgid "Read-Only"
+msgstr "只读"
+
+#: app/vols.cpp:126
+msgid "Logical Type"
+msgstr "逻辑类型"
+
+#: app/vols.cpp:127
+msgid "Loop Device"
+msgstr "回环设备"
+
+#: app/vols.cpp:128
+msgid "VFS opts"
+msgstr "VFS 选项"
+
+#: app/vols.cpp:129
+msgid "Super opts"
+msgstr "超级块选项"
+
+#: app/vols.cpp:247
+msgid "vols: unexpected argument: "
+msgstr "vols: 意外的参数: "
+
+#: app/vols.cpp:258
+msgid "vols: -v/--verbose and -q/--quiet are mutually exclusive\n"
+msgstr "vols: -v/--verbose 与 -q/--quiet 不能同时使用\n"
+
+#: app/vols.cpp:263
+msgid "vols: -a/--all and -c/--compact are mutually exclusive\n"
+msgstr "vols: -a/--all 与 -c/--compact 不能同时使用\n"
+
+#: app/vols.cpp:303
+msgid "vols: no columns selected\n"
+msgstr "vols: 未选择任何列\n"
+
+#: src/bas/security/ACList.cpp:26
+msgid ""
+"aclist commands:\n"
+"  list                   list ACE rows\n"
+"  help                   show this help\n"
+"  -h, --help             show this help\n"
+msgstr ""
+"aclist 命令:\n"
+"  list                   列出 ACE 行\n"
+"  help                   显示此帮助\n"
+"  -h, --help             显示此帮助\n"
+
+#: src/bas/security/ACList.cpp:34
+msgid "no ACE rows\n"
+msgstr "没有 ACE 行\n"
+
+#: src/bas/security/ACList.cpp:101
+msgid ""
+"usage: list [-h]\n"
+"  List ACE rows.\n"
+msgstr ""
+"用法：list [-h]\n"
+"  列出 ACE 行。\n"
+
+#: src/bas/security/ACList.cpp:113
+msgid "unknown aclist command: "
+msgstr "未知的 aclist 命令: "
+
+#: src/bas/security/ACList.cpp:113
+#: src/bas/security/CredentialManagerCommand.cpp:123
+#: src/bas/security/IdentityRegistryCommand.cpp:104
+#: src/bas/security/IdentityServiceCommand.cpp:71
+#: src/bas/security/PolicyStoreCommand.cpp:123
+#: src/bas/security/SecurityManagerCommand.cpp:208
+msgid " (try: help)\n"
+msgstr " (请试: help)\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:14
+msgid ""
+"credential commands:\n"
+"  list [-v]              list cached credentials (no secrets)\n"
+"  del STORE ID           remove credential by ref\n"
+"  clear                  remove all credentials\n"
+"  path                   show credential file path\n"
+"  reload                 reload from disk\n"
+"  save                   write credentials to disk\n"
+"  help                   show this help\n"
+msgstr ""
+"凭据命令:\n"
+"  list [-v]              列出缓存的凭据（不含机密）\n"
+"  del STORE ID           按引用删除凭据\n"
+"  clear                  删除全部凭据\n"
+"  path                   显示凭据文件路径\n"
+"  reload                 从磁盘重新加载\n"
+"  save                   将凭据写入磁盘\n"
+"  help                   显示此帮助\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:28
+msgid "no cached credentials\n"
+msgstr "没有缓存的凭据\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:40
+msgid "    (use login/request to verify; secrets not printed)\n"
+msgstr "    (使用 login/request 验证; 不打印机密)\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:75
+msgid "credential store: in-memory\n"
+msgstr "凭据存储: 内存\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:83
+msgid "reload only applies to file credential store\n"
+msgstr "reload 仅适用于文件凭据存储\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:87
+#: src/bas/security/SecurityManagerCommand.cpp:137
+msgid "reloaded "
+msgstr "已重新加载 "
+
+#: src/bas/security/CredentialManagerCommand.cpp:87
+#: src/bas/security/SecurityManagerCommand.cpp:138
+msgid " credential(s) from "
+msgstr " 个凭据，来自 "
+
+#: src/bas/security/CredentialManagerCommand.cpp:93
+msgid "save only applies to file credential store\n"
+msgstr "save 仅适用于文件凭据存储\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:97
+msgid "saved credentials to "
+msgstr "已将凭据保存到 "
+
+#: src/bas/security/CredentialManagerCommand.cpp:102
+msgid "cleared all credentials\n"
+msgstr "已清除全部凭据\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:107
+msgid "usage: del STORE ID\n"
+msgstr "用法：del STORE ID\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:114
+msgid "removed credential ["
+msgstr "已删除凭据 ["
+
+#: src/bas/security/CredentialManagerCommand.cpp:123
+msgid "unknown credential command: "
+msgstr "未知的凭据命令: "
+
+#: src/bas/security/IdentityRegistryCommand.cpp:14
+msgid ""
+"identity registry commands:\n"
+"  list                   list registered identity services\n"
+"  realms                 list realm → service bindings\n"
+"  service ID [SUBCMD …]  run commands on a service by id\n"
+"  help                   show this help\n"
+msgstr ""
+"身份注册表命令:\n"
+"  list                   列出已注册的身份服务\n"
+"  realms                 列出领域 → 服务绑定\n"
+"  service ID [SUBCMD …]  按 id 对服务运行命令\n"
+"  help                   显示此帮助\n"
+
+#: src/bas/security/IdentityRegistryCommand.cpp:24
+msgid "no identity services registered\n"
+msgstr "没有已注册的身份服务\n"
+
+#: src/bas/security/IdentityRegistryCommand.cpp:33
+msgid " [auto-login]"
+msgstr " [自动登录]"
+
+#: src/bas/security/IdentityRegistryCommand.cpp:42
+msgid "no realms registered\n"
+msgstr "没有已注册的领域\n"
+
+#: src/bas/security/IdentityRegistryCommand.cpp:49
+msgid " (no service)\n"
+msgstr " (无服务)\n"
+
+#: src/bas/security/IdentityRegistryCommand.cpp:92
+msgid "usage: service ID [SUBCMD …]\n"
+msgstr "用法：service ID [SUBCMD …]\n"
+
+#: src/bas/security/IdentityRegistryCommand.cpp:98
+msgid "identity service not found: "
+msgstr "未找到身份服务: "
+
+#: src/bas/security/IdentityRegistryCommand.cpp:104
+msgid "unknown registry subcommand: "
+msgstr "未知的注册表子命令: "
+
+#: src/bas/security/IdentityServiceCommand.cpp:15
+msgid ""
+"identity service commands:\n"
+"  info                   show service id, type, credentials, realms\n"
+"  help                   show this help\n"
+"  store SUBCMD …         (store service) user-store commands\n"
+msgstr ""
+"身份服务命令:\n"
+"  info                   显示服务 id、类型、凭据与领域\n"
+"  help                   显示此帮助\n"
+"  store SUBCMD …         （存储服务）用户存储命令\n"
+
+#: src/bas/security/IdentityServiceCommand.cpp:22
+msgid "  id: "
+msgstr "  ID: "
+
+#: src/bas/security/IdentityServiceCommand.cpp:24
+msgid "  auto-login: "
+msgstr "  自动登录: "
+
+#: src/bas/security/IdentityServiceCommand.cpp:24
+#: src/bas/security/UserStoreCommand.cpp:143
+#: src/bas/security/UserStoreCommand.cpp:159
+#: src/bas/security/UserStoreCommand.cpp:724
+msgid "yes"
+msgstr "是"
+
+#: src/bas/security/IdentityServiceCommand.cpp:24
+#: src/bas/security/UserStoreCommand.cpp:143
+#: src/bas/security/UserStoreCommand.cpp:159
+#: src/bas/security/UserStoreCommand.cpp:724
+msgid "no"
+msgstr "否"
+
+#: src/bas/security/IdentityServiceCommand.cpp:25
+msgid "  credentials:"
+msgstr "  凭据:"
+
+#: src/bas/security/IdentityServiceCommand.cpp:28
+#: src/bas/security/UserStoreCommand.cpp:146
+msgid " (none)\n"
+msgstr " (无)\n"
+
+#: src/bas/security/IdentityServiceCommand.cpp:35
+msgid "  realm-types:"
+msgstr "  领域类型:"
+
+#: src/bas/security/IdentityServiceCommand.cpp:38
+msgid " (any)\n"
+msgstr " (任意)\n"
+
+#: src/bas/security/IdentityServiceCommand.cpp:47
+msgid "  backed-stores: "
+msgstr "  后端存储: "
+
+#: src/bas/security/IdentityServiceCommand.cpp:71
+msgid "unknown identity service subcommand: "
+msgstr "未知的身份服务子命令: "
+
+#: src/bas/security/IdentityServiceCommand.cpp:88
+msgid "user store not configured\n"
+msgstr "未配置用户存储\n"
+
+#: src/bas/security/IdentityService.cpp:106
+msgid "User Login"
+msgstr "用户登录"
+
+#: src/bas/security/IdentityService.cpp:110
+msgid "Realm type"
+msgstr "领域类型"
+
+#: src/bas/security/IdentityService.cpp:120
+msgid "Realm name"
+msgstr "领域名称"
+
+#: src/bas/security/IdentityService.cpp:128
+msgid "Realm UUID"
+msgstr "领域 UUID"
+
+#: src/bas/security/IdentityService.cpp:136
+msgid "Username"
+msgstr "用户名"
+
+#: src/bas/security/IdentityService.cpp:141
+msgid "Password"
+msgstr "密码"
+
+#: src/bas/security/PolicyStoreCommand.cpp:15
+msgid ""
+"acl commands:\n"
+"  list                   list ACL grants\n"
+"  clear                  remove all grants\n"
+"  path                   show ACL file path\n"
+"  reload                 reload file ACL from disk\n"
+"  save                   write file ACL to disk\n"
+"  help                   show this help\n"
+"  -h, --help             show this help\n"
+msgstr ""
+"ACL 命令:\n"
+"  list                   列出 ACL 授权\n"
+"  clear                  删除全部授权\n"
+"  path                   显示 ACL 文件路径\n"
+"  reload                 从磁盘重新加载文件 ACL\n"
+"  save                   将文件 ACL 写入磁盘\n"
+"  help                   显示此帮助\n"
+"  -h, --help             显示此帮助\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:28
+msgid "no ACL grants\n"
+msgstr "没有 ACL 授权\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:63
+msgid ""
+"usage: list [-h]\n"
+"  List ACL grants.\n"
+msgstr ""
+"用法：list [-h]\n"
+"  列出 ACL 授权。\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:71
+msgid ""
+"usage: clear [-h]\n"
+"  Remove all ACL grants.\n"
+msgstr ""
+"用法：clear [-h]\n"
+"  删除全部 ACL 授权。\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:75
+msgid "cleared ACL\n"
+msgstr "已清除 ACL\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:80
+msgid ""
+"usage: path [-h]\n"
+"  Show ACL file path.\n"
+msgstr ""
+"用法：path [-h]\n"
+"  显示 ACL 文件路径。\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:85
+msgid "acl: in-memory\n"
+msgstr "acl: 内存\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:87
+msgid "acl file: "
+msgstr "ACL 文件: "
+
+#: src/bas/security/PolicyStoreCommand.cpp:93
+msgid ""
+"usage: reload [-h]\n"
+"  Reload file ACL from disk.\n"
+msgstr ""
+"用法：reload [-h]\n"
+"  从磁盘重新加载文件 ACL。\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:97
+msgid "reload only applies to file ACL (-a/--acl FILE)\n"
+msgstr "reload 仅适用于文件 ACL (-a/--acl FILE)\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:101
+msgid "reloaded ACL from "
+msgstr "已从以下位置重新加载 ACL: "
+
+#: src/bas/security/PolicyStoreCommand.cpp:106
+msgid ""
+"usage: save [-h]\n"
+"  Write file ACL to disk.\n"
+msgstr ""
+"用法：save [-h]\n"
+"  将文件 ACL 写入磁盘。\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:110
+msgid "save only applies to file ACL (-a/--acl FILE)\n"
+msgstr "save 仅适用于文件 ACL (-a/--acl FILE)\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:114
+msgid "saved ACL to "
+msgstr "已将 ACL 保存到 "
+
+#: src/bas/security/PolicyStoreCommand.cpp:123
+msgid "unknown acl command: "
+msgstr "未知的 ACL 命令: "
+
+#: src/bas/security/SecurityManagerCommand.cpp:15
+msgid ""
+"access control commands:\n"
+"  whoami                         list active identities\n"
+"  logout                         clear all active identities\n"
+"  logout-realm [@realm|NAME]     clear identities in a realm\n"
+"  check [@realm] PERMISSION      check permission\n"
+"  request [@realm] PERM [USER]   request permission (login if needed)\n"
+"  login [@realm] [USER]          interactive login\n"
+"  reload-creds                   reload credential file and restore logins\n"
+"  help                           show this help\n"
+msgstr ""
+"访问控制命令:\n"
+"  whoami                         列出活动身份\n"
+"  logout                         清除全部活动身份\n"
+"  logout-realm [@realm|NAME]     清除某领域中的身份\n"
+"  check [@realm] PERMISSION      检查权限\n"
+"  request [@realm] PERM [USER]   请求权限（必要时登录）\n"
+"  login [@realm] [USER]          交互式登录\n"
+"  reload-creds                   重新加载凭据文件并恢复登录\n"
+"  help                           显示此帮助\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:40
+msgid "no active identities\n"
+msgstr "没有活动身份\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:49
+msgid " via "
+msgstr " 经由 "
+
+#: src/bas/security/SecurityManagerCommand.cpp:111
+msgid "logged out all identities (auto-login suppressed until next login)\n"
+msgstr "已退出全部身份（在下次登录前抑制自动登录）\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:124
+msgid "usage: logout-realm [@realm|NAME]\n"
+msgstr "用法：logout-realm [@realm|NAME]\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:128
+msgid "logged out identities in realm "
+msgstr "已退出领域中的身份: "
+
+#: src/bas/security/SecurityManagerCommand.cpp:133
+msgid "no file credential store configured\n"
+msgstr "未配置文件凭据存储\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:156
+msgid "usage: check [@realm] PERMISSION\n"
+msgstr "用法：check [@realm] PERMISSION\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:166
+msgid "usage: request [@realm] PERMISSION [USER]\n"
+msgstr "用法：request [@realm] PERMISSION [USER]\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:196
+msgid "login ok"
+msgstr "登录成功"
+
+#: src/bas/security/SecurityManagerCommand.cpp:198
+msgid " realm="
+msgstr " realm="
+
+#: src/bas/security/SecurityManagerCommand.cpp:204
+msgid "login failed\n"
+msgstr "登录失败\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:208
+#: src/bas/security/UserStoreCommand.cpp:524
+msgid "unknown command: "
+msgstr "未知命令: "
+
+#: src/bas/security/UserStoreCommand.cpp:34
+msgid ""
+"user store commands:\n"
+"  user list                       list usernames\n"
+"  user show USER                  show profile, roles, keys\n"
+"  user add [options] USER [PASSWORD]\n"
+"  user update [options] USER [PASSWORD]\n"
+"      -a/--avatar NAME   -d/--display NAME   -e/--email EMAIL\n"
+"      -p/--password PASS  [PASSWORD] positional\n"
+"      -H/--hash ALGO      plain (default), sha256, sha1, md5\n"
+"      -h/--help           show command help\n"
+"      -r/--roles ROLES    comma-separated role names\n"
+"      password from stdin when -p and [PASSWORD] are both omitted\n"
+"  user check USER [PASSWORD]        validate password (exit 1 on failure)\n"
+"  user del USER                   remove user\n"
+"  user enable USER | user disable USER\n"
+"  user roles USER | user roles set USER R…\n"
+"  user role add USER ROLE | user role del USER ROLE\n"
+"  user keys USER | user key add/del …\n"
+"  path | reload | save | help\n"
+"  commands may be abbreviated by unique prefix\n"
+"  -h/--help on any subcommand shows its usage\n"
+msgstr ""
+"用户存储命令:\n"
+"  user list                       列出用户名\n"
+"  user show USER                  显示个人资料、角色、密钥\n"
+"  user add [options] USER [PASSWORD]\n"
+"  user update [options] USER [PASSWORD]\n"
+"      -a/--avatar NAME   -d/--display NAME   -e/--email EMAIL\n"
+"      -p/--password PASS  [PASSWORD] 位置参数\n"
+"      -H/--hash ALGO      plain（默认）、sha256、sha1、md5\n"
+"      -h/--help           显示命令帮助\n"
+"      -r/--roles ROLES    逗号分隔的角色名\n"
+"      同时省略 -p 与 [PASSWORD] 时从标准输入读取密码\n"
+"  user check USER [PASSWORD]        验证密码（失败时退出码为 1）\n"
+"  user del USER                   删除用户\n"
+"  user enable USER | user disable USER\n"
+"  user roles USER | user roles set USER R…\n"
+"  user role add USER ROLE | user role del USER ROLE\n"
+"  user keys USER | user key add/del …\n"
+"  path | reload | save | help\n"
+"  命令可用唯一前缀缩写\n"
+"  任意子命令的 -h/--help 显示其用法\n"
+
+#: src/bas/security/UserStoreCommand.cpp:57
+msgid ""
+"usage: user list [-h]\n"
+"  List all usernames in the store.\n"
+msgstr ""
+"用法：user list [-h]\n"
+"  列出存储中的全部用户名。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:62
+msgid ""
+"usage: user show [-h] USER\n"
+"  Show profile, roles, and auth keys for USER.\n"
+msgstr ""
+"用法：user show [-h] USER\n"
+"  显示 USER 的个人资料、角色与认证密钥。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:67
+msgid ""
+"usage: user add [-h] [options] USER [PASSWORD]\n"
+"  Create a new user record.\n"
+"options:\n"
+"  -a, --avatar NAME     profile.attributes.avatar\n"
+"  -d, --display NAME    display name\n"
+"  -e, --email EMAIL     email address\n"
+"  -p, --password PASS   password (or positional PASSWORD)\n"
+"  -H, --hash ALGO       plain (default), sha256, sha1, md5\n"
+"  -r, --roles ROLES     comma-separated role names (default: operator)\n"
+"  -h, --help            show this help\n"
+"  If neither -p nor PASSWORD is given, password is read from stdin.\n"
+msgstr ""
+"用法：user add [-h] [options] USER [PASSWORD]\n"
+"  创建新的用户记录。\n"
+"options：\n"
+"  -a, --avatar NAME     profile.attributes.avatar\n"
+"  -d, --display NAME    显示名称\n"
+"  -e, --email EMAIL     电子邮箱\n"
+"  -p, --password PASS   密码（或位置参数 PASSWORD）\n"
+"  -H, --hash ALGO       plain（默认）、sha256、sha1、md5\n"
+"  -r, --roles ROLES     逗号分隔的角色名（默认：operator）\n"
+"  -h, --help            显示此帮助\n"
+"  若未提供 -p 也未提供 PASSWORD，则从标准输入读取密码。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:81
+msgid ""
+"usage: user update [-h] [options] USER [PASSWORD]\n"
+"  Update an existing user; only specified fields are changed.\n"
+"options: same as user add\n"
+msgstr ""
+"用法：user update [-h] [options] USER [PASSWORD]\n"
+"  更新已有用户；仅修改指定的字段。\n"
+"options：与 user add 相同\n"
+
+#: src/bas/security/UserStoreCommand.cpp:87
+msgid ""
+"usage: user check [-h] USER [PASSWORD]\n"
+"  Validate PASSWORD against USER's stored keys (exit 1 on failure).\n"
+"  PASSWORD from stdin when omitted.\n"
+msgstr ""
+"用法：user check [-h] USER [PASSWORD]\n"
+"  对照 USER 已存储的密钥验证 PASSWORD（失败时退出码为 1）。\n"
+"  省略时从标准输入读取 PASSWORD。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:93
+msgid ""
+"usage: user del|rm [-h] USER\n"
+"  Remove USER from the store.\n"
+msgstr ""
+"用法：user del|rm [-h] USER\n"
+"  从存储中删除 USER。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:98
+msgid ""
+"usage: user enable|disable [-h] USER\n"
+"  Enable or disable USER login.\n"
+msgstr ""
+"用法：user enable|disable [-h] USER\n"
+"  启用或禁用 USER 的登录。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:103
+msgid ""
+"usage: user roles [-h] USER\n"
+"       user roles set [-h] USER ROLE…\n"
+"  List roles, or replace the role list for USER.\n"
+msgstr ""
+"用法：user roles [-h] USER\n"
+"       user roles set [-h] USER ROLE…\n"
+"  列出角色，或替换 USER 的角色列表。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:109
+msgid ""
+"usage: user role add [-h] USER ROLE\n"
+"       user role del [-h] USER ROLE\n"
+"  Add or remove a single role name on USER.\n"
+msgstr ""
+"用法：user role add [-h] USER ROLE\n"
+"       user role del [-h] USER ROLE\n"
+"  为 USER 添加或删除单个角色名。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:115
+msgid ""
+"usage: user keys [-h] USER\n"
+"  List authentication keys for USER.\n"
+msgstr ""
+"用法：user keys [-h] USER\n"
+"  列出 USER 的认证密钥。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:120
+msgid ""
+"usage: user key add [-h] USER ID TYPE [options]\n"
+"       user key del [-h] USER ID\n"
+"options for add:\n"
+"  -p, --password PASS   key secret\n"
+"  -H, --hash ALGO       for password-hash (default plain → password-plain)\n"
+"  --name LABEL          key display name\n"
+"  -h, --help            show this help\n"
+msgstr ""
+"用法：user key add [-h] USER ID TYPE [options]\n"
+"       user key del [-h] USER ID\n"
+"add 的 options：\n"
+"  -p, --password PASS   密钥机密\n"
+"  -H, --hash ALGO       用于 password-hash（默认 plain → password-plain）\n"
+"  --name LABEL          密钥显示名称\n"
+"  -h, --help            显示此帮助\n"
+
+#: src/bas/security/UserStoreCommand.cpp:133
+msgid "  display: "
+msgstr "  显示名: "
+
+#: src/bas/security/UserStoreCommand.cpp:136
+msgid "  email: "
+msgstr "  邮箱: "
+
+#: src/bas/security/UserStoreCommand.cpp:140
+msgid "  avatar: "
+msgstr "  头像: "
+
+#: src/bas/security/UserStoreCommand.cpp:143
+msgid "  enabled: "
+msgstr "  已启用: "
+
+#: src/bas/security/UserStoreCommand.cpp:144
+msgid "  roles:"
+msgstr "  角色:"
+
+#: src/bas/security/UserStoreCommand.cpp:153
+msgid "  keys:\n"
+msgstr "  密钥:\n"
+
+#: src/bas/security/UserStoreCommand.cpp:155
+msgid "    (none)\n"
+msgstr "    (无)\n"
+
+#: src/bas/security/UserStoreCommand.cpp:244
+msgid "failed to read password from stdin"
+msgstr "无法从标准输入读取密码"
+
+#: src/bas/security/UserStoreCommand.cpp:257
+msgid "missing value for "
+msgstr "缺少值: "
+
+#: src/bas/security/UserStoreCommand.cpp:313
+msgid "unknown option: "
+msgstr "未知选项: "
+
+#: src/bas/security/UserStoreCommand.cpp:333
+#: src/bas/security/UserStoreCommand.cpp:366
+msgid "unexpected argument: "
+msgstr "意外的参数: "
+
+#: src/bas/security/UserStoreCommand.cpp:337
+#: src/bas/security/UserStoreCommand.cpp:353
+msgid "USER name required"
+msgstr "需要 USER 名称"
+
+#: src/bas/security/UserStoreCommand.cpp:411
+msgid "user already exists: "
+msgstr "用户已存在: "
+
+#: src/bas/security/UserStoreCommand.cpp:415
+#: src/bas/security/UserStoreCommand.cpp:460
+#: src/bas/security/UserStoreCommand.cpp:788
+msgid "unsupported hash algorithm: "
+msgstr "不支持的哈希算法: "
+
+#: src/bas/security/UserStoreCommand.cpp:416
+#: src/bas/security/UserStoreCommand.cpp:461
+msgid " (use plain, sha256, sha1, or md5)\n"
+msgstr " (请使用 plain、sha256、sha1 或 md5)\n"
+
+#: src/bas/security/UserStoreCommand.cpp:436
+msgid "added user "
+msgstr "已添加用户 "
+
+#: src/bas/security/UserStoreCommand.cpp:456
+#: src/bas/security/UserStoreCommand.cpp:467
+#: src/bas/security/UserStoreCommand.cpp:505
+#: src/bas/security/UserStoreCommand.cpp:588
+#: src/bas/security/UserStoreCommand.cpp:613
+#: src/bas/security/UserStoreCommand.cpp:630
+#: src/bas/security/UserStoreCommand.cpp:665
+#: src/bas/security/UserStoreCommand.cpp:674
+#: src/bas/security/UserStoreCommand.cpp:698
+#: src/bas/security/UserStoreCommand.cpp:719
+#: src/bas/security/UserStoreCommand.cpp:767
+msgid "user not found: "
+msgstr "未找到用户: "
+
+#: src/bas/security/UserStoreCommand.cpp:485
+msgid "updated user "
+msgstr "已更新用户 "
+
+#: src/bas/security/UserStoreCommand.cpp:501
+msgid "password required\n"
+msgstr "需要密码\n"
+
+#: src/bas/security/UserStoreCommand.cpp:509
+msgid "password ok for "
+msgstr "密码正确: "
+
+#: src/bas/security/UserStoreCommand.cpp:512
+msgid "invalid password for "
+msgstr "密码无效: "
+
+#: src/bas/security/UserStoreCommand.cpp:520
+msgid "ambiguous command: "
+msgstr "命令不明确: "
+
+#: src/bas/security/UserStoreCommand.cpp:559
+msgid "no users in store\n"
+msgstr "存储中没有用户\n"
+
+#: src/bas/security/UserStoreCommand.cpp:570
+msgid " [disabled]"
+msgstr " [已禁用]"
+
+#: src/bas/security/UserStoreCommand.cpp:617
+msgid "removed user "
+msgstr "已删除用户 "
+
+#: src/bas/security/UserStoreCommand.cpp:635
+msgid "enabled user "
+msgstr "已启用用户 "
+
+#: src/bas/security/UserStoreCommand.cpp:638
+msgid "disabled user "
+msgstr "已禁用用户 "
+
+#: src/bas/security/UserStoreCommand.cpp:660
+msgid "usage: user roles set USER R…\n"
+msgstr "用法：user roles set USER R…\n"
+
+#: src/bas/security/UserStoreCommand.cpp:670
+msgid "roles updated for "
+msgstr "已更新角色: "
+
+#: src/bas/security/UserStoreCommand.cpp:678
+msgid "  role:"
+msgstr "  角色:"
+
+#: src/bas/security/UserStoreCommand.cpp:706
+msgid "role "
+msgstr "角色 "
+
+#: src/bas/security/UserStoreCommand.cpp:706
+msgid " for "
+msgstr " 用于 "
+
+#: src/bas/security/UserStoreCommand.cpp:751
+msgid "removed key "
+msgstr "已删除密钥 "
+
+#: src/bas/security/UserStoreCommand.cpp:751
+msgid " from "
+msgstr " 从 "
+
+#: src/bas/security/UserStoreCommand.cpp:793
+msgid "password flags require key type password-hash or password-plain\n"
+msgstr "密码相关选项需要密钥类型为 password-hash 或 password-plain\n"
+
+#: src/bas/security/UserStoreCommand.cpp:805
+msgid "added key "
+msgstr "已添加密钥 "
+
+#: src/bas/security/UserStoreCommand.cpp:805
+msgid " to "
+msgstr " 到 "
+
+#: src/bas/security/UserStoreCommand.cpp:809
+msgid "unknown user subcommand: "
+msgstr "未知的用户子命令: "
+
+#: src/bas/security/UserStoreCommand.cpp:837
+msgid ""
+"usage: path [-h]\n"
+"  Show user store file path and label.\n"
+msgstr ""
+"用法：path [-h]\n"
+"  显示用户存储的文件路径与标签。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:843
+msgid "  file: "
+msgstr "  文件: "
+
+#: src/bas/security/UserStoreCommand.cpp:845
+msgid "  kind: in-memory\n"
+msgstr "  类型: 内存\n"
+
+#: src/bas/security/UserStoreCommand.cpp:851
+msgid ""
+"usage: reload [-h]\n"
+"  Reload user store from disk.\n"
+msgstr ""
+"用法：reload [-h]\n"
+"  从磁盘重新加载用户存储。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:855
+msgid "reload only applies to file store (-d/--store FILE)\n"
+msgstr "reload 仅适用于文件存储 (-d/--store FILE)\n"
+
+#: src/bas/security/UserStoreCommand.cpp:859
+msgid "reloaded user store from "
+msgstr "已从以下位置重新加载用户存储: "
+
+#: src/bas/security/UserStoreCommand.cpp:864
+msgid ""
+"usage: save [-h]\n"
+"  Write user store to disk.\n"
+msgstr ""
+"用法：save [-h]\n"
+"  将用户存储写入磁盘。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:868
+msgid "save only applies to file store (-d/--store FILE)\n"
+msgstr "save 仅适用于文件存储 (-d/--store FILE)\n"
+
+#: src/bas/security/UserStoreCommand.cpp:872
+msgid "saved user store to "
+msgstr "已将用户存储保存到 "
+
+#: src/bas/volume/Volume_utils.cpp:152
+msgid "Usage: assets [OPTIONS] [PATH...]"
+msgstr "用法：assets [OPTIONS] [PATH...]"
+
+#: src/bas/volume/Volume_utils.cpp:153
+msgid "Options:"
+msgstr "选项："
+
+#: src/bas/volume/Volume_utils.cpp:154
+msgid "  -R, --recursive        list subdirectories recursively"
+msgstr "  -R, --recursive        递归列出子目录"
+
+#: src/bas/volume/Volume_utils.cpp:155
+msgid "  -l, --long             use a long listing format"
+msgstr "  -l, --long             使用长列表格式"
+
+#: src/bas/volume/Volume_utils.cpp:156
+msgid "  -a, --all              include entries starting with . and .."
+msgstr "  -a, --all              包含以 . 和 .. 开头的条目"
+
+#: src/bas/volume/Volume_utils.cpp:157
+msgid ""
+"  -A, --almost-all       include entries starting with . except . and .."
+msgstr "  -A, --almost-all       包含以 . 开头的条目（不含 . 和 ..）"
+
+#: src/bas/volume/Volume_utils.cpp:158
+msgid "  -F, --classify         append file type indicators"
+msgstr "  -F, --classify         附加文件类型指示符"
+
+#: src/bas/volume/Volume_utils.cpp:159
+msgid "  -h, --human-readable   print sizes in human-readable form"
+msgstr "  -h, --human-readable   以人类可读形式打印大小"
+
+#: src/bas/volume/Volume_utils.cpp:160
+msgid "  -C, --color            enable colored output"
+msgstr "  -C, --color            启用彩色输出"
+
+#: src/bas/volume/Volume_utils.cpp:161
+msgid "  -T, --tree             print as directory tree"
+msgstr "  -T, --tree             以目录树形式打印"
+
+#: src/bas/volume/Volume_utils.cpp:162
+msgid "      --help             display this help and exit"
+msgstr "      --help             显示此帮助并退出"

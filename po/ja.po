@@ -1,0 +1,1425 @@
+# Japanese translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: bas-cpp 1.0.3\n"
+"Report-Msgid-Bugs-To: bas-cpp@bodz.net\n"
+"POT-Creation-Date: 2026-07-13 16:39+0800\n"
+"PO-Revision-Date: 2026-07-13 16:18+0800\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: app/acdemo.cpp:102
+msgid ""
+"acdemo — bas.security permissions, credentials, and console login demo\n"
+"\n"
+"usage: acdemo [options] [command [args...]]\n"
+"\n"
+"  If no command is given, starts an interactive shell.\n"
+"\n"
+"commands:\n"
+"  check [@realm] PERMISSION       check permission (optional realm scope)\n"
+"  request [@realm] PERMISSION [USER]  request permission (login if needed)\n"
+"  login [@realm] [USER]             interactive login → active identities\n"
+"  whoami                            list active identities\n"
+"  creds [-v]                        list cached credentials (no secrets)\n"
+"  sm                                enter security manager shell\n"
+"  us                                enter user store shell\n"
+"  cm                                enter credential manager shell\n"
+"  ps                                enter policy store shell\n"
+"  reg                               enter identity registry shell\n"
+"  id                                enter identity service shell (current realm)\n"
+"  realm show|NAME|@realm            show or switch current realm\n"
+"  realms                            list registered realms\n"
+"  logout                            clear all active identities\n"
+"  logout-realm [NAME]               clear identities in a realm\n"
+"  reload-creds                      reload credentials and restore cached logins\n"
+"  help                              show this help\n"
+"\n"
+"  Interactive shells: sm, store, acl, cm, reg, id (exit or Ctrl-D to leave)\n"
+"  One-shot: store SUBCMD … | cm SUBCMD … | creds [-v]\n"
+"\n"
+"  @realm syntax:\n"
+"    @factory-a          realm name\n"
+"    @device:tablet-1    realm type + name (types: global, device, app)\n"
+"    @device             realm type only\n"
+"\n"
+"options:\n"
+"  (global options must appear before the subcommand, e.g. acdemo -d user.db store …)\n"
+"  -f, --credential-db PATH          credential cache file\n"
+"  -d, --user-db FILE                user store JSON file (default: built-in demo)\n"
+"  -p, --policy-db FILE              policy store JSON file (default: built-in demo)\n"
+"  -u, --subject USER                default subject hint\n"
+"  -r, --realm NAME                  default realm name\n"
+"      --realm-type TYPE             default realm type (global|device|app)\n"
+"      --realm-uuid UUID             default realm uuid\n"
+"      --version                     print version and exit\n"
+"  -h, --help                        show help and exit\n"
+"\n"
+"demo permissions (ACL is built-in):\n"
+"  fab.order.view / fab.order.modify / fab.order.delete / file.save\n"
+msgstr ""
+"acdemo — bas.security の権限・資格情報・コンソールログインのデモ\n"
+"\n"
+"使い方: acdemo [options] [command [args...]]\n"
+"\n"
+"  コマンドを省略すると対話シェルを開始します。\n"
+"\n"
+"commands:\n"
+"  check [@realm] PERMISSION       権限を確認（レルム範囲は任意）\n"
+"  request [@realm] PERMISSION [USER]  権限を要求（必要ならログイン）\n"
+"  login [@realm] [USER]             対話ログイン → アクティブなアイデンティティ\n"
+"  whoami                            アクティブなアイデンティティを一覧\n"
+"  creds [-v]                        キャッシュされた資格情報を一覧（秘密は含まない）\n"
+"  sm                                セキュリティマネージャシェルに入る\n"
+"  us                                ユーザーストアシェルに入る\n"
+"  cm                                資格情報マネージャシェルに入る\n"
+"  ps                                ポリシーストアシェルに入る\n"
+"  reg                               アイデンティティレジストリシェルに入る\n"
+"  id                                アイデンティティサービスシェルに入る（現在のレルム）\n"
+"  realm show|NAME|@realm            現在のレルムを表示または切り替え\n"
+"  realms                            登録済みレルムを一覧\n"
+"  logout                            すべてのアクティブなアイデンティティを消去\n"
+"  logout-realm [NAME]               レルム内のアイデンティティを消去\n"
+"  reload-creds                      資格情報を再読み込みしキャッシュされたログインを復元\n"
+"  help                              このヘルプを表示\n"
+"\n"
+"  対話シェル: sm, store, acl, cm, reg, id（exit または Ctrl-D で終了）\n"
+"  一回実行: store SUBCMD … | cm SUBCMD … | creds [-v]\n"
+"\n"
+"  @realm 構文:\n"
+"    @factory-a          レルム名\n"
+"    @device:tablet-1    レルムタイプ + 名前（タイプ: global, device, app）\n"
+"    @device             レルムタイプのみ\n"
+"\n"
+"options:\n"
+"  （グローバルオプションはサブコマンドの前に置く必要があります。例: acdemo -d user.db store …）\n"
+"  -f, --credential-db PATH          資格情報キャッシュファイル\n"
+"  -d, --user-db FILE                ユーザーストア JSON ファイル（既定: 内蔵デモ）\n"
+"  -p, --policy-db FILE              ポリシーストア JSON ファイル（既定: 内蔵デモ）\n"
+"  -u, --subject USER                既定のサブジェクトヒント\n"
+"  -r, --realm NAME                  既定のレルム名\n"
+"      --realm-type TYPE             既定のレルムタイプ（global|device|app）\n"
+"      --realm-uuid UUID             既定のレルム uuid\n"
+"      --version                     バージョンを表示して終了\n"
+"  -h, --help                        ヘルプを表示して終了\n"
+"\n"
+"デモ権限（ACL は内蔵）:\n"
+"  fab.order.view / fab.order.modify / fab.order.delete / file.save\n"
+
+#: app/acdemo.cpp:210
+msgid "  (none)\n"
+msgstr "  (なし)\n"
+
+#: app/acdemo.cpp:213
+msgid "  label: "
+msgstr "  ラベル: "
+
+#: app/acdemo.cpp:215 src/bas/security/IdentityServiceCommand.cpp:23
+msgid "  type: "
+msgstr "  タイプ: "
+
+#: app/acdemo.cpp:218 src/bas/security/UserStoreCommand.cpp:131
+msgid "  name: "
+msgstr "  名前: "
+
+#: app/acdemo.cpp:221
+msgid "  uuid: "
+msgstr "  UUID: "
+
+#: app/acdemo.cpp:224
+msgid "  description: "
+msgstr "  説明: "
+
+#: app/acdemo.cpp:227
+msgid "  (current)\n"
+msgstr "  (現在)\n"
+
+#: app/acdemo.cpp:236
+msgid "invalid realm token: "
+msgstr "無効なレルムトークン: "
+
+#: app/acdemo.cpp:250
+msgid "current realm: "
+msgstr "現在のレルム: "
+
+#: app/acdemo.cpp:276
+msgid "usage: realm show | realm NAME | realm @token\n"
+msgstr "使い方: realm show | realm NAME | realm @token\n"
+
+#: app/acdemo.cpp:281
+msgid "current realm:\n"
+msgstr "現在のレルム:\n"
+
+#: app/acdemo.cpp:291
+msgid "no registered realms\n"
+msgstr "登録されたレルムはありません\n"
+
+#: app/acdemo.cpp:294
+msgid "registered realms:\n"
+msgstr "登録済みレルム:\n"
+
+#: app/acdemo.cpp:298
+msgid " (current)"
+msgstr " (現在)"
+
+#: app/acdemo.cpp:393
+msgid "entered "
+msgstr "開始: "
+
+#: app/acdemo.cpp:393
+msgid " (exit or Ctrl-D to leave)\n"
+msgstr " (exit または Ctrl-D で終了)\n"
+
+#: app/acdemo.cpp:443 app/acdemo.cpp:498
+msgid "no identity service for current realm\n"
+msgstr "現在のレルムにアイデンティティサービスがありません\n"
+
+#: app/acdemo.cpp:521
+msgid "acdemo interactive mode. Type help for commands.\n"
+msgstr "acdemo 対話モード。コマンドは help で表示。\n"
+
+#: app/acdemo.cpp:522
+msgid "  Tab: complete   Up/Down: history   Emacs keys: Ctrl-A/E/F/B, Alt-F/B\n"
+msgstr "  Tab: 補完   上下: 履歴   Emacs キー: Ctrl-A/E/F/B, Alt-F/B\n"
+
+#: app/acdemo.cpp:523
+msgid "  Ctrl-arrows: word   Ctrl-K/U/W Alt-BS: kill word   Ctrl-L: redraw\n"
+msgstr "  Ctrl-矢印: 単語   Ctrl-K/U/W Alt-BS: 単語削除   Ctrl-L: 再描画\n"
+
+#: app/acdemo.cpp:524
+msgid "  Shells: con, store, acl, man, reg, id (exit or Ctrl-D to leave)\n"
+msgstr "  シェル: con, store, acl, man, reg, id (exit または Ctrl-D で終了)\n"
+
+#: app/acdemo.cpp:529 src/bas/security/CredentialManagerCommand.cpp:77
+msgid "credential file: "
+msgstr "資格情報ファイル: "
+
+#: app/acdemo.cpp:530 src/bas/security/UserStoreCommand.cpp:840
+msgid "user store: "
+msgstr "ユーザーストア: "
+
+#: app/reg.cpp:33
+msgid ""
+"usage: reg [options]\n"
+"  -r, --root DIR|FILE   registry root (directory → LocalRegistry, file → JsonRegistry)\n"
+"  -d, --dump PATH       list all keys under PATH (path=value lines)\n"
+"  -g, --get PATH        print registry value (valueToString)\n"
+"  -s, --set PATH VALUE  set registry value (parseOption)\n"
+"  -e, --export PATH     export subtree at PATH as JSON to stdout\n"
+"  -i, --import PATH     read JSON from stdin and merge at PATH\n"
+"  -v, --verbose         debug logging\n"
+"  -q, --quiet           errors only on stderr\n"
+"      --version         print version and exit\n"
+"  -h, --help            show this help and exit\n"
+msgstr ""
+"使い方: reg [options]\n"
+"  -r, --root DIR|FILE   レジストリルート（ディレクトリ → LocalRegistry、ファイル → JsonRegistry）\n"
+"  -d, --dump PATH       PATH 配下のすべてのキーを一覧（path=value 行）\n"
+"  -g, --get PATH        レジストリ値を表示（valueToString）\n"
+"  -s, --set PATH VALUE  レジストリ値を設定（parseOption）\n"
+"  -e, --export PATH     PATH の部分木を JSON として stdout にエクスポート\n"
+"  -i, --import PATH     stdin から JSON を読み PATH でマージ\n"
+"  -v, --verbose         デバッグログ\n"
+"  -q, --quiet           エラーのみ stderr に出力\n"
+"      --version         バージョンを表示して終了\n"
+"  -h, --help            このヘルプを表示して終了\n"
+
+#: app/reg.cpp:180
+msgid "reg: cannot create "
+msgstr "reg: 作成できません: "
+
+#: app/reg.cpp:185
+msgid "reg: cannot create directory "
+msgstr "reg: ディレクトリを作成できません: "
+
+#: app/reg.cpp:201 app/reg.cpp:382 app/reg.cpp:389
+msgid "reg: "
+msgstr "reg: "
+
+#: app/reg.cpp:208
+msgid "reg: root is neither a directory nor a regular file: "
+msgstr "reg: ルートはディレクトリでも通常ファイルでもありません: "
+
+#: app/reg.cpp:261
+msgid "reg: --set requires a value argument\n"
+msgstr "reg: --set には値の引数が必要です\n"
+
+#: app/reg.cpp:291
+msgid "reg: unexpected argument: "
+msgstr "reg: 予期しない引数: "
+
+#: app/reg.cpp:307
+msgid "reg: -v/--verbose and -q/--quiet are mutually exclusive\n"
+msgstr "reg: -v/--verbose と -q/--quiet は同時に指定できません\n"
+
+#: app/reg.cpp:328
+msgid "reg: specify only one of --dump, --get, --set, --export, or --import\n"
+msgstr "reg: --dump、--get、--set、--export、--import のいずれか一つだけを指定してください\n"
+
+#: app/reg.cpp:349
+msgid "reg: invalid path "
+msgstr "reg: 無効なパス "
+
+#: app/reg.cpp:357
+msgid "reg: no value at "
+msgstr "reg: 値がありません: "
+
+#: app/reg.cpp:366
+msgid "reg: failed to set "
+msgstr "reg: 設定に失敗しました: "
+
+#: app/tanks_game.cpp:207
+msgid " TANK AC - dual device access control demo "
+msgstr " 戦車アクセス制御 - デュアルデバイスデモ "
+
+#: app/tanks_game.cpp:214
+msgid "Terminal too small for tanks_game."
+msgstr "端末が小さすぎて tanks_game を実行できません。"
+
+#: app/tanks_game.cpp:215
+#, c-format
+msgid "Need at least %dx%d, have %dx%d."
+msgstr "最低 %dx%d が必要です（現在 %dx%d）。"
+
+#: app/tanks_game.cpp:216
+msgid "Resize the terminal and try again. Press any key to exit."
+msgstr "端末サイズを変更して再試行してください。何かキーで終了。"
+
+#: app/tanks_game.cpp:411
+msgid "ENGINE ON "
+msgstr "エンジンON "
+
+#: app/tanks_game.cpp:414
+msgid "ENGINE OFF"
+msgstr "エンジンOFF"
+
+#: app/tanks_game.cpp:423
+msgid " Controls "
+msgstr " 操作 "
+
+#: app/tanks_game.cpp:424
+msgid "TAB device  L login  F1/F2 engine  Q quit"
+msgstr "TAB デバイス切替  L ログイン  F1/F2 エンジン  Q 終了"
+
+#: app/tanks_game.cpp:425
+msgid "Arrows move/turn  Space fire"
+msgstr "矢印で移動/旋回  Spaceで発射"
+
+#: app/tanks_game.cpp:426
+#, c-format
+msgid "Active: %s"
+msgstr "選択中: %s"
+
+#: app/tanks_game.cpp:450
+#, c-format
+msgid " Policy %s "
+msgstr " ポリシー %s "
+
+#: app/tanks_game.cpp:491
+msgid "BINDINGS"
+msgstr "バインディング"
+
+#: app/tanks_game.cpp:495
+msgid "identity      aclId"
+msgstr "ID           ACL"
+
+#: app/tanks_game.cpp:513 app/tanks_game.cpp:548 app/tanks_game.cpp:588
+msgid "(none)"
+msgstr "(なし)"
+
+#: app/tanks_game.cpp:522
+msgid "ACLS"
+msgstr "ACL"
+
+#: app/tanks_game.cpp:531
+#, c-format
+msgid "%-10s %zu entries"
+msgstr "%-10s %zu 件"
+
+#: app/tanks_game.cpp:557
+msgid "GRANTS"
+msgstr "許可"
+
+#: app/tanks_game.cpp:566
+msgid "identity"
+msgstr "ID"
+
+#: app/tanks_game.cpp:566
+msgid "permission"
+msgstr "権限"
+
+#: app/tanks_game.cpp:596
+msgid " Event log "
+msgstr " イベントログ "
+
+#: app/tanks_game.cpp:703
+msgid "Enter/Esc=OK"
+msgstr "Enter/Esc=OK"
+
+#: app/tanks_game.cpp:739
+msgid "Enter=retry   Esc=cancel"
+msgstr "Enter=再試行   Esc=キャンセル"
+
+#: app/tanks_game.cpp:770 app/tanks_game.cpp:848
+#, c-format
+msgid " Login %s "
+msgstr " ログイン %s "
+
+#: app/tanks_game.cpp:771 app/tanks_game.cpp:850
+msgid "user: "
+msgstr "ユーザー: "
+
+#: app/tanks_game.cpp:772 app/tanks_game.cpp:851
+msgid "pass: "
+msgstr "パスワード: "
+
+#: app/tanks_game.cpp:773
+msgid "Up/Down demo user  Enter=OK  Esc=cancel"
+msgstr "上下でデモユーザー  Enter=OK  Esc=キャンセル"
+
+#: app/tanks_game.cpp:774 app/tanks_game.cpp:855
+msgid "demo accounts (user/pass):"
+msgstr "デモアカウント（ユーザー/パスワード）:"
+
+#: app/tanks_game.cpp:848
+#, c-format
+msgid " Elevate %s "
+msgstr " 昇格 %s "
+
+#: app/tanks_game.cpp:853
+msgid "Up/Down demo user  Enter=login  Esc=cancel"
+msgstr "上下でデモユーザー  Enter=ログイン  Esc=キャンセル"
+
+#: app/tanks_game.cpp:854
+msgid "Up/Down demo user  Enter=authorize  Esc=cancel"
+msgstr "上下でデモユーザー  Enter=認可  Esc=キャンセル"
+
+#: app/tanks_game.cpp:902
+msgid ": login cancelled"
+msgstr ": ログイン取消"
+
+#: app/tanks_game.cpp:906 app/tanks_game.cpp:971
+msgid ": logged in as "
+msgstr ": ログイン中 "
+
+#: app/tanks_game.cpp:909
+msgid " login failed for "
+msgstr " のログイン失敗: "
+
+#: app/tanks_game.cpp:910 app/tanks_game.cpp:952
+msgid "Invalid username or password for "
+msgstr "ユーザー名またはパスワードが無効です: "
+
+#: app/tanks_game.cpp:911
+msgid "Login Failed"
+msgstr "ログイン失敗"
+
+#: app/tanks_game.cpp:951
+msgid "Auth Failed"
+msgstr "認証失敗"
+
+#: app/tanks_game.cpp:961
+msgid " lacks "
+msgstr " に権限がありません: "
+
+#: app/tanks_game.cpp:961
+msgid " on "
+msgstr " / "
+
+#: app/tanks_game.cpp:962
+msgid "Access Denied"
+msgstr "アクセス拒否"
+
+#: app/tanks_game.cpp:1024
+msgid "Tank AC demo - per-device user store & ACL"
+msgstr "戦車ACデモ - デバイスごとのユーザーストアとACL"
+
+#: app/tanks_game.cpp:1025
+msgid "L login  arrows move  space fire  denied=elevate/login"
+msgstr "L ログイン  矢印移動  Space発射  拒否=昇格/ログイン"
+
+#: app/tanks_game.cpp:1026
+msgid "tank-a: alice=operator(ACL) bob=gunner(grants) admin=commander"
+msgstr "tank-a: alice=operator(ACL) bob=gunner(grants) admin=commander"
+
+#: app/tanks_game.cpp:1027
+msgid "tank-b: charlie=cadet(ACL) dana=instructor(grants)"
+msgstr "tank-b: charlie=cadet(ACL) dana=instructor(grants)"
+
+#: app/tanks_game.cpp:1051
+msgid "switch -> "
+msgstr "切替 -> "
+
+#: app/tanks_game.cpp:1090
+msgid "usage: "
+msgstr "用法: "
+
+#: app/tanks_game.cpp:1090
+msgid " [--batch]\n"
+msgstr " [--batch]\n"
+
+#: app/tanks_game.cpp:1091
+msgid "  default: ncurses tank game (TAB switch, arrows, F1/F2, space)\n"
+msgstr "  既定: ncurses 戦車ゲーム（TAB 切替、矢印、F1/F2、Space）\n"
+
+#: app/tanks_game.cpp:1092
+msgid "  --batch: line-oriented mode for scripts\n"
+msgstr "  --batch: スクリプト向け行指向モード\n"
+
+#: app/tanks_game.cpp:1107
+msgid "unknown argument: "
+msgstr "不明な引数: "
+
+#: app/tanks_game.cpp:1122
+msgid "access denied: "
+msgstr "アクセス拒否: "
+
+#: app/tanks_game.cpp:1125
+msgid "error: "
+msgstr "エラー: "
+
+#: app/vols.cpp:39
+msgid ""
+"usage: vols [options]\n"
+"  Field selection (default without any: -mdtlu; with -v: -mdtlurLD):\n"
+"    -a, --all            all columns\n"
+"    -c, --compact        same columns as -mdtlu (merges with explicit field flags)\n"
+"    -m, --mountpoint     mount point column\n"
+"    -d, --device         device column\n"
+"    -t, --type           type column\n"
+"    -l, --label          label column\n"
+"    -u, --uuid           UUID column\n"
+"    -r, --read-only      read-only (ro/rw) column\n"
+"    -L, --logical-type   logical type column\n"
+"    -D, --loop-device    loop device column\n"
+"    -o, --opts           per-mount (VFS) options from mountinfo\n"
+"    -O, --superopts      superblock options from mountinfo\n"
+"    -z, --root           root path within filesystem (mountinfo field)\n"
+"  Other:\n"
+"    -s, --symbols        include overlay filesystems in the scan (bind mounts always on)\n"
+"    -h, --help           show this help and exit\n"
+"    -w, --writable       list only writable mounts; implies -r\n"
+"    -v, --verbose        more log detail; default columns include logical type\n"
+"    -q, --quiet          only errors on stderr\n"
+msgstr ""
+"使い方: vols [options]\n"
+"  フィールド選択（未指定時の既定: -mdtlu、-v 時: -mdtlurLD）:\n"
+"    -a, --all            すべての列\n"
+"    -c, --compact        -mdtlu と同じ列（明示的なフィールドフラグと結合）\n"
+"    -m, --mountpoint     マウントポイント列\n"
+"    -d, --device         デバイス列\n"
+"    -t, --type           タイプ列\n"
+"    -l, --label          ラベル列\n"
+"    -u, --uuid           UUID 列\n"
+"    -r, --read-only      読み取り専用（ro/rw）列\n"
+"    -L, --logical-type   論理タイプ列\n"
+"    -D, --loop-device    ループデバイス列\n"
+"    -o, --opts           mountinfo からのマウント単位（VFS）オプション\n"
+"    -O, --superopts      mountinfo からのスーパーブロックオプション\n"
+"    -z, --root           ファイルシステム内のルートパス（mountinfo フィールド）\n"
+"  その他:\n"
+"    -s, --symbols        スキャンにオーバーレイファイルシステムを含める（バインドマウントは常にオン）\n"
+"    -h, --help           このヘルプを表示して終了\n"
+"    -w, --writable       書き込み可能なマウントのみ一覧；-r を暗示\n"
+"    -v, --verbose        より詳細なログ；既定列に論理タイプを含む\n"
+"    -q, --quiet          エラーのみ stderr に出力\n"
+
+#: app/vols.cpp:119
+msgid "Mount Point"
+msgstr "マウントポイント"
+
+#: app/vols.cpp:120
+msgid "Root"
+msgstr "ルート"
+
+#: app/vols.cpp:121
+msgid "Device"
+msgstr "デバイス"
+
+#: app/vols.cpp:122
+msgid "Type"
+msgstr "タイプ"
+
+#: app/vols.cpp:123
+msgid "Label"
+msgstr "ラベル"
+
+#: app/vols.cpp:124
+msgid "UUID"
+msgstr "UUID"
+
+#: app/vols.cpp:125
+msgid "Read-Only"
+msgstr "読み取り専用"
+
+#: app/vols.cpp:126
+msgid "Logical Type"
+msgstr "論理タイプ"
+
+#: app/vols.cpp:127
+msgid "Loop Device"
+msgstr "ループデバイス"
+
+#: app/vols.cpp:128
+msgid "VFS opts"
+msgstr "VFS オプション"
+
+#: app/vols.cpp:129
+msgid "Super opts"
+msgstr "スーパーブロックオプション"
+
+#: app/vols.cpp:247
+msgid "vols: unexpected argument: "
+msgstr "vols: 予期しない引数: "
+
+#: app/vols.cpp:258
+msgid "vols: -v/--verbose and -q/--quiet are mutually exclusive\n"
+msgstr "vols: -v/--verbose と -q/--quiet は同時に指定できません\n"
+
+#: app/vols.cpp:263
+msgid "vols: -a/--all and -c/--compact are mutually exclusive\n"
+msgstr "vols: -a/--all と -c/--compact は同時に指定できません\n"
+
+#: app/vols.cpp:303
+msgid "vols: no columns selected\n"
+msgstr "vols: 列が選択されていません\n"
+
+#: src/bas/security/ACList.cpp:26
+msgid ""
+"aclist commands:\n"
+"  list                   list ACE rows\n"
+"  help                   show this help\n"
+"  -h, --help             show this help\n"
+msgstr ""
+"aclist コマンド:\n"
+"  list                   ACE 行を一覧表示\n"
+"  help                   このヘルプを表示\n"
+"  -h, --help             このヘルプを表示\n"
+
+#: src/bas/security/ACList.cpp:34
+msgid "no ACE rows\n"
+msgstr "ACE 行がありません\n"
+
+#: src/bas/security/ACList.cpp:101
+msgid ""
+"usage: list [-h]\n"
+"  List ACE rows.\n"
+msgstr ""
+"使い方: list [-h]\n"
+"  ACE 行を一覧表示します。\n"
+
+#: src/bas/security/ACList.cpp:113
+msgid "unknown aclist command: "
+msgstr "不明な aclist コマンド: "
+
+#: src/bas/security/ACList.cpp:113
+#: src/bas/security/CredentialManagerCommand.cpp:123
+#: src/bas/security/IdentityRegistryCommand.cpp:104
+#: src/bas/security/IdentityServiceCommand.cpp:71
+#: src/bas/security/PolicyStoreCommand.cpp:123
+#: src/bas/security/SecurityManagerCommand.cpp:208
+msgid " (try: help)\n"
+msgstr " (試す: help)\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:14
+msgid ""
+"credential commands:\n"
+"  list [-v]              list cached credentials (no secrets)\n"
+"  del STORE ID           remove credential by ref\n"
+"  clear                  remove all credentials\n"
+"  path                   show credential file path\n"
+"  reload                 reload from disk\n"
+"  save                   write credentials to disk\n"
+"  help                   show this help\n"
+msgstr ""
+"資格情報コマンド:\n"
+"  list [-v]              キャッシュされた資格情報を一覧（秘密は含まない）\n"
+"  del STORE ID           参照で資格情報を削除\n"
+"  clear                  すべての資格情報を削除\n"
+"  path                   資格情報ファイルのパスを表示\n"
+"  reload                 ディスクから再読み込み\n"
+"  save                   資格情報をディスクに書き込み\n"
+"  help                   このヘルプを表示\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:28
+msgid "no cached credentials\n"
+msgstr "キャッシュされた資格情報がありません\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:40
+msgid "    (use login/request to verify; secrets not printed)\n"
+msgstr "    (login/request で検証; 秘密は表示されません)\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:75
+msgid "credential store: in-memory\n"
+msgstr "資格情報ストア: メモリ内\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:83
+msgid "reload only applies to file credential store\n"
+msgstr "reload はファイル資格情報ストアにのみ適用されます\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:87
+#: src/bas/security/SecurityManagerCommand.cpp:137
+msgid "reloaded "
+msgstr "再読み込みしました: "
+
+#: src/bas/security/CredentialManagerCommand.cpp:87
+#: src/bas/security/SecurityManagerCommand.cpp:138
+msgid " credential(s) from "
+msgstr " 件の資格情報（元: "
+
+#: src/bas/security/CredentialManagerCommand.cpp:93
+msgid "save only applies to file credential store\n"
+msgstr "save はファイル資格情報ストアにのみ適用されます\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:97
+msgid "saved credentials to "
+msgstr "資格情報を保存しました: "
+
+#: src/bas/security/CredentialManagerCommand.cpp:102
+msgid "cleared all credentials\n"
+msgstr "すべての資格情報を消去しました\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:107
+msgid "usage: del STORE ID\n"
+msgstr "使い方: del STORE ID\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:114
+msgid "removed credential ["
+msgstr "資格情報を削除しました ["
+
+#: src/bas/security/CredentialManagerCommand.cpp:123
+msgid "unknown credential command: "
+msgstr "不明な資格情報コマンド: "
+
+#: src/bas/security/IdentityRegistryCommand.cpp:14
+msgid ""
+"identity registry commands:\n"
+"  list                   list registered identity services\n"
+"  realms                 list realm → service bindings\n"
+"  service ID [SUBCMD …]  run commands on a service by id\n"
+"  help                   show this help\n"
+msgstr ""
+"アイデンティティレジストリコマンド:\n"
+"  list                   登録済みアイデンティティサービスを一覧\n"
+"  realms                 レルム → サービスの対応を一覧\n"
+"  service ID [SUBCMD …]  ID でサービスにコマンドを実行\n"
+"  help                   このヘルプを表示\n"
+
+#: src/bas/security/IdentityRegistryCommand.cpp:24
+msgid "no identity services registered\n"
+msgstr "アイデンティティサービスが登録されていません\n"
+
+#: src/bas/security/IdentityRegistryCommand.cpp:33
+msgid " [auto-login]"
+msgstr " [自動ログイン]"
+
+#: src/bas/security/IdentityRegistryCommand.cpp:42
+msgid "no realms registered\n"
+msgstr "レルムが登録されていません\n"
+
+#: src/bas/security/IdentityRegistryCommand.cpp:49
+msgid " (no service)\n"
+msgstr " (サービスなし)\n"
+
+#: src/bas/security/IdentityRegistryCommand.cpp:92
+msgid "usage: service ID [SUBCMD …]\n"
+msgstr "使い方: service ID [SUBCMD …]\n"
+
+#: src/bas/security/IdentityRegistryCommand.cpp:98
+msgid "identity service not found: "
+msgstr "アイデンティティサービスが見つかりません: "
+
+#: src/bas/security/IdentityRegistryCommand.cpp:104
+msgid "unknown registry subcommand: "
+msgstr "不明なレジストリサブコマンド: "
+
+#: src/bas/security/IdentityServiceCommand.cpp:15
+msgid ""
+"identity service commands:\n"
+"  info                   show service id, type, credentials, realms\n"
+"  help                   show this help\n"
+"  store SUBCMD …         (store service) user-store commands\n"
+msgstr ""
+"アイデンティティサービスコマンド:\n"
+"  info                   サービス ID、タイプ、資格情報、レルムを表示\n"
+"  help                   このヘルプを表示\n"
+"  store SUBCMD …         （ストアサービス）ユーザーストアコマンド\n"
+
+#: src/bas/security/IdentityServiceCommand.cpp:22
+msgid "  id: "
+msgstr "  ID: "
+
+#: src/bas/security/IdentityServiceCommand.cpp:24
+msgid "  auto-login: "
+msgstr "  自動ログイン: "
+
+#: src/bas/security/IdentityServiceCommand.cpp:24
+#: src/bas/security/UserStoreCommand.cpp:143
+#: src/bas/security/UserStoreCommand.cpp:159
+#: src/bas/security/UserStoreCommand.cpp:724
+msgid "yes"
+msgstr "はい"
+
+#: src/bas/security/IdentityServiceCommand.cpp:24
+#: src/bas/security/UserStoreCommand.cpp:143
+#: src/bas/security/UserStoreCommand.cpp:159
+#: src/bas/security/UserStoreCommand.cpp:724
+msgid "no"
+msgstr "いいえ"
+
+#: src/bas/security/IdentityServiceCommand.cpp:25
+msgid "  credentials:"
+msgstr "  資格情報:"
+
+#: src/bas/security/IdentityServiceCommand.cpp:28
+#: src/bas/security/UserStoreCommand.cpp:146
+msgid " (none)\n"
+msgstr " (なし)\n"
+
+#: src/bas/security/IdentityServiceCommand.cpp:35
+msgid "  realm-types:"
+msgstr "  レルムタイプ:"
+
+#: src/bas/security/IdentityServiceCommand.cpp:38
+msgid " (any)\n"
+msgstr " (任意)\n"
+
+#: src/bas/security/IdentityServiceCommand.cpp:47
+msgid "  backed-stores: "
+msgstr "  バックエンドストア: "
+
+#: src/bas/security/IdentityServiceCommand.cpp:71
+msgid "unknown identity service subcommand: "
+msgstr "不明なアイデンティティサービスサブコマンド: "
+
+#: src/bas/security/IdentityServiceCommand.cpp:88
+msgid "user store not configured\n"
+msgstr "ユーザーストアが設定されていません\n"
+
+#: src/bas/security/IdentityService.cpp:106
+msgid "User Login"
+msgstr "ユーザーログイン"
+
+#: src/bas/security/IdentityService.cpp:110
+msgid "Realm type"
+msgstr "レルムタイプ"
+
+#: src/bas/security/IdentityService.cpp:120
+msgid "Realm name"
+msgstr "レルム名"
+
+#: src/bas/security/IdentityService.cpp:128
+msgid "Realm UUID"
+msgstr "レルム UUID"
+
+#: src/bas/security/IdentityService.cpp:136
+msgid "Username"
+msgstr "ユーザー名"
+
+#: src/bas/security/IdentityService.cpp:141
+msgid "Password"
+msgstr "パスワード"
+
+#: src/bas/security/PolicyStoreCommand.cpp:15
+msgid ""
+"acl commands:\n"
+"  list                   list ACL grants\n"
+"  clear                  remove all grants\n"
+"  path                   show ACL file path\n"
+"  reload                 reload file ACL from disk\n"
+"  save                   write file ACL to disk\n"
+"  help                   show this help\n"
+"  -h, --help             show this help\n"
+msgstr ""
+"ACL コマンド:\n"
+"  list                   ACL 付与を一覧\n"
+"  clear                  すべての付与を削除\n"
+"  path                   ACL ファイルのパスを表示\n"
+"  reload                 ディスクからファイル ACL を再読み込み\n"
+"  save                   ファイル ACL をディスクに書き込み\n"
+"  help                   このヘルプを表示\n"
+"  -h, --help             このヘルプを表示\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:28
+msgid "no ACL grants\n"
+msgstr "ACL 付与がありません\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:63
+msgid ""
+"usage: list [-h]\n"
+"  List ACL grants.\n"
+msgstr ""
+"使い方: list [-h]\n"
+"  ACL 付与を一覧表示します。\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:71
+msgid ""
+"usage: clear [-h]\n"
+"  Remove all ACL grants.\n"
+msgstr ""
+"使い方: clear [-h]\n"
+"  すべての ACL 付与を削除します。\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:75
+msgid "cleared ACL\n"
+msgstr "ACL を消去しました\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:80
+msgid ""
+"usage: path [-h]\n"
+"  Show ACL file path.\n"
+msgstr ""
+"使い方: path [-h]\n"
+"  ACL ファイルのパスを表示します。\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:85
+msgid "acl: in-memory\n"
+msgstr "acl: メモリ内\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:87
+msgid "acl file: "
+msgstr "ACL ファイル: "
+
+#: src/bas/security/PolicyStoreCommand.cpp:93
+msgid ""
+"usage: reload [-h]\n"
+"  Reload file ACL from disk.\n"
+msgstr ""
+"使い方: reload [-h]\n"
+"  ディスクからファイル ACL を再読み込みします。\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:97
+msgid "reload only applies to file ACL (-a/--acl FILE)\n"
+msgstr "reload はファイル ACL にのみ適用されます (-a/--acl FILE)\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:101
+msgid "reloaded ACL from "
+msgstr "ACL を再読み込みしました: "
+
+#: src/bas/security/PolicyStoreCommand.cpp:106
+msgid ""
+"usage: save [-h]\n"
+"  Write file ACL to disk.\n"
+msgstr ""
+"使い方: save [-h]\n"
+"  ファイル ACL をディスクに書き込みます。\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:110
+msgid "save only applies to file ACL (-a/--acl FILE)\n"
+msgstr "save はファイル ACL にのみ適用されます (-a/--acl FILE)\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:114
+msgid "saved ACL to "
+msgstr "ACL を保存しました: "
+
+#: src/bas/security/PolicyStoreCommand.cpp:123
+msgid "unknown acl command: "
+msgstr "不明な ACL コマンド: "
+
+#: src/bas/security/SecurityManagerCommand.cpp:15
+msgid ""
+"access control commands:\n"
+"  whoami                         list active identities\n"
+"  logout                         clear all active identities\n"
+"  logout-realm [@realm|NAME]     clear identities in a realm\n"
+"  check [@realm] PERMISSION      check permission\n"
+"  request [@realm] PERM [USER]   request permission (login if needed)\n"
+"  login [@realm] [USER]          interactive login\n"
+"  reload-creds                   reload credential file and restore logins\n"
+"  help                           show this help\n"
+msgstr ""
+"アクセス制御コマンド:\n"
+"  whoami                         アクティブなアイデンティティを一覧\n"
+"  logout                         すべてのアクティブなアイデンティティを消去\n"
+"  logout-realm [@realm|NAME]     レルム内のアイデンティティを消去\n"
+"  check [@realm] PERMISSION      権限を確認\n"
+"  request [@realm] PERM [USER]   権限を要求（必要ならログイン）\n"
+"  login [@realm] [USER]          対話ログイン\n"
+"  reload-creds                   資格情報ファイルを再読み込みしログインを復元\n"
+"  help                           このヘルプを表示\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:40
+msgid "no active identities\n"
+msgstr "アクティブなアイデンティティがありません\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:49
+msgid " via "
+msgstr " via "
+
+#: src/bas/security/SecurityManagerCommand.cpp:111
+msgid "logged out all identities (auto-login suppressed until next login)\n"
+msgstr "すべてのアイデンティティからログアウトしました（次回ログインまで自動ログインを抑制）\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:124
+msgid "usage: logout-realm [@realm|NAME]\n"
+msgstr "使い方: logout-realm [@realm|NAME]\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:128
+msgid "logged out identities in realm "
+msgstr "レルム内のアイデンティティからログアウトしました: "
+
+#: src/bas/security/SecurityManagerCommand.cpp:133
+msgid "no file credential store configured\n"
+msgstr "ファイル資格情報ストアが設定されていません\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:156
+msgid "usage: check [@realm] PERMISSION\n"
+msgstr "使い方: check [@realm] PERMISSION\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:166
+msgid "usage: request [@realm] PERMISSION [USER]\n"
+msgstr "使い方: request [@realm] PERMISSION [USER]\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:196
+msgid "login ok"
+msgstr "ログイン成功"
+
+#: src/bas/security/SecurityManagerCommand.cpp:198
+msgid " realm="
+msgstr " realm="
+
+#: src/bas/security/SecurityManagerCommand.cpp:204
+msgid "login failed\n"
+msgstr "ログインに失敗しました\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:208
+#: src/bas/security/UserStoreCommand.cpp:524
+msgid "unknown command: "
+msgstr "不明なコマンド: "
+
+#: src/bas/security/UserStoreCommand.cpp:34
+msgid ""
+"user store commands:\n"
+"  user list                       list usernames\n"
+"  user show USER                  show profile, roles, keys\n"
+"  user add [options] USER [PASSWORD]\n"
+"  user update [options] USER [PASSWORD]\n"
+"      -a/--avatar NAME   -d/--display NAME   -e/--email EMAIL\n"
+"      -p/--password PASS  [PASSWORD] positional\n"
+"      -H/--hash ALGO      plain (default), sha256, sha1, md5\n"
+"      -h/--help           show command help\n"
+"      -r/--roles ROLES    comma-separated role names\n"
+"      password from stdin when -p and [PASSWORD] are both omitted\n"
+"  user check USER [PASSWORD]        validate password (exit 1 on failure)\n"
+"  user del USER                   remove user\n"
+"  user enable USER | user disable USER\n"
+"  user roles USER | user roles set USER R…\n"
+"  user role add USER ROLE | user role del USER ROLE\n"
+"  user keys USER | user key add/del …\n"
+"  path | reload | save | help\n"
+"  commands may be abbreviated by unique prefix\n"
+"  -h/--help on any subcommand shows its usage\n"
+msgstr ""
+"ユーザーストアコマンド:\n"
+"  user list                       ユーザー名を一覧\n"
+"  user show USER                  プロフィール、ロール、鍵を表示\n"
+"  user add [options] USER [PASSWORD]\n"
+"  user update [options] USER [PASSWORD]\n"
+"      -a/--avatar NAME   -d/--display NAME   -e/--email EMAIL\n"
+"      -p/--password PASS  [PASSWORD] 位置引数\n"
+"      -H/--hash ALGO      plain（既定）、sha256、sha1、md5\n"
+"      -h/--help           コマンドのヘルプを表示\n"
+"      -r/--roles ROLES    カンマ区切りのロール名\n"
+"      -p と [PASSWORD] を両方省略した場合、パスワードは stdin から\n"
+"  user check USER [PASSWORD]        パスワードを検証（失敗時は終了コード 1）\n"
+"  user del USER                   ユーザーを削除\n"
+"  user enable USER | user disable USER\n"
+"  user roles USER | user roles set USER R…\n"
+"  user role add USER ROLE | user role del USER ROLE\n"
+"  user keys USER | user key add/del …\n"
+"  path | reload | save | help\n"
+"  コマンドは一意な接頭辞で省略可能\n"
+"  各サブコマンドの -h/--help でその使い方を表示\n"
+
+#: src/bas/security/UserStoreCommand.cpp:57
+msgid ""
+"usage: user list [-h]\n"
+"  List all usernames in the store.\n"
+msgstr ""
+"使い方: user list [-h]\n"
+"  ストア内のすべてのユーザー名を一覧表示します。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:62
+msgid ""
+"usage: user show [-h] USER\n"
+"  Show profile, roles, and auth keys for USER.\n"
+msgstr ""
+"使い方: user show [-h] USER\n"
+"  USER のプロフィール、ロール、認証鍵を表示します。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:67
+msgid ""
+"usage: user add [-h] [options] USER [PASSWORD]\n"
+"  Create a new user record.\n"
+"options:\n"
+"  -a, --avatar NAME     profile.attributes.avatar\n"
+"  -d, --display NAME    display name\n"
+"  -e, --email EMAIL     email address\n"
+"  -p, --password PASS   password (or positional PASSWORD)\n"
+"  -H, --hash ALGO       plain (default), sha256, sha1, md5\n"
+"  -r, --roles ROLES     comma-separated role names (default: operator)\n"
+"  -h, --help            show this help\n"
+"  If neither -p nor PASSWORD is given, password is read from stdin.\n"
+msgstr ""
+"使い方: user add [-h] [options] USER [PASSWORD]\n"
+"  新しいユーザーレコードを作成します。\n"
+"options:\n"
+"  -a, --avatar NAME     profile.attributes.avatar\n"
+"  -d, --display NAME    表示名\n"
+"  -e, --email EMAIL     メールアドレス\n"
+"  -p, --password PASS   パスワード（または位置引数 PASSWORD）\n"
+"  -H, --hash ALGO       plain（既定）、sha256、sha1、md5\n"
+"  -r, --roles ROLES     カンマ区切りのロール名（既定: operator）\n"
+"  -h, --help            このヘルプを表示\n"
+"  -p も PASSWORD も指定しない場合、パスワードは stdin から読みます。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:81
+msgid ""
+"usage: user update [-h] [options] USER [PASSWORD]\n"
+"  Update an existing user; only specified fields are changed.\n"
+"options: same as user add\n"
+msgstr ""
+"使い方: user update [-h] [options] USER [PASSWORD]\n"
+"  既存のユーザーを更新します。指定したフィールドのみ変更されます。\n"
+"options: user add と同じ\n"
+
+#: src/bas/security/UserStoreCommand.cpp:87
+msgid ""
+"usage: user check [-h] USER [PASSWORD]\n"
+"  Validate PASSWORD against USER's stored keys (exit 1 on failure).\n"
+"  PASSWORD from stdin when omitted.\n"
+msgstr ""
+"使い方: user check [-h] USER [PASSWORD]\n"
+"  USER の保存済み鍵に対して PASSWORD を検証します（失敗時は終了コード 1）。\n"
+"  省略時は stdin から PASSWORD を読みます。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:93
+msgid ""
+"usage: user del|rm [-h] USER\n"
+"  Remove USER from the store.\n"
+msgstr ""
+"使い方: user del|rm [-h] USER\n"
+"  ストアから USER を削除します。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:98
+msgid ""
+"usage: user enable|disable [-h] USER\n"
+"  Enable or disable USER login.\n"
+msgstr ""
+"使い方: user enable|disable [-h] USER\n"
+"  USER のログインを有効または無効にします。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:103
+msgid ""
+"usage: user roles [-h] USER\n"
+"       user roles set [-h] USER ROLE…\n"
+"  List roles, or replace the role list for USER.\n"
+msgstr ""
+"使い方: user roles [-h] USER\n"
+"       user roles set [-h] USER ROLE…\n"
+"  ロールを一覧表示するか、USER のロール一覧を置き換えます。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:109
+msgid ""
+"usage: user role add [-h] USER ROLE\n"
+"       user role del [-h] USER ROLE\n"
+"  Add or remove a single role name on USER.\n"
+msgstr ""
+"使い方: user role add [-h] USER ROLE\n"
+"       user role del [-h] USER ROLE\n"
+"  USER に単一のロール名を追加または削除します。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:115
+msgid ""
+"usage: user keys [-h] USER\n"
+"  List authentication keys for USER.\n"
+msgstr ""
+"使い方: user keys [-h] USER\n"
+"  USER の認証鍵を一覧表示します。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:120
+msgid ""
+"usage: user key add [-h] USER ID TYPE [options]\n"
+"       user key del [-h] USER ID\n"
+"options for add:\n"
+"  -p, --password PASS   key secret\n"
+"  -H, --hash ALGO       for password-hash (default plain → password-plain)\n"
+"  --name LABEL          key display name\n"
+"  -h, --help            show this help\n"
+msgstr ""
+"使い方: user key add [-h] USER ID TYPE [options]\n"
+"       user key del [-h] USER ID\n"
+"add の options:\n"
+"  -p, --password PASS   鍵の秘密\n"
+"  -H, --hash ALGO       password-hash 用（既定 plain → password-plain）\n"
+"  --name LABEL          鍵の表示名\n"
+"  -h, --help            このヘルプを表示\n"
+
+#: src/bas/security/UserStoreCommand.cpp:133
+msgid "  display: "
+msgstr "  表示名: "
+
+#: src/bas/security/UserStoreCommand.cpp:136
+msgid "  email: "
+msgstr "  メール: "
+
+#: src/bas/security/UserStoreCommand.cpp:140
+msgid "  avatar: "
+msgstr "  アバター: "
+
+#: src/bas/security/UserStoreCommand.cpp:143
+msgid "  enabled: "
+msgstr "  有効: "
+
+#: src/bas/security/UserStoreCommand.cpp:144
+msgid "  roles:"
+msgstr "  ロール:"
+
+#: src/bas/security/UserStoreCommand.cpp:153
+msgid "  keys:\n"
+msgstr "  鍵:\n"
+
+#: src/bas/security/UserStoreCommand.cpp:155
+msgid "    (none)\n"
+msgstr "    (なし)\n"
+
+#: src/bas/security/UserStoreCommand.cpp:244
+msgid "failed to read password from stdin"
+msgstr "stdin からパスワードを読めませんでした"
+
+#: src/bas/security/UserStoreCommand.cpp:257
+msgid "missing value for "
+msgstr "値がありません: "
+
+#: src/bas/security/UserStoreCommand.cpp:313
+msgid "unknown option: "
+msgstr "不明なオプション: "
+
+#: src/bas/security/UserStoreCommand.cpp:333
+#: src/bas/security/UserStoreCommand.cpp:366
+msgid "unexpected argument: "
+msgstr "予期しない引数: "
+
+#: src/bas/security/UserStoreCommand.cpp:337
+#: src/bas/security/UserStoreCommand.cpp:353
+msgid "USER name required"
+msgstr "USER 名が必要です"
+
+#: src/bas/security/UserStoreCommand.cpp:411
+msgid "user already exists: "
+msgstr "ユーザーは既に存在します: "
+
+#: src/bas/security/UserStoreCommand.cpp:415
+#: src/bas/security/UserStoreCommand.cpp:460
+#: src/bas/security/UserStoreCommand.cpp:788
+msgid "unsupported hash algorithm: "
+msgstr "未対応のハッシュアルゴリズム: "
+
+#: src/bas/security/UserStoreCommand.cpp:416
+#: src/bas/security/UserStoreCommand.cpp:461
+msgid " (use plain, sha256, sha1, or md5)\n"
+msgstr " (plain、sha256、sha1、md5 を使用)\n"
+
+#: src/bas/security/UserStoreCommand.cpp:436
+msgid "added user "
+msgstr "ユーザーを追加しました: "
+
+#: src/bas/security/UserStoreCommand.cpp:456
+#: src/bas/security/UserStoreCommand.cpp:467
+#: src/bas/security/UserStoreCommand.cpp:505
+#: src/bas/security/UserStoreCommand.cpp:588
+#: src/bas/security/UserStoreCommand.cpp:613
+#: src/bas/security/UserStoreCommand.cpp:630
+#: src/bas/security/UserStoreCommand.cpp:665
+#: src/bas/security/UserStoreCommand.cpp:674
+#: src/bas/security/UserStoreCommand.cpp:698
+#: src/bas/security/UserStoreCommand.cpp:719
+#: src/bas/security/UserStoreCommand.cpp:767
+msgid "user not found: "
+msgstr "ユーザーが見つかりません: "
+
+#: src/bas/security/UserStoreCommand.cpp:485
+msgid "updated user "
+msgstr "ユーザーを更新しました: "
+
+#: src/bas/security/UserStoreCommand.cpp:501
+msgid "password required\n"
+msgstr "パスワードが必要です\n"
+
+#: src/bas/security/UserStoreCommand.cpp:509
+msgid "password ok for "
+msgstr "パスワード OK: "
+
+#: src/bas/security/UserStoreCommand.cpp:512
+msgid "invalid password for "
+msgstr "無効なパスワード: "
+
+#: src/bas/security/UserStoreCommand.cpp:520
+msgid "ambiguous command: "
+msgstr "あいまいなコマンド: "
+
+#: src/bas/security/UserStoreCommand.cpp:559
+msgid "no users in store\n"
+msgstr "ストアにユーザーがいません\n"
+
+#: src/bas/security/UserStoreCommand.cpp:570
+msgid " [disabled]"
+msgstr " [無効]"
+
+#: src/bas/security/UserStoreCommand.cpp:617
+msgid "removed user "
+msgstr "ユーザーを削除しました: "
+
+#: src/bas/security/UserStoreCommand.cpp:635
+msgid "enabled user "
+msgstr "ユーザーを有効化しました: "
+
+#: src/bas/security/UserStoreCommand.cpp:638
+msgid "disabled user "
+msgstr "ユーザーを無効化しました: "
+
+#: src/bas/security/UserStoreCommand.cpp:660
+msgid "usage: user roles set USER R…\n"
+msgstr "使い方: user roles set USER R…\n"
+
+#: src/bas/security/UserStoreCommand.cpp:670
+msgid "roles updated for "
+msgstr "ロールを更新しました: "
+
+#: src/bas/security/UserStoreCommand.cpp:678
+msgid "  role:"
+msgstr "  ロール:"
+
+#: src/bas/security/UserStoreCommand.cpp:706
+msgid "role "
+msgstr "ロール "
+
+#: src/bas/security/UserStoreCommand.cpp:706
+msgid " for "
+msgstr " 対象 "
+
+#: src/bas/security/UserStoreCommand.cpp:751
+msgid "removed key "
+msgstr "鍵を削除しました: "
+
+#: src/bas/security/UserStoreCommand.cpp:751
+msgid " from "
+msgstr " から "
+
+#: src/bas/security/UserStoreCommand.cpp:793
+msgid "password flags require key type password-hash or password-plain\n"
+msgstr "パスワードフラグには鍵タイプ password-hash または password-plain が必要です\n"
+
+#: src/bas/security/UserStoreCommand.cpp:805
+msgid "added key "
+msgstr "鍵を追加しました: "
+
+#: src/bas/security/UserStoreCommand.cpp:805
+msgid " to "
+msgstr " へ "
+
+#: src/bas/security/UserStoreCommand.cpp:809
+msgid "unknown user subcommand: "
+msgstr "不明なユーザーサブコマンド: "
+
+#: src/bas/security/UserStoreCommand.cpp:837
+msgid ""
+"usage: path [-h]\n"
+"  Show user store file path and label.\n"
+msgstr ""
+"使い方: path [-h]\n"
+"  ユーザーストアのファイルパスとラベルを表示します。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:843
+msgid "  file: "
+msgstr "  ファイル: "
+
+#: src/bas/security/UserStoreCommand.cpp:845
+msgid "  kind: in-memory\n"
+msgstr "  種類: メモリ内\n"
+
+#: src/bas/security/UserStoreCommand.cpp:851
+msgid ""
+"usage: reload [-h]\n"
+"  Reload user store from disk.\n"
+msgstr ""
+"使い方: reload [-h]\n"
+"  ディスクからユーザーストアを再読み込みします。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:855
+msgid "reload only applies to file store (-d/--store FILE)\n"
+msgstr "reload はファイルストアにのみ適用されます (-d/--store FILE)\n"
+
+#: src/bas/security/UserStoreCommand.cpp:859
+msgid "reloaded user store from "
+msgstr "ユーザーストアを再読み込みしました: "
+
+#: src/bas/security/UserStoreCommand.cpp:864
+msgid ""
+"usage: save [-h]\n"
+"  Write user store to disk.\n"
+msgstr ""
+"使い方: save [-h]\n"
+"  ユーザーストアをディスクに書き込みます。\n"
+
+#: src/bas/security/UserStoreCommand.cpp:868
+msgid "save only applies to file store (-d/--store FILE)\n"
+msgstr "save はファイルストアにのみ適用されます (-d/--store FILE)\n"
+
+#: src/bas/security/UserStoreCommand.cpp:872
+msgid "saved user store to "
+msgstr "ユーザーストアを保存しました: "
+
+#: src/bas/volume/Volume_utils.cpp:152
+msgid "Usage: assets [OPTIONS] [PATH...]"
+msgstr "使い方: assets [OPTIONS] [PATH...]"
+
+#: src/bas/volume/Volume_utils.cpp:153
+msgid "Options:"
+msgstr "オプション:"
+
+#: src/bas/volume/Volume_utils.cpp:154
+msgid "  -R, --recursive        list subdirectories recursively"
+msgstr "  -R, --recursive        サブディレクトリを再帰的に一覧表示"
+
+#: src/bas/volume/Volume_utils.cpp:155
+msgid "  -l, --long             use a long listing format"
+msgstr "  -l, --long             長い一覧形式を使用"
+
+#: src/bas/volume/Volume_utils.cpp:156
+msgid "  -a, --all              include entries starting with . and .."
+msgstr "  -a, --all              . と .. で始まる項目を含める"
+
+#: src/bas/volume/Volume_utils.cpp:157
+msgid ""
+"  -A, --almost-all       include entries starting with . except . and .."
+msgstr "  -A, --almost-all       . で始まる項目を含める（. と .. を除く）"
+
+#: src/bas/volume/Volume_utils.cpp:158
+msgid "  -F, --classify         append file type indicators"
+msgstr "  -F, --classify         ファイル種別の記号を付ける"
+
+#: src/bas/volume/Volume_utils.cpp:159
+msgid "  -h, --human-readable   print sizes in human-readable form"
+msgstr "  -h, --human-readable   サイズを人が読みやすい形式で表示"
+
+#: src/bas/volume/Volume_utils.cpp:160
+msgid "  -C, --color            enable colored output"
+msgstr "  -C, --color            色付き出力を有効にする"
+
+#: src/bas/volume/Volume_utils.cpp:161
+msgid "  -T, --tree             print as directory tree"
+msgstr "  -T, --tree             ディレクトリツリーとして表示"
+
+#: src/bas/volume/Volume_utils.cpp:162
+msgid "      --help             display this help and exit"
+msgstr "      --help             このヘルプを表示して終了"

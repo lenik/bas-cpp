@@ -1,0 +1,1430 @@
+# Vietnamese translations for PACKAGE package.
+# Copyright (C) 2026 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the PACKAGE package.
+# Automatically generated, 2026.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: bas-cpp 1.0.3\n"
+"Report-Msgid-Bugs-To: bas-cpp@bodz.net\n"
+"POT-Creation-Date: 2026-07-13 16:39+0800\n"
+"PO-Revision-Date: 2026-07-13 16:18+0800\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: vi\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+
+#: app/acdemo.cpp:102
+msgid ""
+"acdemo — bas.security permissions, credentials, and console login demo\n"
+"\n"
+"usage: acdemo [options] [command [args...]]\n"
+"\n"
+"  If no command is given, starts an interactive shell.\n"
+"\n"
+"commands:\n"
+"  check [@realm] PERMISSION       check permission (optional realm scope)\n"
+"  request [@realm] PERMISSION [USER]  request permission (login if needed)\n"
+"  login [@realm] [USER]             interactive login → active identities\n"
+"  whoami                            list active identities\n"
+"  creds [-v]                        list cached credentials (no secrets)\n"
+"  sm                                enter security manager shell\n"
+"  us                                enter user store shell\n"
+"  cm                                enter credential manager shell\n"
+"  ps                                enter policy store shell\n"
+"  reg                               enter identity registry shell\n"
+"  id                                enter identity service shell (current realm)\n"
+"  realm show|NAME|@realm            show or switch current realm\n"
+"  realms                            list registered realms\n"
+"  logout                            clear all active identities\n"
+"  logout-realm [NAME]               clear identities in a realm\n"
+"  reload-creds                      reload credentials and restore cached logins\n"
+"  help                              show this help\n"
+"\n"
+"  Interactive shells: sm, store, acl, cm, reg, id (exit or Ctrl-D to leave)\n"
+"  One-shot: store SUBCMD … | cm SUBCMD … | creds [-v]\n"
+"\n"
+"  @realm syntax:\n"
+"    @factory-a          realm name\n"
+"    @device:tablet-1    realm type + name (types: global, device, app)\n"
+"    @device             realm type only\n"
+"\n"
+"options:\n"
+"  (global options must appear before the subcommand, e.g. acdemo -d user.db store …)\n"
+"  -f, --credential-db PATH          credential cache file\n"
+"  -d, --user-db FILE                user store JSON file (default: built-in demo)\n"
+"  -p, --policy-db FILE              policy store JSON file (default: built-in demo)\n"
+"  -u, --subject USER                default subject hint\n"
+"  -r, --realm NAME                  default realm name\n"
+"      --realm-type TYPE             default realm type (global|device|app)\n"
+"      --realm-uuid UUID             default realm uuid\n"
+"      --version                     print version and exit\n"
+"  -h, --help                        show help and exit\n"
+"\n"
+"demo permissions (ACL is built-in):\n"
+"  fab.order.view / fab.order.modify / fab.order.delete / file.save\n"
+msgstr ""
+"acdemo — demo quyền, thông tin xác thực và đăng nhập console của bas.security\n"
+"\n"
+"cách dùng: acdemo [options] [command [args...]]\n"
+"\n"
+"  Nếu không có lệnh, khởi động shell tương tác.\n"
+"\n"
+"commands:\n"
+"  check [@realm] PERMISSION       kiểm tra quyền (phạm vi realm tùy chọn)\n"
+"  request [@realm] PERMISSION [USER]  yêu cầu quyền (đăng nhập nếu cần)\n"
+"  login [@realm] [USER]             đăng nhập tương tác → danh tính đang hoạt động\n"
+"  whoami                            liệt kê danh tính đang hoạt động\n"
+"  creds [-v]                        liệt kê thông tin xác thực trong bộ nhớ đệm (không có bí mật)\n"
+"  sm                                vào shell trình quản lý bảo mật\n"
+"  us                                vào shell kho người dùng\n"
+"  cm                                vào shell trình quản lý thông tin xác thực\n"
+"  ps                                vào shell kho chính sách\n"
+"  reg                               vào shell registry danh tính\n"
+"  id                                vào shell dịch vụ danh tính (realm hiện tại)\n"
+"  realm show|NAME|@realm            hiện hoặc chuyển realm hiện tại\n"
+"  realms                            liệt kê các realm đã đăng ký\n"
+"  logout                            xóa tất cả danh tính đang hoạt động\n"
+"  logout-realm [NAME]               xóa danh tính trong một realm\n"
+"  reload-creds                      tải lại thông tin xác thực và khôi phục đăng nhập trong bộ nhớ đệm\n"
+"  help                              hiện trợ giúp này\n"
+"\n"
+"  Shell tương tác: sm, store, acl, cm, reg, id (exit hoặc Ctrl-D để thoát)\n"
+"  Một lần: store SUBCMD … | cm SUBCMD … | creds [-v]\n"
+"\n"
+"  Cú pháp @realm:\n"
+"    @factory-a          tên realm\n"
+"    @device:tablet-1    loại realm + tên (loại: global, device, app)\n"
+"    @device             chỉ loại realm\n"
+"\n"
+"options:\n"
+"  (tùy chọn toàn cục phải đứng trước lệnh con, vd. acdemo -d user.db store …)\n"
+"  -f, --credential-db PATH          tệp bộ nhớ đệm thông tin xác thực\n"
+"  -d, --user-db FILE                tệp JSON kho người dùng (mặc định: demo tích hợp)\n"
+"  -p, --policy-db FILE              tệp JSON kho chính sách (mặc định: demo tích hợp)\n"
+"  -u, --subject USER                gợi ý chủ thể mặc định\n"
+"  -r, --realm NAME                  tên realm mặc định\n"
+"      --realm-type TYPE             loại realm mặc định (global|device|app)\n"
+"      --realm-uuid UUID             uuid realm mặc định\n"
+"      --version                     in phiên bản và thoát\n"
+"  -h, --help                        hiện trợ giúp và thoát\n"
+"\n"
+"quyền demo (ACL tích hợp):\n"
+"  fab.order.view / fab.order.modify / fab.order.delete / file.save\n"
+
+#: app/acdemo.cpp:210
+msgid "  (none)\n"
+msgstr "  (không)\n"
+
+#: app/acdemo.cpp:213
+msgid "  label: "
+msgstr "  Nhãn: "
+
+#: app/acdemo.cpp:215 src/bas/security/IdentityServiceCommand.cpp:23
+msgid "  type: "
+msgstr "  Loại: "
+
+#: app/acdemo.cpp:218 src/bas/security/UserStoreCommand.cpp:131
+msgid "  name: "
+msgstr "  Tên: "
+
+#: app/acdemo.cpp:221
+msgid "  uuid: "
+msgstr "  UUID: "
+
+#: app/acdemo.cpp:224
+msgid "  description: "
+msgstr "  Mô tả: "
+
+#: app/acdemo.cpp:227
+msgid "  (current)\n"
+msgstr "  (hiện tại)\n"
+
+#: app/acdemo.cpp:236
+msgid "invalid realm token: "
+msgstr "token realm không hợp lệ: "
+
+#: app/acdemo.cpp:250
+msgid "current realm: "
+msgstr "realm hiện tại: "
+
+#: app/acdemo.cpp:276
+msgid "usage: realm show | realm NAME | realm @token\n"
+msgstr "cách dùng: realm show | realm NAME | realm @token\n"
+
+#: app/acdemo.cpp:281
+msgid "current realm:\n"
+msgstr "realm hiện tại:\n"
+
+#: app/acdemo.cpp:291
+msgid "no registered realms\n"
+msgstr "không có realm đã đăng ký\n"
+
+#: app/acdemo.cpp:294
+msgid "registered realms:\n"
+msgstr "các realm đã đăng ký:\n"
+
+#: app/acdemo.cpp:298
+msgid " (current)"
+msgstr " (hiện tại)"
+
+#: app/acdemo.cpp:393
+msgid "entered "
+msgstr "đã vào "
+
+#: app/acdemo.cpp:393
+msgid " (exit or Ctrl-D to leave)\n"
+msgstr " (exit hoặc Ctrl-D để thoát)\n"
+
+#: app/acdemo.cpp:443 app/acdemo.cpp:498
+msgid "no identity service for current realm\n"
+msgstr "không có dịch vụ danh tính cho realm hiện tại\n"
+
+#: app/acdemo.cpp:521
+msgid "acdemo interactive mode. Type help for commands.\n"
+msgstr "Chế độ tương tác acdemo. Gõ help để xem lệnh.\n"
+
+#: app/acdemo.cpp:522
+msgid "  Tab: complete   Up/Down: history   Emacs keys: Ctrl-A/E/F/B, Alt-F/B\n"
+msgstr ""
+"  Tab: hoàn thành   Lên/Xuống: lịch sử   Phím Emacs: Ctrl-A/E/F/B, Alt-F/B\n"
+
+#: app/acdemo.cpp:523
+msgid "  Ctrl-arrows: word   Ctrl-K/U/W Alt-BS: kill word   Ctrl-L: redraw\n"
+msgstr "  Ctrl-mũi tên: từ   Ctrl-K/U/W Alt-BS: xóa từ   Ctrl-L: vẽ lại\n"
+
+#: app/acdemo.cpp:524
+msgid "  Shells: con, store, acl, man, reg, id (exit or Ctrl-D to leave)\n"
+msgstr "  Shell: con, store, acl, man, reg, id (exit hoặc Ctrl-D để thoát)\n"
+
+#: app/acdemo.cpp:529 src/bas/security/CredentialManagerCommand.cpp:77
+msgid "credential file: "
+msgstr "tệp thông tin xác thực: "
+
+#: app/acdemo.cpp:530 src/bas/security/UserStoreCommand.cpp:840
+msgid "user store: "
+msgstr "kho người dùng: "
+
+#: app/reg.cpp:33
+msgid ""
+"usage: reg [options]\n"
+"  -r, --root DIR|FILE   registry root (directory → LocalRegistry, file → JsonRegistry)\n"
+"  -d, --dump PATH       list all keys under PATH (path=value lines)\n"
+"  -g, --get PATH        print registry value (valueToString)\n"
+"  -s, --set PATH VALUE  set registry value (parseOption)\n"
+"  -e, --export PATH     export subtree at PATH as JSON to stdout\n"
+"  -i, --import PATH     read JSON from stdin and merge at PATH\n"
+"  -v, --verbose         debug logging\n"
+"  -q, --quiet           errors only on stderr\n"
+"      --version         print version and exit\n"
+"  -h, --help            show this help and exit\n"
+msgstr ""
+"cách dùng: reg [options]\n"
+"  -r, --root DIR|FILE   gốc registry (thư mục → LocalRegistry, tệp → JsonRegistry)\n"
+"  -d, --dump PATH       liệt kê mọi khóa dưới PATH (dòng path=value)\n"
+"  -g, --get PATH        in giá trị registry (valueToString)\n"
+"  -s, --set PATH VALUE  đặt giá trị registry (parseOption)\n"
+"  -e, --export PATH     xuất cây con tại PATH dạng JSON ra stdout\n"
+"  -i, --import PATH     đọc JSON từ stdin và hợp nhất tại PATH\n"
+"  -v, --verbose         ghi nhật ký gỡ lỗi\n"
+"  -q, --quiet           chỉ lỗi trên stderr\n"
+"      --version         in phiên bản và thoát\n"
+"  -h, --help            hiện trợ giúp này và thoát\n"
+
+#: app/reg.cpp:180
+msgid "reg: cannot create "
+msgstr "reg: không thể tạo "
+
+#: app/reg.cpp:185
+msgid "reg: cannot create directory "
+msgstr "reg: không thể tạo thư mục "
+
+#: app/reg.cpp:201 app/reg.cpp:382 app/reg.cpp:389
+msgid "reg: "
+msgstr "reg: "
+
+#: app/reg.cpp:208
+msgid "reg: root is neither a directory nor a regular file: "
+msgstr "reg: gốc không phải thư mục cũng không phải tệp thường: "
+
+#: app/reg.cpp:261
+msgid "reg: --set requires a value argument\n"
+msgstr "reg: --set cần một đối số giá trị\n"
+
+#: app/reg.cpp:291
+msgid "reg: unexpected argument: "
+msgstr "reg: đối số không mong đợi: "
+
+#: app/reg.cpp:307
+msgid "reg: -v/--verbose and -q/--quiet are mutually exclusive\n"
+msgstr "reg: -v/--verbose và -q/--quiet loại trừ lẫn nhau\n"
+
+#: app/reg.cpp:328
+msgid "reg: specify only one of --dump, --get, --set, --export, or --import\n"
+msgstr ""
+"reg: chỉ chỉ định một trong --dump, --get, --set, --export hoặc --import\n"
+
+#: app/reg.cpp:349
+msgid "reg: invalid path "
+msgstr "reg: đường dẫn không hợp lệ "
+
+#: app/reg.cpp:357
+msgid "reg: no value at "
+msgstr "reg: không có giá trị tại "
+
+#: app/reg.cpp:366
+msgid "reg: failed to set "
+msgstr "reg: không đặt được "
+
+#: app/tanks_game.cpp:207
+msgid " TANK AC - dual device access control demo "
+msgstr " TANK AC - demo kiểm soát truy cập hai thiết bị "
+
+#: app/tanks_game.cpp:214
+msgid "Terminal too small for tanks_game."
+msgstr "Terminal quá nhỏ cho tanks_game."
+
+#: app/tanks_game.cpp:215
+#, c-format
+msgid "Need at least %dx%d, have %dx%d."
+msgstr "Cần ít nhất %dx%d, hiện có %dx%d."
+
+#: app/tanks_game.cpp:216
+msgid "Resize the terminal and try again. Press any key to exit."
+msgstr "Đổi kích thước terminal rồi thử lại. Nhấn phím bất kỳ để thoát."
+
+#: app/tanks_game.cpp:411
+msgid "ENGINE ON "
+msgstr "ĐỘNG CƠ BẬT "
+
+#: app/tanks_game.cpp:414
+msgid "ENGINE OFF"
+msgstr "ĐỘNG CƠ TẮT"
+
+#: app/tanks_game.cpp:423
+msgid " Controls "
+msgstr " Điều khiển "
+
+#: app/tanks_game.cpp:424
+msgid "TAB device  L login  F1/F2 engine  Q quit"
+msgstr "TAB thiết bị  L đăng nhập  F1/F2 động cơ  Q thoát"
+
+#: app/tanks_game.cpp:425
+msgid "Arrows move/turn  Space fire"
+msgstr "Phím mũi tên di chuyển/quay  Space bắn"
+
+#: app/tanks_game.cpp:426
+#, c-format
+msgid "Active: %s"
+msgstr "Đang chọn: %s"
+
+#: app/tanks_game.cpp:450
+#, c-format
+msgid " Policy %s "
+msgstr " Chính sách %s "
+
+#: app/tanks_game.cpp:491
+msgid "BINDINGS"
+msgstr "RÀNG BUỘC"
+
+#: app/tanks_game.cpp:495
+msgid "identity      aclId"
+msgstr "danh tính     aclId"
+
+#: app/tanks_game.cpp:513 app/tanks_game.cpp:548 app/tanks_game.cpp:588
+msgid "(none)"
+msgstr "(không)"
+
+#: app/tanks_game.cpp:522
+msgid "ACLS"
+msgstr "ACL"
+
+#: app/tanks_game.cpp:531
+#, c-format
+msgid "%-10s %zu entries"
+msgstr "%-10s %zu mục"
+
+#: app/tanks_game.cpp:557
+msgid "GRANTS"
+msgstr "CẤP QUYỀN"
+
+#: app/tanks_game.cpp:566
+msgid "identity"
+msgstr "danh tính"
+
+#: app/tanks_game.cpp:566
+msgid "permission"
+msgstr "quyền"
+
+#: app/tanks_game.cpp:596
+msgid " Event log "
+msgstr " Nhật ký "
+
+#: app/tanks_game.cpp:703
+msgid "Enter/Esc=OK"
+msgstr "Enter/Esc=OK"
+
+#: app/tanks_game.cpp:739
+msgid "Enter=retry   Esc=cancel"
+msgstr "Enter=thử lại   Esc=hủy"
+
+#: app/tanks_game.cpp:770 app/tanks_game.cpp:848
+#, c-format
+msgid " Login %s "
+msgstr " Đăng nhập %s "
+
+#: app/tanks_game.cpp:771 app/tanks_game.cpp:850
+msgid "user: "
+msgstr "user: "
+
+#: app/tanks_game.cpp:772 app/tanks_game.cpp:851
+msgid "pass: "
+msgstr "mật khẩu: "
+
+#: app/tanks_game.cpp:773
+msgid "Up/Down demo user  Enter=OK  Esc=cancel"
+msgstr "Lên/Xuống user demo  Enter=OK  Esc=hủy"
+
+#: app/tanks_game.cpp:774 app/tanks_game.cpp:855
+msgid "demo accounts (user/pass):"
+msgstr "Tài khoản demo (user/pass):"
+
+#: app/tanks_game.cpp:848
+#, c-format
+msgid " Elevate %s "
+msgstr " Nâng quyền %s "
+
+#: app/tanks_game.cpp:853
+msgid "Up/Down demo user  Enter=login  Esc=cancel"
+msgstr "Lên/Xuống user demo  Enter=đăng nhập  Esc=hủy"
+
+#: app/tanks_game.cpp:854
+msgid "Up/Down demo user  Enter=authorize  Esc=cancel"
+msgstr "Lên/Xuống user demo  Enter=ủy quyền  Esc=hủy"
+
+#: app/tanks_game.cpp:902
+msgid ": login cancelled"
+msgstr ": đã hủy đăng nhập"
+
+#: app/tanks_game.cpp:906 app/tanks_game.cpp:971
+msgid ": logged in as "
+msgstr ": đã đăng nhập với "
+
+#: app/tanks_game.cpp:909
+msgid " login failed for "
+msgstr " đăng nhập thất bại cho "
+
+#: app/tanks_game.cpp:910 app/tanks_game.cpp:952
+msgid "Invalid username or password for "
+msgstr "Tên hoặc mật khẩu không hợp lệ cho "
+
+#: app/tanks_game.cpp:911
+msgid "Login Failed"
+msgstr "Đăng nhập thất bại"
+
+#: app/tanks_game.cpp:951
+msgid "Auth Failed"
+msgstr "Xác thực thất bại"
+
+#: app/tanks_game.cpp:961
+msgid " lacks "
+msgstr " thiếu "
+
+#: app/tanks_game.cpp:961
+msgid " on "
+msgstr " trên "
+
+#: app/tanks_game.cpp:962
+msgid "Access Denied"
+msgstr "Truy cập bị từ chối"
+
+#: app/tanks_game.cpp:1024
+msgid "Tank AC demo - per-device user store & ACL"
+msgstr "Demo Tank AC - kho user & ACL theo thiết bị"
+
+#: app/tanks_game.cpp:1025
+msgid "L login  arrows move  space fire  denied=elevate/login"
+msgstr ""
+"L đăng nhập  mũi tên di chuyển  space bắn  denied=nâng quyền/đăng nhập"
+
+#: app/tanks_game.cpp:1026
+msgid "tank-a: alice=operator(ACL) bob=gunner(grants) admin=commander"
+msgstr "tank-a: alice=operator(ACL) bob=gunner(grants) admin=commander"
+
+#: app/tanks_game.cpp:1027
+msgid "tank-b: charlie=cadet(ACL) dana=instructor(grants)"
+msgstr "tank-b: charlie=cadet(ACL) dana=instructor(grants)"
+
+#: app/tanks_game.cpp:1051
+msgid "switch -> "
+msgstr "chuyển -> "
+
+#: app/tanks_game.cpp:1090
+msgid "usage: "
+msgstr "cách dùng: "
+
+#: app/tanks_game.cpp:1090
+msgid " [--batch]\n"
+msgstr " [--batch]\n"
+
+#: app/tanks_game.cpp:1091
+msgid "  default: ncurses tank game (TAB switch, arrows, F1/F2, space)\n"
+msgstr "  mặc định: game tank ncurses (TAB, mũi tên, F1/F2, space)\n"
+
+#: app/tanks_game.cpp:1092
+msgid "  --batch: line-oriented mode for scripts\n"
+msgstr "  --batch: chế độ theo dòng cho script\n"
+
+#: app/tanks_game.cpp:1107
+msgid "unknown argument: "
+msgstr "đối số không rõ: "
+
+#: app/tanks_game.cpp:1122
+msgid "access denied: "
+msgstr "truy cập bị từ chối: "
+
+#: app/tanks_game.cpp:1125
+msgid "error: "
+msgstr "lỗi: "
+
+#: app/vols.cpp:39
+msgid ""
+"usage: vols [options]\n"
+"  Field selection (default without any: -mdtlu; with -v: -mdtlurLD):\n"
+"    -a, --all            all columns\n"
+"    -c, --compact        same columns as -mdtlu (merges with explicit field flags)\n"
+"    -m, --mountpoint     mount point column\n"
+"    -d, --device         device column\n"
+"    -t, --type           type column\n"
+"    -l, --label          label column\n"
+"    -u, --uuid           UUID column\n"
+"    -r, --read-only      read-only (ro/rw) column\n"
+"    -L, --logical-type   logical type column\n"
+"    -D, --loop-device    loop device column\n"
+"    -o, --opts           per-mount (VFS) options from mountinfo\n"
+"    -O, --superopts      superblock options from mountinfo\n"
+"    -z, --root           root path within filesystem (mountinfo field)\n"
+"  Other:\n"
+"    -s, --symbols        include overlay filesystems in the scan (bind mounts always on)\n"
+"    -h, --help           show this help and exit\n"
+"    -w, --writable       list only writable mounts; implies -r\n"
+"    -v, --verbose        more log detail; default columns include logical type\n"
+"    -q, --quiet          only errors on stderr\n"
+msgstr ""
+"cách dùng: vols [options]\n"
+"  Chọn trường (mặc định khi không chỉ định: -mdtlu; với -v: -mdtlurLD):\n"
+"    -a, --all            tất cả các cột\n"
+"    -c, --compact        cùng cột như -mdtlu (gộp với các cờ trường tường minh)\n"
+"    -m, --mountpoint     cột điểm gắn\n"
+"    -d, --device         cột thiết bị\n"
+"    -t, --type           cột loại\n"
+"    -l, --label          cột nhãn\n"
+"    -u, --uuid           cột UUID\n"
+"    -r, --read-only      cột chỉ đọc (ro/rw)\n"
+"    -L, --logical-type   cột loại logic\n"
+"    -D, --loop-device    cột thiết bị loop\n"
+"    -o, --opts           tùy chọn theo mount (VFS) từ mountinfo\n"
+"    -O, --superopts      tùy chọn superblock từ mountinfo\n"
+"    -z, --root           đường dẫn gốc trong hệ thống tệp (trường mountinfo)\n"
+"  Khác:\n"
+"    -s, --symbols        gồm hệ thống tệp overlay trong lần quét (bind mount luôn bật)\n"
+"    -h, --help           hiện trợ giúp này và thoát\n"
+"    -w, --writable       chỉ liệt kê mount ghi được; ngầm -r\n"
+"    -v, --verbose        chi tiết nhật ký hơn; cột mặc định gồm loại logic\n"
+"    -q, --quiet          chỉ lỗi trên stderr\n"
+
+#: app/vols.cpp:119
+msgid "Mount Point"
+msgstr "Điểm gắn"
+
+#: app/vols.cpp:120
+msgid "Root"
+msgstr "Gốc"
+
+#: app/vols.cpp:121
+msgid "Device"
+msgstr "Thiết bị"
+
+#: app/vols.cpp:122
+msgid "Type"
+msgstr "Loại"
+
+#: app/vols.cpp:123
+msgid "Label"
+msgstr "Nhãn"
+
+#: app/vols.cpp:124
+msgid "UUID"
+msgstr "UUID"
+
+#: app/vols.cpp:125
+msgid "Read-Only"
+msgstr "Chỉ đọc"
+
+#: app/vols.cpp:126
+msgid "Logical Type"
+msgstr "Loại logic"
+
+#: app/vols.cpp:127
+msgid "Loop Device"
+msgstr "Thiết bị loop"
+
+#: app/vols.cpp:128
+msgid "VFS opts"
+msgstr "Tùy chọn VFS"
+
+#: app/vols.cpp:129
+msgid "Super opts"
+msgstr "Tùy chọn superblock"
+
+#: app/vols.cpp:247
+msgid "vols: unexpected argument: "
+msgstr "vols: đối số không mong đợi: "
+
+#: app/vols.cpp:258
+msgid "vols: -v/--verbose and -q/--quiet are mutually exclusive\n"
+msgstr "vols: -v/--verbose và -q/--quiet loại trừ lẫn nhau\n"
+
+#: app/vols.cpp:263
+msgid "vols: -a/--all and -c/--compact are mutually exclusive\n"
+msgstr "vols: -a/--all và -c/--compact loại trừ lẫn nhau\n"
+
+#: app/vols.cpp:303
+msgid "vols: no columns selected\n"
+msgstr "vols: chưa chọn cột nào\n"
+
+#: src/bas/security/ACList.cpp:26
+msgid ""
+"aclist commands:\n"
+"  list                   list ACE rows\n"
+"  help                   show this help\n"
+"  -h, --help             show this help\n"
+msgstr ""
+"lệnh aclist:\n"
+"  list                   liệt kê hàng ACE\n"
+"  help                   hiện trợ giúp này\n"
+"  -h, --help             hiện trợ giúp này\n"
+
+#: src/bas/security/ACList.cpp:34
+msgid "no ACE rows\n"
+msgstr "không có hàng ACE\n"
+
+#: src/bas/security/ACList.cpp:101
+msgid ""
+"usage: list [-h]\n"
+"  List ACE rows.\n"
+msgstr ""
+"cách dùng: list [-h]\n"
+"  Liệt kê các hàng ACE.\n"
+
+#: src/bas/security/ACList.cpp:113
+msgid "unknown aclist command: "
+msgstr "lệnh aclist không xác định: "
+
+#: src/bas/security/ACList.cpp:113
+#: src/bas/security/CredentialManagerCommand.cpp:123
+#: src/bas/security/IdentityRegistryCommand.cpp:104
+#: src/bas/security/IdentityServiceCommand.cpp:71
+#: src/bas/security/PolicyStoreCommand.cpp:123
+#: src/bas/security/SecurityManagerCommand.cpp:208
+msgid " (try: help)\n"
+msgstr " (thử: help)\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:14
+msgid ""
+"credential commands:\n"
+"  list [-v]              list cached credentials (no secrets)\n"
+"  del STORE ID           remove credential by ref\n"
+"  clear                  remove all credentials\n"
+"  path                   show credential file path\n"
+"  reload                 reload from disk\n"
+"  save                   write credentials to disk\n"
+"  help                   show this help\n"
+msgstr ""
+"lệnh thông tin xác thực:\n"
+"  list [-v]              liệt kê thông tin xác thực trong bộ nhớ đệm (không có bí mật)\n"
+"  del STORE ID           xóa thông tin xác thực theo tham chiếu\n"
+"  clear                  xóa tất cả thông tin xác thực\n"
+"  path                   hiện đường dẫn tệp thông tin xác thực\n"
+"  reload                 tải lại từ đĩa\n"
+"  save                   ghi thông tin xác thực ra đĩa\n"
+"  help                   hiện trợ giúp này\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:28
+msgid "no cached credentials\n"
+msgstr "không có thông tin xác thực trong bộ nhớ đệm\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:40
+msgid "    (use login/request to verify; secrets not printed)\n"
+msgstr "    (dùng login/request để xác minh; bí mật không được in)\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:75
+msgid "credential store: in-memory\n"
+msgstr "kho thông tin xác thực: trong bộ nhớ\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:83
+msgid "reload only applies to file credential store\n"
+msgstr "reload chỉ áp dụng cho kho thông tin xác thực dạng tệp\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:87
+#: src/bas/security/SecurityManagerCommand.cpp:137
+msgid "reloaded "
+msgstr "đã tải lại "
+
+#: src/bas/security/CredentialManagerCommand.cpp:87
+#: src/bas/security/SecurityManagerCommand.cpp:138
+msgid " credential(s) from "
+msgstr " thông tin xác thực từ "
+
+#: src/bas/security/CredentialManagerCommand.cpp:93
+msgid "save only applies to file credential store\n"
+msgstr "save chỉ áp dụng cho kho thông tin xác thực dạng tệp\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:97
+msgid "saved credentials to "
+msgstr "đã lưu thông tin xác thực vào "
+
+#: src/bas/security/CredentialManagerCommand.cpp:102
+msgid "cleared all credentials\n"
+msgstr "đã xóa tất cả thông tin xác thực\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:107
+msgid "usage: del STORE ID\n"
+msgstr "cách dùng: del STORE ID\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:114
+msgid "removed credential ["
+msgstr "đã xóa thông tin xác thực ["
+
+#: src/bas/security/CredentialManagerCommand.cpp:123
+msgid "unknown credential command: "
+msgstr "lệnh thông tin xác thực không xác định: "
+
+#: src/bas/security/IdentityRegistryCommand.cpp:14
+msgid ""
+"identity registry commands:\n"
+"  list                   list registered identity services\n"
+"  realms                 list realm → service bindings\n"
+"  service ID [SUBCMD …]  run commands on a service by id\n"
+"  help                   show this help\n"
+msgstr ""
+"lệnh registry danh tính:\n"
+"  list                   liệt kê dịch vụ danh tính đã đăng ký\n"
+"  realms                 liệt kê liên kết realm → dịch vụ\n"
+"  service ID [SUBCMD …]  chạy lệnh trên dịch vụ theo id\n"
+"  help                   hiện trợ giúp này\n"
+
+#: src/bas/security/IdentityRegistryCommand.cpp:24
+msgid "no identity services registered\n"
+msgstr "không có dịch vụ danh tính đã đăng ký\n"
+
+#: src/bas/security/IdentityRegistryCommand.cpp:33
+msgid " [auto-login]"
+msgstr " [đăng nhập tự động]"
+
+#: src/bas/security/IdentityRegistryCommand.cpp:42
+msgid "no realms registered\n"
+msgstr "không có realm đã đăng ký\n"
+
+#: src/bas/security/IdentityRegistryCommand.cpp:49
+msgid " (no service)\n"
+msgstr " (không có dịch vụ)\n"
+
+#: src/bas/security/IdentityRegistryCommand.cpp:92
+msgid "usage: service ID [SUBCMD …]\n"
+msgstr "cách dùng: service ID [SUBCMD …]\n"
+
+#: src/bas/security/IdentityRegistryCommand.cpp:98
+msgid "identity service not found: "
+msgstr "không tìm thấy dịch vụ danh tính: "
+
+#: src/bas/security/IdentityRegistryCommand.cpp:104
+msgid "unknown registry subcommand: "
+msgstr "lệnh con của registry không xác định: "
+
+#: src/bas/security/IdentityServiceCommand.cpp:15
+msgid ""
+"identity service commands:\n"
+"  info                   show service id, type, credentials, realms\n"
+"  help                   show this help\n"
+"  store SUBCMD …         (store service) user-store commands\n"
+msgstr ""
+"lệnh dịch vụ danh tính:\n"
+"  info                   hiện id, loại, thông tin xác thực và realm của dịch vụ\n"
+"  help                   hiện trợ giúp này\n"
+"  store SUBCMD …         (dịch vụ store) lệnh kho người dùng\n"
+
+#: src/bas/security/IdentityServiceCommand.cpp:22
+msgid "  id: "
+msgstr "  ID: "
+
+#: src/bas/security/IdentityServiceCommand.cpp:24
+msgid "  auto-login: "
+msgstr "  Đăng nhập tự động: "
+
+#: src/bas/security/IdentityServiceCommand.cpp:24
+#: src/bas/security/UserStoreCommand.cpp:143
+#: src/bas/security/UserStoreCommand.cpp:159
+#: src/bas/security/UserStoreCommand.cpp:724
+msgid "yes"
+msgstr "có"
+
+#: src/bas/security/IdentityServiceCommand.cpp:24
+#: src/bas/security/UserStoreCommand.cpp:143
+#: src/bas/security/UserStoreCommand.cpp:159
+#: src/bas/security/UserStoreCommand.cpp:724
+msgid "no"
+msgstr "không"
+
+#: src/bas/security/IdentityServiceCommand.cpp:25
+msgid "  credentials:"
+msgstr "  Thông tin xác thực:"
+
+#: src/bas/security/IdentityServiceCommand.cpp:28
+#: src/bas/security/UserStoreCommand.cpp:146
+msgid " (none)\n"
+msgstr " (không)\n"
+
+#: src/bas/security/IdentityServiceCommand.cpp:35
+msgid "  realm-types:"
+msgstr "  Loại realm:"
+
+#: src/bas/security/IdentityServiceCommand.cpp:38
+msgid " (any)\n"
+msgstr " (bất kỳ)\n"
+
+#: src/bas/security/IdentityServiceCommand.cpp:47
+msgid "  backed-stores: "
+msgstr "  Kho lưu trữ nền: "
+
+#: src/bas/security/IdentityServiceCommand.cpp:71
+msgid "unknown identity service subcommand: "
+msgstr "lệnh con dịch vụ danh tính không xác định: "
+
+#: src/bas/security/IdentityServiceCommand.cpp:88
+msgid "user store not configured\n"
+msgstr "kho người dùng chưa được cấu hình\n"
+
+#: src/bas/security/IdentityService.cpp:106
+msgid "User Login"
+msgstr "Đăng nhập người dùng"
+
+#: src/bas/security/IdentityService.cpp:110
+msgid "Realm type"
+msgstr "Loại realm"
+
+#: src/bas/security/IdentityService.cpp:120
+msgid "Realm name"
+msgstr "Tên realm"
+
+#: src/bas/security/IdentityService.cpp:128
+msgid "Realm UUID"
+msgstr "UUID realm"
+
+#: src/bas/security/IdentityService.cpp:136
+msgid "Username"
+msgstr "Tên người dùng"
+
+#: src/bas/security/IdentityService.cpp:141
+msgid "Password"
+msgstr "Mật khẩu"
+
+#: src/bas/security/PolicyStoreCommand.cpp:15
+msgid ""
+"acl commands:\n"
+"  list                   list ACL grants\n"
+"  clear                  remove all grants\n"
+"  path                   show ACL file path\n"
+"  reload                 reload file ACL from disk\n"
+"  save                   write file ACL to disk\n"
+"  help                   show this help\n"
+"  -h, --help             show this help\n"
+msgstr ""
+"lệnh ACL:\n"
+"  list                   liệt kê cấp quyền ACL\n"
+"  clear                  xóa tất cả cấp quyền\n"
+"  path                   hiện đường dẫn tệp ACL\n"
+"  reload                 tải lại ACL dạng tệp từ đĩa\n"
+"  save                   ghi ACL dạng tệp ra đĩa\n"
+"  help                   hiện trợ giúp này\n"
+"  -h, --help             hiện trợ giúp này\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:28
+msgid "no ACL grants\n"
+msgstr "không có cấp quyền ACL\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:63
+msgid ""
+"usage: list [-h]\n"
+"  List ACL grants.\n"
+msgstr ""
+"cách dùng: list [-h]\n"
+"  Liệt kê các cấp quyền ACL.\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:71
+msgid ""
+"usage: clear [-h]\n"
+"  Remove all ACL grants.\n"
+msgstr ""
+"cách dùng: clear [-h]\n"
+"  Xóa tất cả cấp quyền ACL.\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:75
+msgid "cleared ACL\n"
+msgstr "đã xóa ACL\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:80
+msgid ""
+"usage: path [-h]\n"
+"  Show ACL file path.\n"
+msgstr ""
+"cách dùng: path [-h]\n"
+"  Hiện đường dẫn tệp ACL.\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:85
+msgid "acl: in-memory\n"
+msgstr "acl: trong bộ nhớ\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:87
+msgid "acl file: "
+msgstr "tệp ACL: "
+
+#: src/bas/security/PolicyStoreCommand.cpp:93
+msgid ""
+"usage: reload [-h]\n"
+"  Reload file ACL from disk.\n"
+msgstr ""
+"cách dùng: reload [-h]\n"
+"  Tải lại ACL dạng tệp từ đĩa.\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:97
+msgid "reload only applies to file ACL (-a/--acl FILE)\n"
+msgstr "reload chỉ áp dụng cho ACL dạng tệp (-a/--acl FILE)\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:101
+msgid "reloaded ACL from "
+msgstr "đã tải lại ACL từ "
+
+#: src/bas/security/PolicyStoreCommand.cpp:106
+msgid ""
+"usage: save [-h]\n"
+"  Write file ACL to disk.\n"
+msgstr ""
+"cách dùng: save [-h]\n"
+"  Ghi ACL dạng tệp ra đĩa.\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:110
+msgid "save only applies to file ACL (-a/--acl FILE)\n"
+msgstr "save chỉ áp dụng cho ACL dạng tệp (-a/--acl FILE)\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:114
+msgid "saved ACL to "
+msgstr "đã lưu ACL vào "
+
+#: src/bas/security/PolicyStoreCommand.cpp:123
+msgid "unknown acl command: "
+msgstr "lệnh ACL không xác định: "
+
+#: src/bas/security/SecurityManagerCommand.cpp:15
+msgid ""
+"access control commands:\n"
+"  whoami                         list active identities\n"
+"  logout                         clear all active identities\n"
+"  logout-realm [@realm|NAME]     clear identities in a realm\n"
+"  check [@realm] PERMISSION      check permission\n"
+"  request [@realm] PERM [USER]   request permission (login if needed)\n"
+"  login [@realm] [USER]          interactive login\n"
+"  reload-creds                   reload credential file and restore logins\n"
+"  help                           show this help\n"
+msgstr ""
+"lệnh kiểm soát truy cập:\n"
+"  whoami                         liệt kê danh tính đang hoạt động\n"
+"  logout                         xóa tất cả danh tính đang hoạt động\n"
+"  logout-realm [@realm|NAME]     xóa danh tính trong một realm\n"
+"  check [@realm] PERMISSION      kiểm tra quyền\n"
+"  request [@realm] PERM [USER]   yêu cầu quyền (đăng nhập nếu cần)\n"
+"  login [@realm] [USER]          đăng nhập tương tác\n"
+"  reload-creds                   tải lại tệp thông tin xác thực và khôi phục đăng nhập\n"
+"  help                           hiện trợ giúp này\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:40
+msgid "no active identities\n"
+msgstr "không có danh tính đang hoạt động\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:49
+msgid " via "
+msgstr " qua "
+
+#: src/bas/security/SecurityManagerCommand.cpp:111
+msgid "logged out all identities (auto-login suppressed until next login)\n"
+msgstr ""
+"đã đăng xuất tất cả danh tính (tắt đăng nhập tự động đến lần đăng nhập tiếp "
+"theo)\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:124
+msgid "usage: logout-realm [@realm|NAME]\n"
+msgstr "cách dùng: logout-realm [@realm|NAME]\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:128
+msgid "logged out identities in realm "
+msgstr "đã đăng xuất danh tính trong realm "
+
+#: src/bas/security/SecurityManagerCommand.cpp:133
+msgid "no file credential store configured\n"
+msgstr "chưa cấu hình kho thông tin xác thực dạng tệp\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:156
+msgid "usage: check [@realm] PERMISSION\n"
+msgstr "cách dùng: check [@realm] PERMISSION\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:166
+msgid "usage: request [@realm] PERMISSION [USER]\n"
+msgstr "cách dùng: request [@realm] PERMISSION [USER]\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:196
+msgid "login ok"
+msgstr "đăng nhập thành công"
+
+#: src/bas/security/SecurityManagerCommand.cpp:198
+msgid " realm="
+msgstr " realm="
+
+#: src/bas/security/SecurityManagerCommand.cpp:204
+msgid "login failed\n"
+msgstr "đăng nhập thất bại\n"
+
+#: src/bas/security/SecurityManagerCommand.cpp:208
+#: src/bas/security/UserStoreCommand.cpp:524
+msgid "unknown command: "
+msgstr "lệnh không xác định: "
+
+#: src/bas/security/UserStoreCommand.cpp:34
+msgid ""
+"user store commands:\n"
+"  user list                       list usernames\n"
+"  user show USER                  show profile, roles, keys\n"
+"  user add [options] USER [PASSWORD]\n"
+"  user update [options] USER [PASSWORD]\n"
+"      -a/--avatar NAME   -d/--display NAME   -e/--email EMAIL\n"
+"      -p/--password PASS  [PASSWORD] positional\n"
+"      -H/--hash ALGO      plain (default), sha256, sha1, md5\n"
+"      -h/--help           show command help\n"
+"      -r/--roles ROLES    comma-separated role names\n"
+"      password from stdin when -p and [PASSWORD] are both omitted\n"
+"  user check USER [PASSWORD]        validate password (exit 1 on failure)\n"
+"  user del USER                   remove user\n"
+"  user enable USER | user disable USER\n"
+"  user roles USER | user roles set USER R…\n"
+"  user role add USER ROLE | user role del USER ROLE\n"
+"  user keys USER | user key add/del …\n"
+"  path | reload | save | help\n"
+"  commands may be abbreviated by unique prefix\n"
+"  -h/--help on any subcommand shows its usage\n"
+msgstr ""
+"lệnh kho người dùng:\n"
+"  user list                       liệt kê tên người dùng\n"
+"  user show USER                  hiện hồ sơ, vai trò, khóa\n"
+"  user add [options] USER [PASSWORD]\n"
+"  user update [options] USER [PASSWORD]\n"
+"      -a/--avatar NAME   -d/--display NAME   -e/--email EMAIL\n"
+"      -p/--password PASS  [PASSWORD] vị trí\n"
+"      -H/--hash ALGO      plain (mặc định), sha256, sha1, md5\n"
+"      -h/--help           hiện trợ giúp lệnh\n"
+"      -r/--roles ROLES    tên vai trò phân tách bằng dấu phẩy\n"
+"      mật khẩu từ stdin khi bỏ qua cả -p và [PASSWORD]\n"
+"  user check USER [PASSWORD]        xác thực mật khẩu (thoát mã 1 nếu thất bại)\n"
+"  user del USER                   xóa người dùng\n"
+"  user enable USER | user disable USER\n"
+"  user roles USER | user roles set USER R…\n"
+"  user role add USER ROLE | user role del USER ROLE\n"
+"  user keys USER | user key add/del …\n"
+"  path | reload | save | help\n"
+"  lệnh có thể viết tắt bằng tiền tố duy nhất\n"
+"  -h/--help trên mọi lệnh con hiện cách dùng\n"
+
+#: src/bas/security/UserStoreCommand.cpp:57
+msgid ""
+"usage: user list [-h]\n"
+"  List all usernames in the store.\n"
+msgstr ""
+"cách dùng: user list [-h]\n"
+"  Liệt kê tất cả tên người dùng trong kho.\n"
+
+#: src/bas/security/UserStoreCommand.cpp:62
+msgid ""
+"usage: user show [-h] USER\n"
+"  Show profile, roles, and auth keys for USER.\n"
+msgstr ""
+"cách dùng: user show [-h] USER\n"
+"  Hiện hồ sơ, vai trò và khóa xác thực của USER.\n"
+
+#: src/bas/security/UserStoreCommand.cpp:67
+msgid ""
+"usage: user add [-h] [options] USER [PASSWORD]\n"
+"  Create a new user record.\n"
+"options:\n"
+"  -a, --avatar NAME     profile.attributes.avatar\n"
+"  -d, --display NAME    display name\n"
+"  -e, --email EMAIL     email address\n"
+"  -p, --password PASS   password (or positional PASSWORD)\n"
+"  -H, --hash ALGO       plain (default), sha256, sha1, md5\n"
+"  -r, --roles ROLES     comma-separated role names (default: operator)\n"
+"  -h, --help            show this help\n"
+"  If neither -p nor PASSWORD is given, password is read from stdin.\n"
+msgstr ""
+"cách dùng: user add [-h] [options] USER [PASSWORD]\n"
+"  Tạo bản ghi người dùng mới.\n"
+"options:\n"
+"  -a, --avatar NAME     profile.attributes.avatar\n"
+"  -d, --display NAME    tên hiển thị\n"
+"  -e, --email EMAIL     địa chỉ email\n"
+"  -p, --password PASS   mật khẩu (hoặc PASSWORD vị trí)\n"
+"  -H, --hash ALGO       plain (mặc định), sha256, sha1, md5\n"
+"  -r, --roles ROLES     tên vai trò phân tách bằng dấu phẩy (mặc định: operator)\n"
+"  -h, --help            hiện trợ giúp này\n"
+"  Nếu không có -p cũng như PASSWORD, mật khẩu được đọc từ stdin.\n"
+
+#: src/bas/security/UserStoreCommand.cpp:81
+msgid ""
+"usage: user update [-h] [options] USER [PASSWORD]\n"
+"  Update an existing user; only specified fields are changed.\n"
+"options: same as user add\n"
+msgstr ""
+"cách dùng: user update [-h] [options] USER [PASSWORD]\n"
+"  Cập nhật người dùng hiện có; chỉ các trường được chỉ định mới thay đổi.\n"
+"options: giống user add\n"
+
+#: src/bas/security/UserStoreCommand.cpp:87
+msgid ""
+"usage: user check [-h] USER [PASSWORD]\n"
+"  Validate PASSWORD against USER's stored keys (exit 1 on failure).\n"
+"  PASSWORD from stdin when omitted.\n"
+msgstr ""
+"cách dùng: user check [-h] USER [PASSWORD]\n"
+"  Xác thực PASSWORD với các khóa đã lưu của USER (thoát mã 1 nếu thất bại).\n"
+"  Đọc PASSWORD từ stdin khi bỏ qua.\n"
+
+#: src/bas/security/UserStoreCommand.cpp:93
+msgid ""
+"usage: user del|rm [-h] USER\n"
+"  Remove USER from the store.\n"
+msgstr ""
+"cách dùng: user del|rm [-h] USER\n"
+"  Xóa USER khỏi kho.\n"
+
+#: src/bas/security/UserStoreCommand.cpp:98
+msgid ""
+"usage: user enable|disable [-h] USER\n"
+"  Enable or disable USER login.\n"
+msgstr ""
+"cách dùng: user enable|disable [-h] USER\n"
+"  Bật hoặc tắt đăng nhập của USER.\n"
+
+#: src/bas/security/UserStoreCommand.cpp:103
+msgid ""
+"usage: user roles [-h] USER\n"
+"       user roles set [-h] USER ROLE…\n"
+"  List roles, or replace the role list for USER.\n"
+msgstr ""
+"cách dùng: user roles [-h] USER\n"
+"       user roles set [-h] USER ROLE…\n"
+"  Liệt kê vai trò, hoặc thay danh sách vai trò của USER.\n"
+
+#: src/bas/security/UserStoreCommand.cpp:109
+msgid ""
+"usage: user role add [-h] USER ROLE\n"
+"       user role del [-h] USER ROLE\n"
+"  Add or remove a single role name on USER.\n"
+msgstr ""
+"cách dùng: user role add [-h] USER ROLE\n"
+"       user role del [-h] USER ROLE\n"
+"  Thêm hoặc xóa một tên vai trò trên USER.\n"
+
+#: src/bas/security/UserStoreCommand.cpp:115
+msgid ""
+"usage: user keys [-h] USER\n"
+"  List authentication keys for USER.\n"
+msgstr ""
+"cách dùng: user keys [-h] USER\n"
+"  Liệt kê khóa xác thực của USER.\n"
+
+#: src/bas/security/UserStoreCommand.cpp:120
+msgid ""
+"usage: user key add [-h] USER ID TYPE [options]\n"
+"       user key del [-h] USER ID\n"
+"options for add:\n"
+"  -p, --password PASS   key secret\n"
+"  -H, --hash ALGO       for password-hash (default plain → password-plain)\n"
+"  --name LABEL          key display name\n"
+"  -h, --help            show this help\n"
+msgstr ""
+"cách dùng: user key add [-h] USER ID TYPE [options]\n"
+"       user key del [-h] USER ID\n"
+"options cho add:\n"
+"  -p, --password PASS   bí mật của khóa\n"
+"  -H, --hash ALGO       cho password-hash (mặc định plain → password-plain)\n"
+"  --name LABEL          tên hiển thị của khóa\n"
+"  -h, --help            hiện trợ giúp này\n"
+
+#: src/bas/security/UserStoreCommand.cpp:133
+msgid "  display: "
+msgstr "  Tên hiển thị: "
+
+#: src/bas/security/UserStoreCommand.cpp:136
+msgid "  email: "
+msgstr "  Email: "
+
+#: src/bas/security/UserStoreCommand.cpp:140
+msgid "  avatar: "
+msgstr "  Avatar: "
+
+#: src/bas/security/UserStoreCommand.cpp:143
+msgid "  enabled: "
+msgstr "  Bật: "
+
+#: src/bas/security/UserStoreCommand.cpp:144
+msgid "  roles:"
+msgstr "  Vai trò:"
+
+#: src/bas/security/UserStoreCommand.cpp:153
+msgid "  keys:\n"
+msgstr "  Khóa:\n"
+
+#: src/bas/security/UserStoreCommand.cpp:155
+msgid "    (none)\n"
+msgstr "    (không)\n"
+
+#: src/bas/security/UserStoreCommand.cpp:244
+msgid "failed to read password from stdin"
+msgstr "không đọc được mật khẩu từ stdin"
+
+#: src/bas/security/UserStoreCommand.cpp:257
+msgid "missing value for "
+msgstr "thiếu giá trị cho "
+
+#: src/bas/security/UserStoreCommand.cpp:313
+msgid "unknown option: "
+msgstr "tùy chọn không xác định: "
+
+#: src/bas/security/UserStoreCommand.cpp:333
+#: src/bas/security/UserStoreCommand.cpp:366
+msgid "unexpected argument: "
+msgstr "đối số không mong đợi: "
+
+#: src/bas/security/UserStoreCommand.cpp:337
+#: src/bas/security/UserStoreCommand.cpp:353
+msgid "USER name required"
+msgstr "cần tên USER"
+
+#: src/bas/security/UserStoreCommand.cpp:411
+msgid "user already exists: "
+msgstr "người dùng đã tồn tại: "
+
+#: src/bas/security/UserStoreCommand.cpp:415
+#: src/bas/security/UserStoreCommand.cpp:460
+#: src/bas/security/UserStoreCommand.cpp:788
+msgid "unsupported hash algorithm: "
+msgstr "thuật toán băm không được hỗ trợ: "
+
+#: src/bas/security/UserStoreCommand.cpp:416
+#: src/bas/security/UserStoreCommand.cpp:461
+msgid " (use plain, sha256, sha1, or md5)\n"
+msgstr " (dùng plain, sha256, sha1 hoặc md5)\n"
+
+#: src/bas/security/UserStoreCommand.cpp:436
+msgid "added user "
+msgstr "đã thêm người dùng "
+
+#: src/bas/security/UserStoreCommand.cpp:456
+#: src/bas/security/UserStoreCommand.cpp:467
+#: src/bas/security/UserStoreCommand.cpp:505
+#: src/bas/security/UserStoreCommand.cpp:588
+#: src/bas/security/UserStoreCommand.cpp:613
+#: src/bas/security/UserStoreCommand.cpp:630
+#: src/bas/security/UserStoreCommand.cpp:665
+#: src/bas/security/UserStoreCommand.cpp:674
+#: src/bas/security/UserStoreCommand.cpp:698
+#: src/bas/security/UserStoreCommand.cpp:719
+#: src/bas/security/UserStoreCommand.cpp:767
+msgid "user not found: "
+msgstr "không tìm thấy người dùng: "
+
+#: src/bas/security/UserStoreCommand.cpp:485
+msgid "updated user "
+msgstr "đã cập nhật người dùng "
+
+#: src/bas/security/UserStoreCommand.cpp:501
+msgid "password required\n"
+msgstr "cần mật khẩu\n"
+
+#: src/bas/security/UserStoreCommand.cpp:509
+msgid "password ok for "
+msgstr "mật khẩu đúng cho "
+
+#: src/bas/security/UserStoreCommand.cpp:512
+msgid "invalid password for "
+msgstr "mật khẩu không hợp lệ cho "
+
+#: src/bas/security/UserStoreCommand.cpp:520
+msgid "ambiguous command: "
+msgstr "lệnh mơ hồ: "
+
+#: src/bas/security/UserStoreCommand.cpp:559
+msgid "no users in store\n"
+msgstr "không có người dùng trong kho\n"
+
+#: src/bas/security/UserStoreCommand.cpp:570
+msgid " [disabled]"
+msgstr " [đã tắt]"
+
+#: src/bas/security/UserStoreCommand.cpp:617
+msgid "removed user "
+msgstr "đã xóa người dùng "
+
+#: src/bas/security/UserStoreCommand.cpp:635
+msgid "enabled user "
+msgstr "đã bật người dùng "
+
+#: src/bas/security/UserStoreCommand.cpp:638
+msgid "disabled user "
+msgstr "đã tắt người dùng "
+
+#: src/bas/security/UserStoreCommand.cpp:660
+msgid "usage: user roles set USER R…\n"
+msgstr "cách dùng: user roles set USER R…\n"
+
+#: src/bas/security/UserStoreCommand.cpp:670
+msgid "roles updated for "
+msgstr "đã cập nhật vai trò cho "
+
+#: src/bas/security/UserStoreCommand.cpp:678
+msgid "  role:"
+msgstr "  Vai trò:"
+
+#: src/bas/security/UserStoreCommand.cpp:706
+msgid "role "
+msgstr "vai trò "
+
+#: src/bas/security/UserStoreCommand.cpp:706
+msgid " for "
+msgstr " cho "
+
+#: src/bas/security/UserStoreCommand.cpp:751
+msgid "removed key "
+msgstr "đã xóa khóa "
+
+#: src/bas/security/UserStoreCommand.cpp:751
+msgid " from "
+msgstr " từ "
+
+#: src/bas/security/UserStoreCommand.cpp:793
+msgid "password flags require key type password-hash or password-plain\n"
+msgstr "các cờ mật khẩu yêu cầu kiểu khóa password-hash hoặc password-plain\n"
+
+#: src/bas/security/UserStoreCommand.cpp:805
+msgid "added key "
+msgstr "đã thêm khóa "
+
+#: src/bas/security/UserStoreCommand.cpp:805
+msgid " to "
+msgstr " vào "
+
+#: src/bas/security/UserStoreCommand.cpp:809
+msgid "unknown user subcommand: "
+msgstr "lệnh con người dùng không xác định: "
+
+#: src/bas/security/UserStoreCommand.cpp:837
+msgid ""
+"usage: path [-h]\n"
+"  Show user store file path and label.\n"
+msgstr ""
+"cách dùng: path [-h]\n"
+"  Hiện đường dẫn tệp và nhãn của kho người dùng.\n"
+
+#: src/bas/security/UserStoreCommand.cpp:843
+msgid "  file: "
+msgstr "  Tệp: "
+
+#: src/bas/security/UserStoreCommand.cpp:845
+msgid "  kind: in-memory\n"
+msgstr "  Loại: trong bộ nhớ\n"
+
+#: src/bas/security/UserStoreCommand.cpp:851
+msgid ""
+"usage: reload [-h]\n"
+"  Reload user store from disk.\n"
+msgstr ""
+"cách dùng: reload [-h]\n"
+"  Tải lại kho người dùng từ đĩa.\n"
+
+#: src/bas/security/UserStoreCommand.cpp:855
+msgid "reload only applies to file store (-d/--store FILE)\n"
+msgstr "reload chỉ áp dụng cho kho dạng tệp (-d/--store FILE)\n"
+
+#: src/bas/security/UserStoreCommand.cpp:859
+msgid "reloaded user store from "
+msgstr "đã tải lại kho người dùng từ "
+
+#: src/bas/security/UserStoreCommand.cpp:864
+msgid ""
+"usage: save [-h]\n"
+"  Write user store to disk.\n"
+msgstr ""
+"cách dùng: save [-h]\n"
+"  Ghi kho người dùng ra đĩa.\n"
+
+#: src/bas/security/UserStoreCommand.cpp:868
+msgid "save only applies to file store (-d/--store FILE)\n"
+msgstr "save chỉ áp dụng cho kho dạng tệp (-d/--store FILE)\n"
+
+#: src/bas/security/UserStoreCommand.cpp:872
+msgid "saved user store to "
+msgstr "đã lưu kho người dùng vào "
+
+#: src/bas/volume/Volume_utils.cpp:152
+msgid "Usage: assets [OPTIONS] [PATH...]"
+msgstr "Cách dùng: assets [OPTIONS] [PATH...]"
+
+#: src/bas/volume/Volume_utils.cpp:153
+msgid "Options:"
+msgstr "Tùy chọn:"
+
+#: src/bas/volume/Volume_utils.cpp:154
+msgid "  -R, --recursive        list subdirectories recursively"
+msgstr "  -R, --recursive        liệt kê thư mục con đệ quy"
+
+#: src/bas/volume/Volume_utils.cpp:155
+msgid "  -l, --long             use a long listing format"
+msgstr "  -l, --long             dùng định dạng liệt kê dài"
+
+#: src/bas/volume/Volume_utils.cpp:156
+msgid "  -a, --all              include entries starting with . and .."
+msgstr "  -a, --all              gồm các mục bắt đầu bằng . và .."
+
+#: src/bas/volume/Volume_utils.cpp:157
+msgid ""
+"  -A, --almost-all       include entries starting with . except . and .."
+msgstr "  -A, --almost-all       gồm các mục bắt đầu bằng . trừ . và .."
+
+#: src/bas/volume/Volume_utils.cpp:158
+msgid "  -F, --classify         append file type indicators"
+msgstr "  -F, --classify         thêm chỉ báo kiểu tệp"
+
+#: src/bas/volume/Volume_utils.cpp:159
+msgid "  -h, --human-readable   print sizes in human-readable form"
+msgstr "  -h, --human-readable   in kích thước dạng dễ đọc"
+
+#: src/bas/volume/Volume_utils.cpp:160
+msgid "  -C, --color            enable colored output"
+msgstr "  -C, --color            bật đầu ra màu"
+
+#: src/bas/volume/Volume_utils.cpp:161
+msgid "  -T, --tree             print as directory tree"
+msgstr "  -T, --tree             in dạng cây thư mục"
+
+#: src/bas/volume/Volume_utils.cpp:162
+msgid "      --help             display this help and exit"
+msgstr "      --help             hiện trợ giúp này và thoát"
