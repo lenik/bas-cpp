@@ -138,7 +138,8 @@ void printUsage(std::ostream& out) {
              "      --version                     print version and exit\n"
              "  -h, --help                        show help and exit\n\n"
              "demo permissions (ACL is built-in):\n"
-             "  fab.order.view / fab.order.modify / fab.order.delete / file.save\n");
+             "  action=view;resource=fab.order / action=modify;resource=fab.order /\n"
+             "  action=delete;resource=fab.order / action=save;resource=file\n");
 }
 
 std::size_t restoreCachedLogins(sec::SecurityManager& ac, const sec::Realm& realmFilter) {

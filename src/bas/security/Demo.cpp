@@ -53,17 +53,21 @@ void populateDemoPolicy(PolicyStore& store) {
     store.clear();
     const Realm& global = Realm::GLOBAL;
     store.addGrant(makeAccessGrant(IdentityRef{"role", global, "operator"},
-                                   Permission{"fab.order.view"}, AccessEffect::Allow));
+                                   Permission{"action=view;resource=fab.order"},
+                                   AccessEffect::Allow));
     store.addGrant(makeAccessGrant(IdentityRef{"role", global, "operator"},
-                                   Permission{"fab.order.modify"}, AccessEffect::Allow));
+                                   Permission{"action=modify;resource=fab.order"},
+                                   AccessEffect::Allow));
     store.addGrant(makeAccessGrant(IdentityRef{"user", global, "bob"},
-                                   Permission{"fab.order.delete"}, AccessEffect::Deny));
+                                   Permission{"action=delete;resource=fab.order"},
+                                   AccessEffect::Deny));
     store.addGrant(makeAccessGrant(IdentityRef{"anonymous", global, "default"},
-                                   Permission{"fab.order.view"}, AccessEffect::Allow));
-    store.addGrant(makeAccessGrant(IdentityRef{"role", global, "operator"}, Permission{"file.save"},
+                                   Permission{"action=view;resource=fab.order"},
                                    AccessEffect::Allow));
-    store.addGrant(makeAccessGrant(IdentityRef{"role", global, "operator"}, Permission{"file.*"},
-                                   AccessEffect::Allow));
+    store.addGrant(makeAccessGrant(IdentityRef{"role", global, "operator"},
+                                   Permission{"action=save;resource=file"}, AccessEffect::Allow));
+    store.addGrant(makeAccessGrant(IdentityRef{"role", global, "operator"},
+                                   Permission{"resource=file"}, AccessEffect::Allow));
 }
 
 namespace {
@@ -115,18 +119,18 @@ void populateTankAPolicy(PolicyStore& store) {
     store.clear();
     auto& policy = static_cast<DefaultPolicyStore&>(store);
     addRoleAcl(policy, "operator-drive", "operator",
-               {{"device.start", AccessEffect::Allow},
-                {"device.forward", AccessEffect::Allow},
-                {"device.backward", AccessEffect::Allow},
-                {"device.left", AccessEffect::Allow},
-                {"device.right", AccessEffect::Allow},
-                {"device.stop", AccessEffect::Allow}});
-    store.addGrant(makeAccessGrant(IdentityRef{"role", Realm{}, "gunner"}, Permission{"device.fire"},
-                                   AccessEffect::Allow));
-    store.addGrant(makeAccessGrant(IdentityRef{"role", Realm{}, "gunner"}, Permission{"device.stop"},
-                                   AccessEffect::Allow));
+               {{"action=start;resource=device", AccessEffect::Allow},
+                {"action=forward;resource=device", AccessEffect::Allow},
+                {"action=backward;resource=device", AccessEffect::Allow},
+                {"action=left;resource=device", AccessEffect::Allow},
+                {"action=right;resource=device", AccessEffect::Allow},
+                {"action=stop;resource=device", AccessEffect::Allow}});
+    store.addGrant(makeAccessGrant(IdentityRef{"role", Realm{}, "gunner"},
+                                   Permission{"action=fire;resource=device"}, AccessEffect::Allow));
+    store.addGrant(makeAccessGrant(IdentityRef{"role", Realm{}, "gunner"},
+                                   Permission{"action=stop;resource=device"}, AccessEffect::Allow));
     store.addGrant(makeAccessGrant(IdentityRef{"role", Realm{}, "commander"},
-                                   Permission{"device.**"}, AccessEffect::Allow));
+                                   Permission{"resource=device"}, AccessEffect::Allow));
 }
 
 void populateTankBUsers(DefaultUserStore& store) {
@@ -152,15 +156,15 @@ void populateTankBPolicy(PolicyStore& store) {
     store.clear();
     auto& policy = static_cast<DefaultPolicyStore&>(store);
     addRoleAcl(policy, "cadet-training", "cadet",
-               {{"device.start", AccessEffect::Allow},
-                {"device.forward", AccessEffect::Allow},
-                {"device.backward", AccessEffect::Allow},
-                {"device.left", AccessEffect::Allow},
-                {"device.right", AccessEffect::Allow},
-                {"device.stop", AccessEffect::Allow},
-                {"device.fire", AccessEffect::Deny}});
+               {{"action=start;resource=device", AccessEffect::Allow},
+                {"action=forward;resource=device", AccessEffect::Allow},
+                {"action=backward;resource=device", AccessEffect::Allow},
+                {"action=left;resource=device", AccessEffect::Allow},
+                {"action=right;resource=device", AccessEffect::Allow},
+                {"action=stop;resource=device", AccessEffect::Allow},
+                {"action=fire;resource=device", AccessEffect::Deny}});
     store.addGrant(makeAccessGrant(IdentityRef{"role", Realm{}, "instructor"},
-                                   Permission{"device.**"}, AccessEffect::Allow));
+                                   Permission{"resource=device"}, AccessEffect::Allow));
 }
 
 } // namespace bas::security

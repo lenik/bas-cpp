@@ -39,9 +39,10 @@ struct OpResult {
 };
 
 inline const std::unordered_map<std::string, std::string> kOpPermissions = {
-    {"start", "device.start"}, {"forward", "device.forward"}, {"backward", "device.backward"},
-    {"left", "device.left"},   {"right", "device.right"},     {"fire", "device.fire"},
-    {"stop", "device.stop"},
+    {"start", "action=start;resource=device"},     {"forward", "action=forward;resource=device"},
+    {"backward", "action=backward;resource=device"}, {"left", "action=left;resource=device"},
+    {"right", "action=right;resource=device"},     {"fire", "action=fire;resource=device"},
+    {"stop", "action=stop;resource=device"},
 };
 
 struct DemoAccount {

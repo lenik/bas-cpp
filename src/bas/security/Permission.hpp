@@ -7,44 +7,38 @@
 
 namespace bas::security {
 
+/** Permission: optional action and resource. Empty field means "all".
+ *
+ * Canonical text form:
+ *   action=<action>;resource=<resource>
+ * Segments are `;`-separated. Values may be quoted when they contain
+ * special characters, e.g. resource="file;special".
+ * Either or both keys may be omitted (defaults to all).
+ */
 struct Permission {
     std::string action;
     std::string resource;
 
     Permission() = default;
 
-    explicit Permission(std::string_view legacyPattern) { *this = parse(legacyPattern); }
+    explicit Permission(std::string_view text) { *this = parse(text); }
 
     bool operator==(const Permission& other) const {
         return action == other.action && resource == other.resource;
     }
 
+    /** True when both fields are empty (matches all). */
     bool empty() const { return action.empty() && resource.empty(); }
 
-    /** Pattern string used for wildcard matching (action when resource is empty). */
-    std::string pattern() const { return action; }
+    /** True when action is unrestricted (empty = all). */
+    bool actionIsAll() const { return action.empty(); }
 
-    std::string toString() const {
-        if (resource.empty()) {
-            return action;
-        }
-        return action + ':' + resource;
-    }
+    /** True when resource is unrestricted (empty = all). */
+    bool resourceIsAll() const { return resource.empty(); }
 
-    static Permission parse(std::string_view text) {
-        Permission permission;
-        if (text.empty()) {
-            return permission;
-        }
-        const auto colon = text.find(':');
-        if (colon != std::string_view::npos && colon > 0) {
-            permission.action = std::string(text.substr(0, colon));
-            permission.resource = std::string(text.substr(colon + 1));
-        } else {
-            permission.action = std::string(text);
-        }
-        return permission;
-    }
+    std::string toString() const;
+
+    static Permission parse(std::string_view text);
 };
 
 class PermissionMatcher {

@@ -59,7 +59,8 @@ static const std::vector<std::string> kAcCommands = {
 };
 
 static const std::vector<std::string> kDemoPermissions = {
-    "fab.order.view", "fab.order.modify", "fab.order.delete", "file.save", "file.*",
+    "action=view;resource=fab.order", "action=modify;resource=fab.order",
+    "action=delete;resource=fab.order", "action=save;resource=file", "resource=file",
 };
 
 static const std::vector<std::string> kRealmCompletions = {

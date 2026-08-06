@@ -29,18 +29,73 @@ static std::string sessionUser(const SecurityManager& ac, const Realm& realm) {
     return {};
 }
 
+static void test_permission_syntax() {
+    {
+        const Permission p = Permission::parse("action=file.read;resource=/tmp/a");
+        assert(p.action == "file.read");
+        assert(p.resource == "/tmp/a");
+        assert(p.toString() == "action=file.read;resource=/tmp/a");
+    }
+    {
+        const Permission p = Permission::parse(R"(action=read;resource="file;special")");
+        assert(p.action == "read");
+        assert(p.resource == "file;special");
+        assert(p.toString() == R"(action=read;resource="file;special")");
+        assert(Permission::parse(p.toString()) == p);
+    }
+    {
+        const Permission all;
+        assert(all.empty());
+        assert(all.actionIsAll());
+        assert(all.resourceIsAll());
+        assert(all.toString().empty());
+    }
+    {
+        const Permission onlyAction = Permission::parse("action=fire;resource=device");
+        assert(onlyAction.action == "fire");
+        assert(onlyAction.resource == "device");
+        assert(onlyAction.toString() == "action=fire;resource=device");
+    }
+    {
+        const Permission onlyResource = Permission::parse("resource=disk1");
+        assert(onlyResource.actionIsAll());
+        assert(onlyResource.resource == "disk1");
+        assert(onlyResource.toString() == "resource=disk1");
+    }
+    // Legacy shorthand still accepted.
+    {
+        const Permission legacy = Permission::parse("file.read");
+        assert(legacy.action == "file.read");
+        assert(legacy.resourceIsAll());
+    }
+}
+
 static void test_permission_matcher() {
     DefaultPermissionMatcher matcher;
-    assert(matcher.matches(Permission{"file.*"}, Permission{"file.read"}));
-    assert(matcher.matches(Permission{"file.*"}, Permission{"file.write"}));
-    assert(!matcher.matches(Permission{"file.*"}, Permission{"file.read.local"}));
-    assert(matcher.matches(Permission{"file.**"}, Permission{"file"}));
-    assert(matcher.matches(Permission{"file.**"}, Permission{"file.read"}));
-    assert(matcher.matches(Permission{"file.**"}, Permission{"file.read.local"}));
-    assert(matcher.specificity(Permission{"file.read"}) >
-           matcher.specificity(Permission{"file.*"}));
-    assert(matcher.specificity(Permission{"file.*"}) > matcher.specificity(Permission{"file.**"}));
-    assert(!matcher.matches(Permission{"fab.order.modify"}, Permission{"fab.order.delete"}));
+    assert(matcher.matches(Permission{"action=file.*"}, Permission{"action=file.read"}));
+    assert(matcher.matches(Permission{"action=file.*"}, Permission{"action=file.write"}));
+    assert(!matcher.matches(Permission{"action=file.*"}, Permission{"action=file.read.local"}));
+    assert(matcher.matches(Permission{"action=file.**"}, Permission{"action=file"}));
+    assert(matcher.matches(Permission{"action=file.**"}, Permission{"action=file.read"}));
+    assert(matcher.matches(Permission{"action=file.**"}, Permission{"action=file.read.local"}));
+    assert(matcher.specificity(Permission{"action=file.read"}) >
+           matcher.specificity(Permission{"action=file.*"}));
+    assert(matcher.specificity(Permission{"action=file.*"}) >
+           matcher.specificity(Permission{"action=file.**"}));
+    assert(!matcher.matches(Permission{"action=modify;resource=fab.order"},
+                            Permission{"action=delete;resource=fab.order"}));
+
+    // Empty field = all.
+    assert(matcher.matches(Permission{}, Permission{"action=anything"}));
+    assert(matcher.matches(Permission{"action=file.read"}, Permission{"action=file.read"}));
+    assert(matcher.matches(Permission{"action=file.read"},
+                           Permission{"action=file.read;resource=/a"}));
+    assert(matcher.matches(Permission{"resource=/a"},
+                           Permission{"action=file.read;resource=/a"}));
+    assert(!matcher.matches(Permission{"resource=/a"},
+                            Permission{"action=file.read;resource=/b"}));
+    assert(matcher.matches(Permission{R"(action=read;resource="file;special")"},
+                           Permission{R"(action=read;resource="file;special")"}));
 }
 
 static void test_resolve_tied_permission_specificity() {
@@ -48,16 +103,16 @@ static void test_resolve_tied_permission_specificity() {
     std::vector<ACEMatch> matches;
 
     const Realm global = Realm::GLOBAL;
-    matches.push_back(ACEMatch{ACEntry{Permission{"file.read"}, AccessEffect::Allow},
+    matches.push_back(ACEMatch{ACEntry{Permission{"action=file.read"}, AccessEffect::Allow},
                                IdentityRef{"user", global, "a"}, 20, 5});
-    matches.push_back(ACEMatch{ACEntry{Permission{"file.*"}, AccessEffect::Deny},
+    matches.push_back(ACEMatch{ACEntry{Permission{"action=file.*"}, AccessEffect::Deny},
                                IdentityRef{"user", global, "b"}, 20, 3});
     assert(resolver.resolve(matches) == AccessEffect::Deny);
 
     matches.clear();
-    matches.push_back(ACEMatch{ACEntry{Permission{"file.read"}, AccessEffect::Allow},
+    matches.push_back(ACEMatch{ACEntry{Permission{"action=file.read"}, AccessEffect::Allow},
                                IdentityRef{"user", global, "low"}, 20, 2});
-    matches.push_back(ACEMatch{ACEntry{Permission{"file.read"}, AccessEffect::Allow},
+    matches.push_back(ACEMatch{ACEntry{Permission{"action=file.read"}, AccessEffect::Allow},
                                IdentityRef{"user", global, "high"}, 20, 9});
     assert(resolver.resolve(matches) == AccessEffect::Allow);
 }
@@ -131,9 +186,9 @@ static void test_one_shot_authenticate() {
     auto acl = std::make_shared<DefaultPolicyStore>();
     const Realm deviceRealm{"device", "", "tank-a", "", ""};
     acl->addGrant(makeAccessGrant(IdentityRef{"role", deviceRealm, "operator"},
-                                  Permission{"device.forward"}, AccessEffect::Allow));
+                                  Permission{"action=forward;resource=device"}, AccessEffect::Allow));
     acl->addGrant(makeAccessGrant(IdentityRef{"role", deviceRealm, "gunner"},
-                                  Permission{"device.fire"}, AccessEffect::Allow));
+                                  Permission{"action=fire;resource=device"}, AccessEffect::Allow));
 
     auto userStore = std::make_shared<DefaultUserStore>();
     {
@@ -175,8 +230,10 @@ static void test_one_shot_authenticate() {
     credentialManager->put(std::move(aliceCred));
     opts.nameHint = "alice";
     assert(ac.login(opts));
-    assert(ac.checkPermission(Permission{"device.forward"}, opts) == AccessEffect::Allow);
-    assert(ac.checkPermission(Permission{"device.fire"}, opts) == AccessEffect::Deny);
+    assert(ac.checkPermission(Permission{"action=forward;resource=device"}, opts) ==
+           AccessEffect::Allow);
+    assert(ac.checkPermission(Permission{"action=fire;resource=device"}, opts) ==
+           AccessEffect::Deny);
 
     Credential bobCred;
     bobCred.meta.type = "password";
@@ -187,17 +244,19 @@ static void test_one_shot_authenticate() {
     const auto bobIdentities = ac.authenticate(std::move(bobCred), opts);
     assert(bobIdentities.has_value());
     const Subject bobSubject = Subject::fromIdentitySet(*bobIdentities);
-    assert(ac.checkSubjectPermission(Permission{"device.fire"}, bobSubject, opts) ==
+    assert(ac.checkSubjectPermission(Permission{"action=fire;resource=device"}, bobSubject, opts) ==
            AccessEffect::Allow);
-    assert(ac.checkSubjectPermission(Permission{"device.forward"}, bobSubject, opts) ==
-           AccessEffect::Deny);
+    assert(ac.checkSubjectPermission(Permission{"action=forward;resource=device"}, bobSubject,
+                                     opts) == AccessEffect::Deny);
 
-    assert(ac.checkPermission(Permission{"device.fire"}, opts) == AccessEffect::Deny);
+    assert(ac.checkPermission(Permission{"action=fire;resource=device"}, opts) ==
+           AccessEffect::Deny);
     assert(!ac.currentIdentities().empty());
     assert(sessionUser(ac, deviceRealm) == "alice");
 
     ac.logoutAll();
-    assert(ac.checkPermission(Permission{"device.forward"}, opts) == AccessEffect::Deny);
+    assert(ac.checkPermission(Permission{"action=forward;resource=device"}, opts) ==
+           AccessEffect::Deny);
 
     Credential bobCred2;
     bobCred2.meta.type = "password";
@@ -207,10 +266,11 @@ static void test_one_shot_authenticate() {
     const auto bobIdentities2 = ac.authenticate(std::move(bobCred2), opts);
     assert(bobIdentities2.has_value());
     const Subject bobSubject2 = Subject::fromIdentitySet(*bobIdentities2);
-    assert(ac.checkSubjectPermission(Permission{"device.fire"}, bobSubject2, opts) ==
-           AccessEffect::Allow);
+    assert(ac.checkSubjectPermission(Permission{"action=fire;resource=device"}, bobSubject2,
+                                     opts) == AccessEffect::Allow);
     ac.activate(*bobIdentities2);
-    assert(ac.checkPermission(Permission{"device.fire"}, opts) == AccessEffect::Allow);
+    assert(ac.checkPermission(Permission{"action=fire;resource=device"}, opts) ==
+           AccessEffect::Allow);
     assert(sessionUser(ac, deviceRealm) == "bob");
 
     bool hasOperator = false;
@@ -234,9 +294,11 @@ static void test_acl_and_manager() {
     auto acl = std::make_shared<DefaultPolicyStore>();
     const Realm global = Realm::GLOBAL;
     acl->addGrant(makeAccessGrant(IdentityRef{"role", global, "operator"},
-                                  Permission{"fab.order.modify"}, AccessEffect::Allow));
+                                  Permission{"action=modify;resource=fab.order"},
+                                  AccessEffect::Allow));
     acl->addGrant(makeAccessGrant(IdentityRef{"user", global, "bob"},
-                                  Permission{"fab.order.delete"}, AccessEffect::Deny));
+                                  Permission{"action=delete;resource=fab.order"},
+                                  AccessEffect::Deny));
 
     auto credentialManager = std::make_shared<DefaultCredentialManager>();
     auto registry = std::make_shared<IdentityRegistry>();
@@ -249,7 +311,8 @@ static void test_acl_and_manager() {
     SecurityManager ac(acl, credentialManager, registry, matcher, resolver);
     ac.start();
 
-    assert(ac.checkPermission(Permission{"fab.order.modify"}) == AccessEffect::Deny);
+    assert(ac.checkPermission(Permission{"action=modify;resource=fab.order"}) ==
+           AccessEffect::Deny);
 
     Identity role;
     role.type = "role";
@@ -263,8 +326,10 @@ static void test_acl_and_manager() {
     set.identities.push_back(role);
     ac.activate(set);
 
-    assert(ac.checkPermission(Permission{"fab.order.modify"}) == AccessEffect::Allow);
-    assert(ac.checkPermission(Permission{"fab.order.delete"}) == AccessEffect::Deny);
+    assert(ac.checkPermission(Permission{"action=modify;resource=fab.order"}) ==
+           AccessEffect::Allow);
+    assert(ac.checkPermission(Permission{"action=delete;resource=fab.order"}) ==
+           AccessEffect::Deny);
 }
 
 static void test_login_session_realm_switch() {
@@ -549,6 +614,7 @@ static void test_registry_user_store() {
 }
 
 int main() {
+    test_permission_syntax();
     test_permission_matcher();
     test_resolve_tied_permission_specificity();
     test_credential_from_login_form();
