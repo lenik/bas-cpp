@@ -17,6 +17,8 @@
 #include <string>
 #include <vector>
 
+class Volume;
+
 namespace bas::security {
 
 class SecurityManager : public ICommandSupport {
@@ -76,6 +78,12 @@ class SecurityManager : public ICommandSupport {
     void logoutRealm(const Realm& realm);
 
     bool login(const AccessRequestOptions& options = {});
+
+    /**
+     * Wrap @a volume with a VolumeAccessor that enforces the volume's PolicyStore
+     * against the active session (and optional one-shot elevation on the accessor).
+     */
+    std::unique_ptr<Volume> accessVolume(Volume* volume);
 
     void setCommandDefaults(Realm defaultRealm, std::string defaultSubject);
 

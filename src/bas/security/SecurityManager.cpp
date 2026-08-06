@@ -4,6 +4,7 @@
 #include "Identity.hpp"
 #include "PolicyStore.hpp"
 #include "Realm.hpp"
+#include "VolumeAccessor.hpp"
 
 #include <algorithm>
 
@@ -273,6 +274,10 @@ void SecurityManager::requirePermission(const Permission& permission,
     if (requestPermission(permission, options) != AccessEffect::Allow) {
         throw AccessDenied(permission);
     }
+}
+
+std::unique_ptr<Volume> SecurityManager::accessVolume(Volume* volume) {
+    return std::make_unique<VolumeAccessor>(volume, this);
 }
 
 AccessEffect SecurityManager::checkPermissionRaw(const Permission& permission) const {

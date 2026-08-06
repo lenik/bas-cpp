@@ -8,6 +8,7 @@
 #include "../io/ReversedReader.hpp"
 #include "../io/StringReader.hpp"
 #include "../io/U32stringReader.hpp"
+#include "../security/PublicAccess.hpp"
 #include "../util/unicode.hpp"
 
 #include <algorithm>
@@ -20,6 +21,28 @@
 #include <bas/log/uselog.h>
 
 #include <sys/stat.h>
+
+Volume::~Volume() = default;
+
+std::shared_ptr<bas::security::UserStore> Volume::getUserStore() {
+    if (m_userStore)
+        return m_userStore;
+    return bas::security::PublicAccess::userStore();
+}
+
+std::shared_ptr<bas::security::PolicyStore> Volume::getPolicyStore() {
+    if (m_policyStore)
+        return m_policyStore;
+    return bas::security::PublicAccess::policyStore();
+}
+
+void Volume::setUserStore(std::shared_ptr<bas::security::UserStore> store) {
+    m_userStore = std::move(store);
+}
+
+void Volume::setPolicyStore(std::shared_ptr<bas::security::PolicyStore> store) {
+    m_policyStore = std::move(store);
+}
 
 std::string volumeTypeToString(VolumeType t) {
     switch (t) {
