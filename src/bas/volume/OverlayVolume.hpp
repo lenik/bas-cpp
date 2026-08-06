@@ -6,39 +6,44 @@
 #include <memory>
 #include <string>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 /**
  * Stack of volumes: logical paths match; earlier layers are below, later layers override
  * for listing and reads. Mutations and writes go only to the last (top) layer.
+ *
+ * Layers are held by shared_ptr so OverlayVolume participates in their lifetime.
  */
 class OverlayVolume : public Volume {
   public:
-    explicit OverlayVolume(std::string label, std::vector<Volume*> layers);
+    explicit OverlayVolume(std::string label, std::vector<std::shared_ptr<Volume>> layers);
 
     template <typename... Ts>
     static std::unique_ptr<OverlayVolume> make(std::string label, Ts&&... vols) {
-        static_assert((std::is_convertible_v<Ts*, Volume*> && ...));
-        std::vector<Volume*> vec;
+        static_assert(
+            ((!std::is_pointer_v<std::remove_cv_t<std::remove_reference_t<Ts>>>) && ...),
+            "OverlayVolume::make expects shared_ptr or unique_ptr layers, not raw pointers");
+        std::vector<std::shared_ptr<Volume>> vec;
         vec.reserve(sizeof...(Ts));
-        (vec.push_back(vols), ...);
-        return std::make_unique<OverlayVolume>(label, std::move(vec));
+        (vec.push_back(std::shared_ptr<Volume>(std::forward<Ts>(vols))), ...);
+        return std::make_unique<OverlayVolume>(std::move(label), std::move(vec));
     }
 
-    Volume* bottomLayer();
-    Volume* topLayer();
-    const Volume* bottomLayer() const;
-    const Volume* topLayer() const;
+    std::shared_ptr<Volume> bottomLayer();
+    std::shared_ptr<Volume> topLayer();
+    std::shared_ptr<const Volume> bottomLayer() const;
+    std::shared_ptr<const Volume> topLayer() const;
 
-    const std::vector<Volume*>& getLayers() const;
-    std::vector<Volume*>& layers();
+    const std::vector<std::shared_ptr<Volume>>& getLayers() const;
+    std::vector<std::shared_ptr<Volume>>& layers();
 
-    Volume* layerExists(std::string_view path) const;
-    Volume* layerForFile(std::string_view path) const;
+    std::shared_ptr<Volume> layerExists(std::string_view path) const;
+    std::shared_ptr<Volume> layerForFile(std::string_view path) const;
 
-    void pushLayer(Volume* vol);
+    void pushLayer(std::shared_ptr<Volume> vol);
     void popLayer();
-    void removeLayer(Volume* vol);
+    void removeLayer(const std::shared_ptr<Volume>& vol);
 
     std::string getClass() const override;
     std::string getUrl() const override;
@@ -91,7 +96,7 @@ class OverlayVolume : public Volume {
     void renameFileThrowsUnchecked(std::string_view src, std::string_view dest) override;
 
   private:
-    std::vector<Volume*> m_layers;
+    std::vector<std::shared_ptr<Volume>> m_layers;
     std::string m_class = "overlay";
     std::string m_url = "overlay:";
     std::string m_deviceUrl = "none";

@@ -10,10 +10,15 @@
 #include <stdexcept>
 #include <utility>
 
-OverlayVolume::OverlayVolume(std::string label, std::vector<Volume*> layers)
-    : m_layers(std::move(layers)), m_label(label) {
+OverlayVolume::OverlayVolume(std::string label, std::vector<std::shared_ptr<Volume>> layers)
+    : m_layers(std::move(layers)), m_label(std::move(label)) {
     if (m_layers.empty()) {
         throw std::invalid_argument("OverlayVolume requires at least one volume layer");
+    }
+    for (const auto& layer : m_layers) {
+        if (!layer) {
+            throw std::invalid_argument("OverlayVolume layer cannot be nullptr");
+        }
     }
     if (!m_label.empty()) {
         user_attrs = true;
@@ -41,7 +46,7 @@ std::string OverlayVolume::getDeviceUrl() const {
         return m_deviceUrl;
     std::string out = "overlay:";
     int i = 1;
-    for (Volume* v : m_layers) {
+    for (const auto& v : m_layers) {
         if (i != 1)
             out += ",";
         out += std::to_string(i) + "=" + v->getDeviceUrl();
@@ -64,39 +69,40 @@ VolumeType OverlayVolume::getType() const {
     return type;
 }
 
-Volume* OverlayVolume::bottomLayer() { return m_layers.front(); }
-Volume* OverlayVolume::topLayer() { return m_layers.back(); }
-const Volume* OverlayVolume::bottomLayer() const { return m_layers.front(); }
-const Volume* OverlayVolume::topLayer() const { return m_layers.back(); }
+std::shared_ptr<Volume> OverlayVolume::bottomLayer() { return m_layers.front(); }
+std::shared_ptr<Volume> OverlayVolume::topLayer() { return m_layers.back(); }
+std::shared_ptr<const Volume> OverlayVolume::bottomLayer() const { return m_layers.front(); }
+std::shared_ptr<const Volume> OverlayVolume::topLayer() const { return m_layers.back(); }
 
-const std::vector<Volume*>& OverlayVolume::getLayers() const { return m_layers; }
-std::vector<Volume*>& OverlayVolume::layers() { return m_layers; }
+const std::vector<std::shared_ptr<Volume>>& OverlayVolume::getLayers() const { return m_layers; }
+std::vector<std::shared_ptr<Volume>>& OverlayVolume::layers() { return m_layers; }
 
-void OverlayVolume::pushLayer(Volume* vol) {
-    if (vol == nullptr) {
+void OverlayVolume::pushLayer(std::shared_ptr<Volume> vol) {
+    if (!vol) {
         throw std::invalid_argument("Volume cannot be nullptr");
     }
     if (std::find(m_layers.begin(), m_layers.end(), vol) != m_layers.end()) {
         throw std::invalid_argument("Volume already in overlay volume");
     }
-    m_layers.push_back(vol);
+    m_layers.push_back(std::move(vol));
 }
 
 void OverlayVolume::popLayer() {
-    if (m_layers.empty()) {
+    if (m_layers.size() <= 1) {
         throw std::invalid_argument("Overlay volume must have at least one layer");
     }
     m_layers.pop_back();
 }
 
-void OverlayVolume::removeLayer(Volume* vol) {
-    if (std::find(m_layers.begin(), m_layers.end(), vol) == m_layers.end()) {
+void OverlayVolume::removeLayer(const std::shared_ptr<Volume>& vol) {
+    auto it = std::find(m_layers.begin(), m_layers.end(), vol);
+    if (it == m_layers.end()) {
         throw std::invalid_argument("Volume not found in overlay volume");
     }
-    m_layers.erase(std::remove(m_layers.begin(), m_layers.end(), vol), m_layers.end());
-    if (m_layers.empty()) {
+    if (m_layers.size() <= 1) {
         throw std::invalid_argument("Overlay volume must have at least one layer");
     }
+    m_layers.erase(it);
 }
 
 std::string OverlayVolume::getDefaultLabel() const { return "Overlay Volume"; }
@@ -150,16 +156,16 @@ void OverlayVolume::setLabel(std::string_view label) {
 }
 
 std::optional<std::string> OverlayVolume::getLocalFile(std::string_view path) const {
-    Volume* w = layerExists(path);
-    if (w == nullptr)
+    auto w = layerExists(path);
+    if (!w)
         return std::nullopt;
     return w->getLocalFile(path);
 }
 
-Volume* OverlayVolume::layerExists(std::string_view _path) const {
+std::shared_ptr<Volume> OverlayVolume::layerExists(std::string_view _path) const {
     std::string path(_path);
     for (size_t i = m_layers.size(); i > 0; --i) {
-        Volume* v = m_layers[i - 1];
+        const auto& v = m_layers[i - 1];
         bool exists = v->exists(path);
         // std::cout << "layerExists: " << v->getSource() << " " << path << " exists: " << exists <<
         // std::endl;
@@ -170,10 +176,10 @@ Volume* OverlayVolume::layerExists(std::string_view _path) const {
     return nullptr;
 }
 
-Volume* OverlayVolume::layerForFile(std::string_view _path) const {
+std::shared_ptr<Volume> OverlayVolume::layerForFile(std::string_view _path) const {
     std::string path(_path);
     for (size_t i = m_layers.size(); i > 0; --i) {
-        Volume* v = m_layers[i - 1];
+        const auto& v = m_layers[i - 1];
         if (v->isFile(path)) {
             return v;
         }
@@ -191,17 +197,17 @@ bool OverlayVolume::exists(std::string_view path) const {
 }
 
 bool OverlayVolume::isFile(std::string_view path) const {
-    Volume* w = layerExists(path);
+    auto w = layerExists(path);
     return w && w->isFile(path);
 }
 
 bool OverlayVolume::isDirectory(std::string_view path) const {
-    Volume* w = layerExists(path);
+    auto w = layerExists(path);
     return w && w->isDirectory(path);
 }
 
 bool OverlayVolume::stat(std::string_view path, DirNode* status) const {
-    Volume* w = layerExists(path);
+    auto w = layerExists(path);
     if (!w) {
         return false;
     }
@@ -239,7 +245,7 @@ void OverlayVolume::readDir_inplace(DirNode& context, std::string_view path, boo
 }
 
 std::unique_ptr<InputStream> OverlayVolume::newInputStream(std::string_view path) {
-    Volume* v = layerForFile(path);
+    auto v = layerForFile(path);
     if (!v) {
         throw IOException("newInputStream", path, "Path is not a readable file");
     }
@@ -247,12 +253,11 @@ std::unique_ptr<InputStream> OverlayVolume::newInputStream(std::string_view path
 }
 
 std::unique_ptr<OutputStream> OverlayVolume::newOutputStream(std::string_view path, bool append) {
-    Volume* top = m_layers.back();
-    return top->newOutputStream(path, append);
+    return m_layers.back()->newOutputStream(path, append);
 }
 
 std::unique_ptr<RandomInputStream> OverlayVolume::newRandomInputStream(std::string_view path) {
-    Volume* v = layerForFile(path);
+    auto v = layerForFile(path);
     if (!v) {
         throw IOException("newRandomInputStream", path, "Path is not a readable file");
     }
@@ -260,18 +265,16 @@ std::unique_ptr<RandomInputStream> OverlayVolume::newRandomInputStream(std::stri
 }
 
 std::string OverlayVolume::getTempDir() {
-    Volume* top = m_layers.back();
-    return top->getTempDir();
+    return m_layers.back()->getTempDir();
 }
 
 std::string OverlayVolume::createTempFile(std::string_view prefix, std::string_view suffix) {
-    Volume* top = m_layers.back();
-    return top->createTempFile(prefix, suffix);
+    return m_layers.back()->createTempFile(prefix, suffix);
 }
 
 std::vector<uint8_t> OverlayVolume::readFileUnchecked(std::string_view path, int64_t off,
                                                       size_t len) {
-    Volume* v = layerForFile(path);
+    auto v = layerForFile(path);
     if (!v) {
         throw IOException("readFileUnchecked", path, "Path is not a readable file");
     }
@@ -279,37 +282,32 @@ std::vector<uint8_t> OverlayVolume::readFileUnchecked(std::string_view path, int
 }
 
 void OverlayVolume::writeFileUnchecked(std::string_view path, const std::vector<uint8_t>& data) {
-    Volume* top = m_layers.back();
-    top->writeFile(path, data);
+    m_layers.back()->writeFile(path, data);
 }
 
 void OverlayVolume::createDirectoryThrowsUnchecked(std::string_view path) {
-    Volume* top = m_layers.back();
-    top->createDirectoryThrows(path);
+    m_layers.back()->createDirectoryThrows(path);
 }
 
 void OverlayVolume::removeDirectoryThrowsUnchecked(std::string_view path) {
-    Volume* top = m_layers.back();
-    top->removeDirectoryThrows(path);
+    m_layers.back()->removeDirectoryThrows(path);
 }
 
 void OverlayVolume::removeFileThrowsUnchecked(std::string_view path) {
-    Volume* top = m_layers.back();
-    top->removeFileThrows(path);
+    m_layers.back()->removeFileThrows(path);
 }
 
 void OverlayVolume::copyFileThrowsUnchecked(std::string_view src, std::string_view dest) {
-    Volume* srcLayer = layerForFile(src);
+    auto srcLayer = layerForFile(src);
     if (!srcLayer) {
         throw IOException("copyFile", src, "Source file does not exist");
     }
     auto data = srcLayer->readFile(src);
-    Volume* top = m_layers.back();
-    top->writeFile(dest, data);
+    m_layers.back()->writeFile(dest, data);
 }
 
 void OverlayVolume::moveFileThrowsUnchecked(std::string_view src, std::string_view dest) {
-    Volume* top = m_layers.back();
+    auto& top = m_layers.back();
     if (!top->exists(src) || !top->isFile(src)) {
         throw IOException("moveFile", src, "Source must exist on the top layer");
     }
@@ -317,7 +315,7 @@ void OverlayVolume::moveFileThrowsUnchecked(std::string_view src, std::string_vi
 }
 
 void OverlayVolume::renameFileThrowsUnchecked(std::string_view src, std::string_view dest) {
-    Volume* top = m_layers.back();
+    auto& top = m_layers.back();
     if (!top->exists(src)) {
         throw IOException("rename", src, "Source must exist on the top layer");
     }

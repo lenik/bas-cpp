@@ -15,7 +15,7 @@
 extern "C" {
 #endif
 
-extern std::unique_ptr<Volume> __CONCAT_EVAL(ASSETS_NAME, _assets);
+extern std::shared_ptr<Volume> __CONCAT_EVAL(ASSETS_NAME, _assets);
 
 #ifdef __cplusplus
 }

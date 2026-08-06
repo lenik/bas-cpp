@@ -15,7 +15,7 @@ namespace {
 
 struct BasCppAssetsRegistrar {
     BasCppAssetsRegistrar() {
-        AssetsRegistry::pushLayer(bas_cpp_assets.get());
+        AssetsRegistry::pushLayer(bas_cpp_assets);
     }
 } bas_cpp_assets_registrar;
 

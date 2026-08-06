@@ -40,7 +40,7 @@ void OverlayUtils::diagnose_path(const std::string& path) {
     std::string normalized = m_overlay->normalize(path);
     std::cout << "Normalized Path: " << normalized << std::endl;
 
-    Volume* w = m_overlay->layerExists(path);
+    auto w = m_overlay->layerExists(path);
     if (w) {
         std::cout << "In Layer: " << w->getUrl() << " (" << w->getDeviceUrl() << ")" << std::endl;
         bool isDir = w->isDirectory(normalized);

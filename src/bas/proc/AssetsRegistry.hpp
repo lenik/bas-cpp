@@ -8,7 +8,7 @@
 class AssetsRegistry {
   public:
     static std::unique_ptr<OverlayVolume>& instance();
-    static void pushLayer(Volume* vol);
+    static void pushLayer(std::shared_ptr<Volume> vol);
 };
 
 #endif // ASSETSREGISTRY_HPP

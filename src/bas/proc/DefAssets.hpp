@@ -4,6 +4,7 @@
 
 #include "../volume/dev/MemDevice.hpp"
 #include "../volume/zip/ZipVolume.hpp"
+#include "../volume/Volume.hpp"
 
 #include <memory>
 
@@ -14,8 +15,8 @@
 #define define_zip_assets(name, sym) \
     extern const unsigned char __CONCAT_EVAL(sym, _start)[]; \
     extern const unsigned char __CONCAT_EVAL(sym, _end)[]; \
-    std::unique_ptr<ZipVolume> __CONCAT_EVAL(name, _assets) = \
-        std::make_unique<ZipVolume>( \
+    std::shared_ptr<Volume> __CONCAT_EVAL(name, _assets) = \
+        std::make_shared<ZipVolume>( \
             std::make_shared<MemDevice>(__CONCAT_EVAL(sym, _start), \
                                          static_cast<size_t>(__CONCAT_EVAL(sym, _end) - __CONCAT_EVAL(sym, _start)), \
                                          #name))

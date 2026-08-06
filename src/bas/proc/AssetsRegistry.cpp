@@ -1,6 +1,7 @@
 #include "AssetsRegistry.hpp"
 
 #include <stdexcept>
+#include <utility>
 #include <vector>
 
 std::unique_ptr<OverlayVolume>& AssetsRegistry::instance() {
@@ -8,14 +9,14 @@ std::unique_ptr<OverlayVolume>& AssetsRegistry::instance() {
     return instance;
 }
 
-void AssetsRegistry::pushLayer(Volume* vol) {
-    if (vol == nullptr) {
+void AssetsRegistry::pushLayer(std::shared_ptr<Volume> vol) {
+    if (!vol) {
         throw std::invalid_argument("Volume cannot be nullptr");
     }
     auto& inst = instance();
     if (!inst) {
-        inst = std::make_unique<OverlayVolume>("", std::vector<Volume*>{vol});
+        inst = std::make_unique<OverlayVolume>("", std::vector<std::shared_ptr<Volume>>{std::move(vol)});
     } else {
-        inst->pushLayer(vol);
+        inst->pushLayer(std::move(vol));
     }
 }
