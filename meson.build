@@ -36,7 +36,7 @@ cpp_nowarn = []
 #cpp_nowarn += cpp.get_supported_arguments(['-w', '/w'])
 
 if fs.is_dir('subprojects/bas-c')
-    subproject('bas-c', default_options: ['icu-config:icu_major=auto'])
+    subproject('bas-c')
 endif
 
 # libbas-c
