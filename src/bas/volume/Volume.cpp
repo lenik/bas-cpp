@@ -68,14 +68,20 @@ std::string volumeTypeToString(VolumeType t) {
 }
 
 std::unique_ptr<VolumeFile> Volume::rcFile(std::string_view name) const {
-    auto rcDir = resolve("/.rc");
-    auto vf = rcDir->resolve(name);
-    return vf;
+    // /.rc is optional metadata. Build the path directly — do not probe via
+    // VolumeFile::resolve(), which would call isFile("/.rc") and can throw on
+    // permission-denied mounts (e.g. /boot/efi).
+    std::string path;
+    path.reserve(5 + name.size());
+    path.append("/.rc/");
+    path.append(name);
+    return std::make_unique<VolumeFile>(VolumeFile::borrowVolume(const_cast<Volume*>(this)),
+                                        std::move(path));
 }
 
 std::string Volume::readRCFile(std::string_view name) const {
-    auto vf = rcFile(name);
     try {
+        auto vf = rcFile(name);
         auto content = vf->readFileString();
         // get the first line
         std::string line = content.substr(0, content.find('\n'));
@@ -90,11 +96,11 @@ std::string Volume::readRCFile(std::string_view name) const {
 }
 
 std::string Volume::readRCFile(std::string_view name, std::string default_data) const {
-    auto vf = rcFile(name);
-    if (!vf->exists() || !vf->isFile()) {
-        return default_data;
-    }
     try {
+        auto vf = rcFile(name);
+        if (!vf->exists() || !vf->isFile()) {
+            return default_data;
+        }
         return readRCFile(name);
     } catch (...) {
         return default_data;
@@ -103,11 +109,11 @@ std::string Volume::readRCFile(std::string_view name, std::string default_data) 
 
 std::optional<std::string> Volume::readRCFileOpt(std::string_view name,
                                                  std::optional<std::string> default_data) const {
-    auto vf = rcFile(name);
-    if (!vf->exists() || !vf->isFile()) {
-        return default_data;
-    }
     try {
+        auto vf = rcFile(name);
+        if (!vf->exists() || !vf->isFile()) {
+            return default_data;
+        }
         return readRCFile(name);
     } catch (...) {
         return default_data;
@@ -115,6 +121,7 @@ std::optional<std::string> Volume::readRCFileOpt(std::string_view name,
 }
 
 bool Volume::writeRCFile(std::string_view name, std::string_view data) {
+    // Create /.rc only when an explicit write is requested.
     std::unique_ptr<VolumeFile> rcDir = resolve("/.rc");
     try {
         if (!rcDir->exists())

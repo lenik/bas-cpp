@@ -110,13 +110,13 @@ class Volume {
         return std::nullopt;
     }
 
-    // default implementation: by file .rc/UUID
+    // default implementation: optional file .rc/UUID (created only on write)
     virtual std::string getUUID() const;
 
-    // default implementation: by file .rc/SERIAL
+    // default implementation: optional file .rc/SERIAL (created only on write)
     virtual std::string getSerial() const;
 
-    // default implementation: by file .rc/LABEL
+    // default implementation: optional file .rc/LABEL (created only on write)
     virtual std::string getLabel() const;
     virtual void setLabel(std::string_view label);
 

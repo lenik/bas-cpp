@@ -260,17 +260,23 @@ std::string LocalVolume::resolveLocal(std::string_view _path) const {
 
 bool LocalVolume::exists(std::string_view path) const {
     std::string localPath = resolveLocal(path);
-    return fs::exists(localPath);
+    std::error_code ec;
+    bool ok = fs::exists(localPath, ec);
+    return !ec && ok;
 }
 
 bool LocalVolume::isFile(std::string_view _path) const {
     std::string localPath = resolveLocal(_path);
-    return fs::is_regular_file(localPath);
+    std::error_code ec;
+    bool ok = fs::is_regular_file(localPath, ec);
+    return !ec && ok;
 }
 
 bool LocalVolume::isDirectory(std::string_view _path) const {
     std::string localPath = resolveLocal(_path);
-    return fs::is_directory(localPath);
+    std::error_code ec;
+    bool ok = fs::is_directory(localPath, ec);
+    return !ec && ok;
 }
 
 bool LocalVolume::stat(std::string_view _path, DirNode* st) const {
