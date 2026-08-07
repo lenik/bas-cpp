@@ -53,6 +53,7 @@ void printUsage(std::ostream& out) {
              "    -z, --root           root path within filesystem (mountinfo field)\n"
              "  Other:\n"
              "    -s, --symbols        include overlay filesystems in the scan (bind mounts always on)\n"
+             "        --loops          include loopback mounts (excluded by default)\n"
              "    -h, --help           show this help and exit\n"
              "    -w, --writable       list only writable mounts; implies -r\n"
              "    -v, --verbose        more log detail; default columns include logical type\n"
@@ -140,6 +141,7 @@ int main(int argc, char** argv) {
     bool excludeReadOnly = false;
     bool writableOpt = false;
     bool includeSymbols = false;
+    bool includeLoops = false;
     bool anyFieldOption = false;
     bool allOpt = false;
     bool compactOpt = false;
@@ -161,6 +163,7 @@ int main(int argc, char** argv) {
         {"superopts", no_argument, nullptr, 'O'},
         {"root", no_argument, nullptr, 'z'},
         {"symbols", no_argument, nullptr, 's'},
+        {"loops", no_argument, nullptr, 1000},
         {"writable", no_argument, nullptr, 'w'},
         {"verbose", no_argument, nullptr, 'v'},
         {"quiet", no_argument, nullptr, 'q'},
@@ -227,6 +230,9 @@ int main(int argc, char** argv) {
         case 's':
             includeSymbols = true;
             break;
+        case 1000:
+            includeLoops = true;
+            break;
         case 'w':
             excludeReadOnly = true;
             writableOpt = true;
@@ -287,7 +293,7 @@ int main(int argc, char** argv) {
     }
 
     VolumeManager vm;
-    vm.addLocalVolumes(includeSymbols || (fields & FLogical) != 0, excludeReadOnly);
+    vm.addLocalVolumes(includeSymbols || (fields & FLogical) != 0, excludeReadOnly, !includeLoops);
 
     const auto& vols = vm.all();
 
@@ -314,8 +320,8 @@ int main(int argc, char** argv) {
         }
     }
 
-    for (const auto& uptr : vols) {
-        auto* local = dynamic_cast<LocalVolume*>(uptr.get());
+    for (const auto& vol : vols) {
+        auto* local = dynamic_cast<LocalVolume*>(vol.get());
         if (!local) {
             continue;
         }
@@ -338,8 +344,8 @@ int main(int argc, char** argv) {
     }
     std::cout << '\n';
 
-    for (const auto& uptr : vols) {
-        auto* local = dynamic_cast<LocalVolume*>(uptr.get());
+    for (const auto& vol : vols) {
+        auto* local = dynamic_cast<LocalVolume*>(vol.get());
         if (!local) {
             continue;
         }

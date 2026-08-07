@@ -20,7 +20,10 @@ VolumeManager::VolumeManager() {}
 
 VolumeManager::~VolumeManager() {}
 
-bool VolumeManager::addVolume(std::unique_ptr<Volume> volume) {
+bool VolumeManager::addVolume(std::shared_ptr<Volume> volume) {
+    if (!volume) {
+        return false;
+    }
     for (const auto& transformer : m_transformers) {
         volume = transformer(std::move(volume));
         if (!volume) {
@@ -41,22 +44,22 @@ void VolumeManager::clear() { m_volumes.clear(); }
 
 size_t VolumeManager::getVolumeCount() const { return m_volumes.size(); }
 
-Volume* VolumeManager::getVolume(size_t index) const { return m_volumes[index].get(); }
+std::shared_ptr<Volume> VolumeManager::getVolume(size_t index) const { return m_volumes[index]; }
 
-Volume* VolumeManager::getDefaultVolume() const {
+std::shared_ptr<Volume> VolumeManager::getDefaultVolume() const {
     if (m_volumes.empty()) {
         return nullptr;
     }
-    return m_volumes[0].get();
+    return m_volumes[0];
 }
 
-const std::vector<std::unique_ptr<Volume>>& VolumeManager::all() const { return m_volumes; }
+const std::vector<std::shared_ptr<Volume>>& VolumeManager::all() const { return m_volumes; }
 
-std::vector<Volume*> VolumeManager::type(std::string_view type) const {
-    std::vector<Volume*> matches;
+std::vector<std::shared_ptr<Volume>> VolumeManager::type(std::string_view type) const {
+    std::vector<std::shared_ptr<Volume>> matches;
     for (const auto& volume : m_volumes) {
         if (volume && volume->getClass() == type) {
-            matches.push_back(volume.get());
+            matches.push_back(volume);
         }
     }
     return matches;
@@ -118,7 +121,7 @@ std::optional<VolumeFile> VolumeManager::resolveUri(std::string_view uri) const 
         return std::nullopt;
     }
 
-    return VolumeFile(VolumeFile::borrowVolume(volume.get()), normalizedPath);
+    return VolumeFile(volume, normalizedPath);
 }
 
 bool VolumeManager::addFat32Volume(std::string_view imagePath) {
@@ -127,7 +130,7 @@ bool VolumeManager::addFat32Volume(std::string_view imagePath) {
     }
     auto device = BlockDevice::file(std::string(imagePath));
     Fat32Options options;
-    return addVolume(std::make_unique<Fat32Volume>(std::move(device), options));
+    return addVolume(std::make_shared<Fat32Volume>(std::move(device), options));
 }
 
 bool VolumeManager::addExt4Volume(std::string_view imagePath) {
@@ -136,10 +139,10 @@ bool VolumeManager::addExt4Volume(std::string_view imagePath) {
     }
     auto device = BlockDevice::file(std::string(imagePath));
     Ext4Options options;
-    return addVolume(std::make_unique<Ext4Volume>(std::move(device), options));
+    return addVolume(std::make_shared<Ext4Volume>(std::move(device), options));
 }
 
-void VolumeManager::addLocalVolumes(bool includeSymbols, bool excludeReadOnly) {
+void VolumeManager::addLocalVolumes(bool includeSymbols, bool excludeReadOnly, bool excludeLoops) {
 #if defined(__linux__)
     std::ifstream mountinfo("/proc/self/mountinfo");
     if (!mountinfo.is_open()) {
@@ -176,6 +179,12 @@ void VolumeManager::addLocalVolumes(bool includeSymbols, bool excludeReadOnly) {
         if (mountInfo.device.find("/") == std::string::npos)
             continue;
 
+        if (excludeLoops) {
+            // Linux loopback block devices use major 7; path is typically /dev/loopN.
+            if (mountInfo.major == 7 || mountInfo.device.rfind("/dev/loop", 0) == 0)
+                continue;
+        }
+
         if (fsType == "cgroup"      //
             || fsType == "cgroup2"  //
             || fsType == "devpts"   //
@@ -208,15 +217,18 @@ void VolumeManager::addLocalVolumes(bool includeSymbols, bool excludeReadOnly) {
         seenMounts.insert(mountPoint);
 
         try {
-            addVolume(std::make_unique<LocalVolume>(mountPoint));
+            addVolume(std::make_shared<LocalVolume>(mountPoint));
         } catch (const std::exception& e) {
             logwarn_fmt("addLocalVolumes: failed for mount {}: {}", mountPoint.c_str(), e.what());
         }
     }
 #else
+    (void)includeSymbols;
+    (void)excludeReadOnly;
+    (void)excludeLoops;
     // Fallback: at least expose root filesystem
     try {
-        addVolume(std::make_unique<LocalVolume>("/"));
+        addVolume(std::make_shared<LocalVolume>("/"));
     } catch (...) {
     }
 #endif
