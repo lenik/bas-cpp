@@ -1,3 +1,27 @@
+bas-cpp (1.0.4) testing; urgency=medium
+
+  * Volume ownership and identity:
+    - OverlayVolume and VolumeManager hold layers/volumes as shared_ptr so
+      callers share lifetime instead of borrowing raw pointers.
+    - AssetsRegistry / embedded zip assets register layers by shared_ptr.
+    - Soft-config UUID/label: Volume exposes getUuid/setUuid and getLabel/
+      setLabel with virtual readUuid/writeUuid and readLabel/writeLabel
+      hooks; drop getSerial and VolumeFile::borrowVolume.
+    - LocalVolume reads filesystem UUID/label from mount metadata; OverlayVolume
+      and VolumeAccessor follow the new read/write hooks.
+  * Block device filesystem probing:
+    - Add fsmagic: magic-byte detection for popular FS types (ext2/3/4, xfs,
+      btrfs, f2fs, jfs, reiserfs, nilfs2, erofs, squashfs, minix, fat12/16/32,
+      exfat, ntfs, hfs/hfs+, apfs, iso9660, udf, zfs, LUKS, LVM2, md raid, swap).
+    - Expand FsInfo with type/usage, uuid/uuidSub/label/serial/version/creator,
+      sector/block/cluster sizes, size/free/used, clean/detected/magicOffset.
+    - BlockDevice::loadInfo/fsInfo/uuid/label/capacity/available cache probe
+      results; path-backed devices fall back to blkid for UUID.
+  * Robustness: treat /.rc soft-config as optional; LocalVolume status probes
+    use error_code so permission-denied mounts do not throw.
+
+ -- Lenik (谢继雷) <lenik@bodz.net>  Sat, 08 Aug 2026 21:06:00 +0900
+
 bas-cpp (1.0.3) testing; urgency=medium
 
   * bas-cpp-static.pc: link libbas-cpp.a by path; chain bas-c-static and icu-uc

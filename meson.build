@@ -1,7 +1,7 @@
 project(
     'bas-cpp',
     'cpp',
-    version: '1.0.3',
+    version: '1.0.4',
     default_options: [
         #        'warning_level=0',
         'cpp_std=c++17',
