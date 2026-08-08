@@ -25,15 +25,6 @@ struct VolumeFile {
     std::string m_path;
 
   public:
-    struct BorrowedVolumeDeleter {
-        void operator()(Volume*) const noexcept {}
-    };
-
-    /** Non-owning alias for process-lifetime-stable Volume instances (e.g. Volume::resolve). */
-    static std::shared_ptr<Volume> borrowVolume(Volume* volume) {
-        return volume ? std::shared_ptr<Volume>(volume, BorrowedVolumeDeleter{}) : nullptr;
-    }
-
     VolumeFile(std::shared_ptr<Volume> volume, std::string path);
     VolumeFile(const VolumeFile& other) = default;
     VolumeFile(VolumeFile&& other) noexcept = default;

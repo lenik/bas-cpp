@@ -1,5 +1,6 @@
 #include "Volume.hpp"
 
+#include "BlockDevice.hpp"
 #include "VolumeExceptions.hpp"
 #include "VolumeFile.hpp"
 
@@ -67,142 +68,54 @@ std::string volumeTypeToString(VolumeType t) {
     }
 }
 
-std::unique_ptr<VolumeFile> Volume::rcFile(std::string_view name) const {
-    // /.rc is optional metadata. Build the path directly — do not probe via
-    // VolumeFile::resolve(), which would call isFile("/.rc") and can throw on
-    // permission-denied mounts (e.g. /boot/efi).
-    std::string path;
-    path.reserve(5 + name.size());
-    path.append("/.rc/");
-    path.append(name);
-    return std::make_unique<VolumeFile>(VolumeFile::borrowVolume(const_cast<Volume*>(this)),
-                                        std::move(path));
-}
-
-std::string Volume::readRCFile(std::string_view name) const {
-    try {
-        auto vf = rcFile(name);
-        auto content = vf->readFileString();
-        // get the first line
-        std::string line = content.substr(0, content.find('\n'));
-        // left trim (spaces and tabs)
-        line = line.erase(0, line.find_first_not_of(' '));
-        // right trim
-        line = line.erase(line.find_last_not_of(' ') + 1);
-        return line;
-    } catch (...) {
-        return getDefaultLabel();
-    }
-}
-
-std::string Volume::readRCFile(std::string_view name, std::string default_data) const {
-    try {
-        auto vf = rcFile(name);
-        if (!vf->exists() || !vf->isFile()) {
-            return default_data;
-        }
-        return readRCFile(name);
-    } catch (...) {
-        return default_data;
-    }
-}
-
-std::optional<std::string> Volume::readRCFileOpt(std::string_view name,
-                                                 std::optional<std::string> default_data) const {
-    try {
-        auto vf = rcFile(name);
-        if (!vf->exists() || !vf->isFile()) {
-            return default_data;
-        }
-        return readRCFile(name);
-    } catch (...) {
-        return default_data;
-    }
-}
-
-bool Volume::writeRCFile(std::string_view name, std::string_view data) {
-    // Create /.rc only when an explicit write is requested.
-    std::unique_ptr<VolumeFile> rcDir = resolve("/.rc");
-    try {
-        if (!rcDir->exists())
-            rcDir->createDirectories();
-        rcDir->resolve(name)->writeFileString(data);
-        return true;
-    } catch (...) {
-        return false;
-    }
-}
-
 std::string Volume::getTypeString() const { return volumeTypeToString(getType()); }
 
-std::string Volume::getUUID() const {
-    if (c_uuid_valid)
-        return c_uuid;
-    auto rc = readRCFileOpt(m_uuidFile);
-    if (!rc.has_value()) {
+std::string Volume::getDeviceUuid() {
+    try {
+        auto dev = BlockDevice::load(getDeviceUrl());
+        return dev->uuid();
+    } catch (const VolumeException& e) {
+        logerror_fmt("Failed to get block device: {}", e.what());
         return "";
     }
-    c_uuid = *rc;
+}
+
+std::string Volume::getUuid() {
+    if (c_uuid_valid)
+        return c_uuid;
+    c_uuid = readUuid();
     c_uuid_valid = true;
     return c_uuid;
 }
 
-void Volume::setUUIDForced(std::string_view u) {
-    writeRCFile(m_uuidFile, u);
-    c_uuid = std::string(u);
-    c_uuid_valid = true;
-}
-
-std::string Volume::getSerial() const {
-    if (c_serial_valid)
-        return c_serial;
-    auto rc = readRCFileOpt(m_serialFile);
-    if (!rc.has_value()) {
-        return "";
+void Volume::setUuid(std::string_view s) {
+    if (writeUuid(s)) {
+        c_uuid = s;
+        c_uuid_valid = true;
     }
-    c_serial = *rc;
-    c_serial_valid = true;
-    return c_serial;
+    else {
+        logerror_fmt("Failed to change volume uuid");
+    }
 }
 
-void Volume::setSerialForced(std::string_view s) {
-    writeRCFile(m_serialFile, s);
-    c_serial = std::string(s);
-    c_serial_valid = true;
-}
-
-std::string Volume::getLabel() const {
+std::string Volume::getLabel() {
     if (c_label_valid)
         return c_label;
-    auto rc = readRCFileOpt(m_labelFile);
-    if (!rc.has_value()) {
-        return this->getDefaultLabel();
+    c_label = readLabel();
+    if (c_label.empty()) {
+        c_label = getDefaultLabel();
     }
-    c_label = *rc;
     c_label_valid = true;
     return c_label;
 }
 
 void Volume::setLabel(std::string_view label) {
-    if (writeRCFile(m_labelFile, label)) {
+    if (writeLabel(label)) {
         c_label = label;
         c_label_valid = true;
     } else {
-        logerror_fmt("Failed to write to LABEL file");
+        logerror_fmt("Failed to change volume label");
     }
-}
-
-std::unique_ptr<VolumeFile> Volume::getRootFile() {
-    return std::make_unique<VolumeFile>(VolumeFile::borrowVolume(this), std::string("/"));
-}
-
-std::unique_ptr<VolumeFile> Volume::resolve(std::string_view path) {
-    return std::make_unique<VolumeFile>(VolumeFile::borrowVolume(this), std::string(path));
-}
-
-std::unique_ptr<const VolumeFile> Volume::resolve(std::string_view path) const {
-    return std::make_unique<const VolumeFile>(VolumeFile::borrowVolume(const_cast<Volume*>(this)),
-                                              std::string(path));
 }
 
 std::string Volume::normalizeArg(std::string_view path, std::optional<std::string> fallback) const {
@@ -943,4 +856,49 @@ void Volume::writeLines(std::string_view path, const std::vector<std::string>& l
     }
 
     writeFileString(path, content.str(), encoding);
+}
+
+std::optional<std::string> Volume::getSoftConfigPath(SoftConfigUse use) {
+    switch (use) {
+        case SoftConfigUse::UUID:
+            return "/.rc/UUID";
+        case SoftConfigUse::LABEL:
+            return "/.rc/LABEL";
+        default:
+            return std::nullopt;
+    }
+}
+
+std::string Volume::readUuid() {
+    auto path = getSoftConfigPath(SoftConfigUse::UUID);
+    if (!path) {
+        return "";
+    }
+    return readFileUTF8(*path);
+}
+
+bool Volume::writeUuid(std::string_view uuid) {
+    auto path = getSoftConfigPath(SoftConfigUse::UUID);
+    if (!path) {
+        return false;
+    }
+    writeFileUTF8(*path, uuid);
+    return true;
+}
+
+std::string Volume::readLabel() {
+    auto path = getSoftConfigPath(SoftConfigUse::LABEL);
+    if (!path) {
+        return "";
+    }
+    return readFileUTF8(*path);
+}
+
+bool Volume::writeLabel(std::string_view label) {
+    auto path = getSoftConfigPath(SoftConfigUse::LABEL);
+    if (!path) {
+        return false;
+    }
+    writeFileUTF8(*path, label);
+    return true;
 }

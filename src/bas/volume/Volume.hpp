@@ -37,6 +37,11 @@ enum class VolumeType {
     OTHER,
 };
 
+enum class SoftConfigUse {
+    UUID,
+    LABEL,
+};
+
 std::string volumeTypeToString(VolumeType t);
 
 struct ListOptions {
@@ -110,21 +115,13 @@ class Volume {
         return std::nullopt;
     }
 
-    // default implementation: optional file .rc/UUID (created only on write)
-    virtual std::string getUUID() const;
+    std::string getDeviceUuid();
+    
+    std::string getUuid();
+    std::string getLabel();
 
-    // default implementation: optional file .rc/SERIAL (created only on write)
-    virtual std::string getSerial() const;
-
-    // default implementation: optional file .rc/LABEL (created only on write)
-    virtual std::string getLabel() const;
-    virtual void setLabel(std::string_view label);
-
-    std::unique_ptr<const VolumeFile> getRootFile() const;
-    std::unique_ptr<VolumeFile> getRootFile();
-
-    std::unique_ptr<VolumeFile> resolve(std::string_view path);
-    std::unique_ptr<const VolumeFile> resolve(std::string_view path) const;
+    void setUuid(std::string_view uuid);
+    void setLabel(std::string_view label);
 
     // check if path is valid, returns normalized form.
     // empty means not specified, returns empty.
@@ -286,8 +283,12 @@ class Volume {
     friend class OverlayVolume;
     friend class AccessControlledVolume;
 
-    virtual void setUUIDForced(std::string_view u);
-    virtual void setSerialForced(std::string_view s);
+    virtual std::string readUuid();
+    virtual std::string readLabel();
+    virtual bool writeUuid(std::string_view uuid);
+    virtual bool writeLabel(std::string_view label);
+
+    virtual std::optional<std::string> getSoftConfigPath(SoftConfigUse use); // ROM
 
     // unchecked operations: no exception handling, no return value
 
@@ -310,25 +311,16 @@ class Volume {
     virtual void renameFileThrowsUnchecked(std::string_view src, std::string_view dest) = 0;
 
   private:
-    std::unique_ptr<VolumeFile> rcFile(std::string_view name) const;
-    std::string readRCFile(std::string_view name) const;
-    std::string readRCFile(std::string_view name, std::string default_data) const;
-    std::optional<std::string>
-    readRCFileOpt(std::string_view name,
-                  std::optional<std::string> default_data = std::nullopt) const;
-    bool writeRCFile(std::string_view name, std::string_view data);
-
-  private:
     __unconst std::string c_uuid;
-    __unconst std::string c_serial;
     __unconst std::string c_label;
     __unconst bool c_uuid_valid = false;
-    __unconst bool c_serial_valid = false;
     __unconst bool c_label_valid = false;
 
     int m_priority = 0;
+
+    // static constexpr std::string_view ROOT_PATH = "/";
+
     std::string m_uuidFile = "UUID";
-    std::string m_serialFile = "SERIAL";
     std::string m_labelFile = "LABEL";
 
     std::shared_ptr<bas::security::UserStore> m_userStore;

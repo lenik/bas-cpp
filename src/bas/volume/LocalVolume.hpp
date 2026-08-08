@@ -22,7 +22,7 @@ class LocalVolume : public Volume {
   private:
     std::string m_rootPath;
     std::string m_label;
-    mutable std::string m_cachedUUID;
+    mutable std::string m_cachedUuid;
     mutable std::string m_cachedLabel;
     mutable std::optional<std::string> m_mountPoint;
     mutable std::optional<std::string> m_device;
@@ -36,7 +36,7 @@ class LocalVolume : public Volume {
 #if defined(__linux__)
     bool isMountPoint(const std::string& path) const;
     std::string getMountDevice(const std::string& mountPoint) const;
-    std::string getFilesystemUUID(const std::string& device) const;
+    std::string getFilesystemUuid(const std::string& device) const;
     std::string getFilesystemLabel(const MountInfo& proc) const;
     void cacheMountInfo() const;
 #elif defined(WINDOWS)
@@ -66,10 +66,11 @@ class LocalVolume : public Volume {
     std::optional<std::string> getLocalFile(std::string_view path) const override {
         return resolveLocal(path);
     }
-    std::string getUUID() const override;
-    std::string getSerial() const override;
-    std::string getLabel() const override;
-    void setLabel(std::string_view label) override;
+    std::string readUuid() override;
+    std::string readLabel() override;
+    bool writeUuid(std::string_view uuid) override;
+    bool writeLabel(std::string_view label) override;
+    
     const std::optional<std::string>& getMountPoint() const;
     const std::optional<std::string>& getDevice() const;
 

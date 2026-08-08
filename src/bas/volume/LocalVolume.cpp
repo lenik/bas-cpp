@@ -168,29 +168,35 @@ VolumeType LocalVolume::getType() const {
     return m_type;
 }
 
+std::string LocalVolume::readUuid() {
+    // get device uuid from e2label/ntfslabel/etc.
+    cacheMountInfo();
+    if (!m_cachedUuid.empty()) {
+        return m_cachedUuid;
+    }
+    return Volume::readUuid();
+}
+
 std::string LocalVolume::getDefaultLabel() const { return "Local Volume"; }
 
-std::string LocalVolume::getLabel() const {
+std::string LocalVolume::readLabel() {
     // Check if root path is a mount point and use device label
     cacheMountInfo();
     if (!m_cachedLabel.empty()) {
         return m_cachedLabel;
     }
-    return Volume::getLabel();
+    return Volume::readLabel();
 }
 
-void LocalVolume::setLabel(std::string_view label) { Volume::setLabel(label); }
-
-std::string LocalVolume::getUUID() const {
-    // Check if root path is a mount point and use device UUID
-    cacheMountInfo();
-    return m_cachedUUID;
+bool LocalVolume::writeUuid(std::string_view uuid) {
+    // Changing the on-disk filesystem UUID needs tools like tune2fs; fall back to soft config.
+    return Volume::writeUuid(uuid);
 }
 
-std::string LocalVolume::getSerial() const {
-    // For now, return empty string or could use device serial number
-    // This could be extended to get device serial from /sys/block/ or similar
-    return getUUID();
+bool LocalVolume::writeLabel(std::string_view label) {
+    // need sudo and e2label/ntfslabel/etc.
+    // this is not implemented yet.
+    return Volume::writeLabel(label);
 }
 
 const std::optional<std::string>& LocalVolume::getMountPoint() const {
@@ -692,7 +698,7 @@ std::string LocalVolume::getMountDevice(const std::string& mountPoint) const {
     return "";
 }
 
-std::string LocalVolume::getFilesystemUUID(const std::string& device) const {
+std::string LocalVolume::getFilesystemUuid(const std::string& device) const {
     if (device.empty()) {
         return "";
     }
@@ -721,7 +727,6 @@ std::string LocalVolume::getFilesystemUUID(const std::string& device) const {
             if (fs::is_symlink(entry.path())) {
                 try {
                     fs::path symlinkPath = entry.path();
-                    fs::path target = fs::read_symlink(symlinkPath);
                     fs::path canonicalTarget = fs::canonical(symlinkPath);
                     fs::path canonicalDevice = fs::canonical(device);
 
@@ -853,7 +858,7 @@ void LocalVolume::cacheMountInfo() const {
                 m_type = VolumeType::OTHER;
             }
 
-            m_cachedUUID = getFilesystemUUID(device);
+            m_cachedUuid = getFilesystemUuid(device);
             m_cachedLabel = getFilesystemLabel(proc);
         }
     }

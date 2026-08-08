@@ -20,8 +20,8 @@ enum Field : unsigned {
     FMount = 1u << 0,
     FDevice = 1u << 1,
     FType = 1u << 2,
-    FLabel = 1u << 3,
-    FUuid = 1u << 4,
+    FUuid = 1u << 3,
+    FLabel = 1u << 4,
     FReadOnly = 1u << 5,
     FLogical = 1u << 6,
     FLoop = 1u << 7,
@@ -36,28 +36,28 @@ constexpr unsigned kAllFields = FMount | FRoot | FDevice | FType | FLabel | FUui
     | FVfsOpts | FSuperOpts;
 
 void printUsage(std::ostream& out) {
-    out << _("usage: vols [options]\n"
-             "  Field selection (default without any: -mdtlu; with -v: -mdtlurLD):\n"
-             "    -a, --all            all columns\n"
-             "    -c, --compact        same columns as -mdtlu (merges with explicit field flags)\n"
-             "    -m, --mountpoint     mount point column\n"
-             "    -d, --device         device column\n"
-             "    -t, --type           type column\n"
-             "    -l, --label          label column\n"
-             "    -u, --uuid           UUID column\n"
-             "    -r, --read-only      read-only (ro/rw) column\n"
-             "    -L, --logical-type   logical type column\n"
-             "    -D, --loop-device    loop device column\n"
-             "    -o, --opts           per-mount (VFS) options from mountinfo\n"
-             "    -O, --superopts      superblock options from mountinfo\n"
-             "    -z, --root           root path within filesystem (mountinfo field)\n"
-             "  Other:\n"
-             "    -s, --symbols        include overlay filesystems in the scan (bind mounts always on)\n"
-             "        --loops          include loopback mounts (excluded by default)\n"
-             "    -h, --help           show this help and exit\n"
-             "    -w, --writable       list only writable mounts; implies -r\n"
-             "    -v, --verbose        more log detail; default columns include logical type\n"
-             "    -q, --quiet          only errors on stderr\n");
+    out << _("usage: vols [options]") << std::endl
+        << "  " << _("Field selection (default without any: -mdtlu; with -v: -mdtlurLD):") << std::endl
+        << "    -a, --all            " << _("all columns") << std::endl
+        << "    -c, --compact        " << _("same columns as -mdtlu (merges with explicit field flags)") << std::endl
+        << "    -m, --mountpoint     " << _("mount point column") << std::endl
+        << "    -d, --device         " << _("device column") << std::endl
+        << "    -t, --type           " << _("type column") << std::endl
+        << "    -u, --uuid           " << _("UUID column") << std::endl
+        << "    -l, --label          " << _("label column") << std::endl
+        << "    -r, --read-only      " << _("read-only (ro/rw) column") << std::endl
+        << "    -L, --logical-type   " << _("logical type column") << std::endl
+        << "    -D, --loop-device    " << _("loop device column") << std::endl
+        << "    -o, --opts           " << _("per-mount (VFS) options from mountinfo") << std::endl
+        << "    -O, --superopts      " << _("superblock options from mountinfo") << std::endl
+        << "    -z, --root           " << _("root path within filesystem (mountinfo field)") << std::endl
+        << "  " << _("Other:") << std::endl
+        << "    -s, --symbols        " << _("include overlay filesystems in the scan (bind mounts always on)") << std::endl
+        << "        --loops          " << _("include loopback mounts (excluded by default)") << std::endl
+        << "    -h, --help           " << _("show this help and exit") << std::endl
+        << "    -w, --writable       " << _("list only writable mounts; implies -r") << std::endl
+        << "    -v, --verbose        " << _("more log detail; default columns include logical type") << std::endl
+        << "    -q, --quiet          " << _("only errors on stderr") << std::endl;
 }
 
 const char* logicalTypeLabel(LocalLogicalType t) {
@@ -88,10 +88,10 @@ std::string fieldCell(LocalVolume* local, Field bit) {
     }
     case FType:
         return local->getTypeString();
+    case FUuid:
+        return local->getUuid();
     case FLabel:
         return local->getLabel();
-    case FUuid:
-        return local->getUUID();
     case FReadOnly:
         return local->isReadOnly() ? "ro" : "rw";
     case FLogical:

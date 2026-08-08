@@ -3,7 +3,6 @@
 #include "Volume.hpp"
 
 #include "../io/IOException.hpp"
-#include "../util/encoding.hpp"
 #include "../util/uuid.hpp"
 
 #include <algorithm>
@@ -24,10 +23,10 @@ OverlayVolume::OverlayVolume(std::string label, std::vector<std::shared_ptr<Volu
         user_attrs = true;
         uint64_t hash = 0;
         for (const auto& layer : m_layers) {
-            std::string uuid = layer->getUUID();
+            std::string uuid = layer->getUuid();
             hash = hash * 31 + std::hash<std::string>()(uuid);
         }
-        m_serial = encoding::to_hex(hash);
+        // m_uuid = encoding::to_hex(hash);
         m_uuid = uuid::randomUUID(hash);
     }
 }
@@ -107,51 +106,37 @@ void OverlayVolume::removeLayer(const std::shared_ptr<Volume>& vol) {
 
 std::string OverlayVolume::getDefaultLabel() const { return "Overlay Volume"; }
 
-std::string OverlayVolume::getUUID() const {
+std::string OverlayVolume::readUuid() {
     if (user_attrs) {
         return m_uuid;
     } else {
-        return Volume::getUUID();
+        return Volume::readUuid();
     }
 }
 
-void OverlayVolume::setUUID(std::string_view u) {
+bool OverlayVolume::writeUuid(std::string_view s) {
     if (user_attrs) {
-        m_uuid = std::string(u);
+        m_uuid = std::string(s);
+        return true;
     } else {
-        Volume::setUUIDForced(u);
+        return Volume::writeUuid(s);
     }
 }
 
-std::string OverlayVolume::getSerial() const {
-    if (user_attrs) {
-        return m_serial;
-    } else {
-        return Volume::getSerial();
-    }
-}
-
-void OverlayVolume::setSerial(std::string_view s) {
-    if (user_attrs) {
-        m_serial = std::string(s);
-    } else {
-        Volume::setSerialForced(s);
-    }
-}
-
-std::string OverlayVolume::getLabel() const {
+std::string OverlayVolume::readLabel() {
     if (user_attrs) {
         return m_label;
     } else {
-        return Volume::getLabel();
+        return Volume::readLabel();
     }
 }
 
-void OverlayVolume::setLabel(std::string_view label) {
+bool OverlayVolume::writeLabel(std::string_view label) {
     if (user_attrs) {
         m_label = std::string(label);
+        return true;
     } else {
-        Volume::setLabel(label);
+        return Volume::writeLabel(label);
     }
 }
 

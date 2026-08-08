@@ -55,13 +55,11 @@ class OverlayVolume : public Volume {
     void setDeviceUrl(std::string_view url) { m_deviceUrl = std::string(url); }
     void setVolumeType(VolumeType t) { m_volumeType = t; }
 
-    std::string getUUID() const override;
-    std::string getSerial() const override;
-    std::string getLabel() const override;
+    std::string readUuid() override;
+    std::string readLabel() override;
 
-    void setUUID(std::string_view u);
-    void setSerial(std::string_view s);
-    void setLabel(std::string_view label) override;
+    bool writeUuid(std::string_view s) override;
+    bool writeLabel(std::string_view label) override;
 
     std::optional<std::string> getLocalFile(std::string_view path) const override;
 
@@ -104,7 +102,6 @@ class OverlayVolume : public Volume {
 
     bool user_attrs = true;
     std::string m_uuid;
-    std::string m_serial;
     std::string m_label;
 };
 

@@ -54,10 +54,12 @@ class VolumeAccessor : public Volume {
     std::string getUrl() const override;
     std::string getDeviceUrl() const override;
     VolumeType getType() const override;
-    std::string getUUID() const override;
-    std::string getSerial() const override;
-    std::string getLabel() const override;
-    void setLabel(std::string_view label) override;
+    
+    std::string readUuid() override;
+    std::string readLabel() override;
+    bool writeUuid(std::string_view uuid) override;
+    bool writeLabel(std::string_view label) override;
+
     bool isEncrypted() const override;
     bool isLocal() const override;
     std::optional<std::string> getLocalFile(std::string_view path) const override;

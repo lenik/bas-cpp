@@ -59,7 +59,8 @@ class ZipVolume : public Volume {
     std::string getDeviceUrl() const override;
     VolumeType getType() const override;
     bool isLocal() const override { return false; }
-    void setLabel(std::string_view) override {}
+    
+    bool writeLabel(std::string_view) override { return false; }
 
     bool exists(std::string_view path) const override;
     bool isFile(std::string_view path) const override;

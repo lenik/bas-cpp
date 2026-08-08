@@ -4,6 +4,7 @@
 
 #include "../io/IOException.hpp"
 #include "../util/unicode.hpp"
+#include <memory>
 
 extern "C" {
 #include <bas/proc/env.h>
@@ -211,7 +212,9 @@ std::unique_ptr<VolumeFile> VolumeFile::getParentFile() const {
     return std::make_unique<VolumeFile>(m_volume, parentPath);
 }
 
-std::unique_ptr<VolumeFile> VolumeFile::getRootFile() const { return m_volume->getRootFile(); }
+std::unique_ptr<VolumeFile> VolumeFile::getRootFile() const {
+    return std::make_unique<VolumeFile>(m_volume, "/");
+}
 
 std::unique_ptr<VolumeFile> VolumeFile::resolve(std::string_view relativePath) const {
     if (!m_volume) {

@@ -17,12 +17,12 @@
 
 namespace bas::security {
 
-Realm realmForVolume(const Volume* volume) {
+Realm realmForVolume(Volume* volume) {
     Realm realm;
     realm.type = "volume";
     if (!volume)
         return realm;
-    realm.uuid = volume->getUUID();
+    realm.uuid = volume->getUuid();
     if (realm.uuid.empty())
         realm.name = volume->getUrl();
     else
@@ -97,10 +97,12 @@ std::string VolumeAccessor::getClass() const { return m_inner->getClass(); }
 std::string VolumeAccessor::getUrl() const { return m_inner->getUrl(); }
 std::string VolumeAccessor::getDeviceUrl() const { return m_inner->getDeviceUrl(); }
 VolumeType VolumeAccessor::getType() const { return m_inner->getType(); }
-std::string VolumeAccessor::getUUID() const { return m_inner->getUUID(); }
-std::string VolumeAccessor::getSerial() const { return m_inner->getSerial(); }
-std::string VolumeAccessor::getLabel() const { return m_inner->getLabel(); }
-void VolumeAccessor::setLabel(std::string_view label) { m_inner->setLabel(label); }
+
+std::string VolumeAccessor::readUuid() { return m_inner->readUuid(); }
+std::string VolumeAccessor::readLabel() { return m_inner->readLabel(); }
+bool VolumeAccessor::writeUuid(std::string_view uuid) { return m_inner->writeUuid(uuid); }
+bool VolumeAccessor::writeLabel(std::string_view label) { return m_inner->writeLabel(label); }
+
 bool VolumeAccessor::isEncrypted() const { return m_inner->isEncrypted(); }
 bool VolumeAccessor::isLocal() const { return m_inner->isLocal(); }
 std::optional<std::string> VolumeAccessor::getLocalFile(std::string_view path) const {
