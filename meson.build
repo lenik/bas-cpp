@@ -218,6 +218,7 @@ cpp_sources = files(
     './src/bas/util/uuid.cpp',
     './src/bas/volume/BlockDevice.cpp',
     './src/bas/volume/DirNode.cpp',
+    './src/bas/volume/fsmagic.cpp',
     './src/bas/volume/LocalVolume.cpp',
     './src/bas/volume/OverlayVolume.cpp',
     './src/bas/volume/Volume.cpp',

@@ -28,7 +28,14 @@ BlockDeviceType LoopDevice::type() const {
 }
 
 std::string LoopDevice::name() const {
-    return "loop:" + m_device->name();
+    std::string buf = m_device->name();
+    if (m_offset > 0 || m_size > 0) {
+        buf += ":" + std::to_string(m_offset);
+    }
+    if (m_size > 0) {
+        buf += ":" + std::to_string(m_size);
+    }
+    return buf;
 }
 
 std::string LoopDevice::uri() const {

@@ -56,7 +56,14 @@ BlockDeviceType MMapDevice::type() const {
 }
 
 std::string MMapDevice::name() const {
-    return "mmap:" + m_path;
+    std::string buf = m_path;
+    if (m_offset > 0 || m_size > 0) {
+        buf += ":" + std::to_string(m_offset);
+    }
+    if (m_size > 0) {
+        buf += ":" + std::to_string(m_size);
+    }
+    return buf;
 }
 
 std::string MMapDevice::uri() const {

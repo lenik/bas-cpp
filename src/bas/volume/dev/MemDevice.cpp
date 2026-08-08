@@ -48,8 +48,7 @@ std::string MemDevice::name() const {
 }
 
 std::string MemDevice::uri() const {
-    std::string uri = "mem:" + encoding::to_hex(reinterpret_cast<uintptr_t>(m_data)) + "h";
-    uri += ":" + std::to_string(m_size);
+    std::string uri = "mem:" + name();
     return uri;
 }
 

@@ -1,6 +1,8 @@
 #ifndef BLOCKDEVICE_H
 #define BLOCKDEVICE_H
 
+#include "fsmagic.hpp"
+
 #include <atomic>
 #include <cstddef>
 #include <cstdint>
@@ -56,22 +58,30 @@ class BlockDevice {
     std::string typeString() const { return blockDeviceTypeToString(type()); }
 
     /**
-     * Get unique device ID.
-     * @return Device ID
-     */
-    uint64_t id() const { return m_id; }
-
-    /**
      * Get device name/identifier.
+     * Name must be unique in the type scope. (path for type "file")
      * @return Device name
      */
     virtual std::string name() const = 0;
+
+    std::string qName() const;
 
     /**
      * Get device URI.
      * @return Device URI
      */
     virtual std::string uri() const = 0;
+
+    /**
+     * Filesystem identity from on-disk magic (cached after first loadInfo).
+     */
+    const FsInfo& fsInfo();
+    std::string uuid();
+    std::string label();
+    long capacity();
+    long available();
+
+    virtual void loadInfo();
 
     /**
      * Read blocks from device.
@@ -157,12 +167,17 @@ class BlockDevice {
     static std::shared_ptr<BlockDevice> loop(std::shared_ptr<BlockDevice> device,
                                              uint64_t offset = 0, uint64_t length = 0);
 
+    static std::string readUuid(const std::string& device);
+
   protected:
     BlockDevice() : m_id(s_next_id++) {}
 
   private:
-    uint64_t m_id;
+    uint64_t m_id{0};
     static std::atomic<uint64_t> s_next_id;
+
+    FsInfo m_info;
+    bool m_info_valid{false};
 };
 
 #endif // BLOCKDEVICE_H
