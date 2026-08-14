@@ -276,7 +276,7 @@ void SecurityManager::requirePermission(const Permission& permission,
     }
 }
 
-std::unique_ptr<Volume> SecurityManager::accessVolume(Volume* volume) {
+std::unique_ptr<VolumeAccessor> SecurityManager::accessVolume(Volume* volume) {
     return std::make_unique<VolumeAccessor>(volume, this);
 }
 

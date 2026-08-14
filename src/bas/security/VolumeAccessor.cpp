@@ -89,9 +89,13 @@ void VolumeAccessor::require(const Permission& permission) const {
         throw AccessDenied(permission);
 }
 
-std::shared_ptr<UserStore> VolumeAccessor::getUserStore() { return m_inner->getUserStore(); }
+std::shared_ptr<UserStore> VolumeAccessor::getUserStore() {
+    return PublicAccess::userStore();
+}
 
-std::shared_ptr<PolicyStore> VolumeAccessor::getPolicyStore() { return m_inner->getPolicyStore(); }
+std::shared_ptr<PolicyStore> VolumeAccessor::getPolicyStore() {
+    return PublicAccess::policyStore();
+}
 
 std::string VolumeAccessor::getClass() const { return m_inner->getClass(); }
 std::string VolumeAccessor::getUrl() const { return m_inner->getUrl(); }

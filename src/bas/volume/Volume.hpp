@@ -20,8 +20,6 @@
 #include <vector>
 
 namespace bas::security {
-class UserStore;
-class PolicyStore;
 class VolumeAccessor;
 } // namespace bas::security
 
@@ -82,24 +80,11 @@ struct ListOptions {
  * Simplified generic volume interface for file system abstraction
  */
 class Volume {
-  protected:
-    friend class AccessControlledVolume;
-    friend class bas::security::VolumeAccessor;
-    virtual std::string getDefaultLabel() const = 0;
-
   public:
     virtual ~Volume();
 
     int getPriority() const { return m_priority; }
     void setPriority(int priority) { m_priority = priority; }
-
-    /**
-     * Authorization stores for this volume.
-     * Default: shared PublicAccess (anonymous + allow-all).
-     * Non-virtual setters; getters are virtual but declared last to preserve ABI.
-     */
-    void setUserStore(std::shared_ptr<bas::security::UserStore> store);
-    void setPolicyStore(std::shared_ptr<bas::security::PolicyStore> store);
 
     // Volume info
     virtual std::string getClass() const = 0; // "local", "seczure", etc.
@@ -271,17 +256,16 @@ class Volume {
     virtual std::string createTempFile(std::string_view prefix = "tmp.",
                                        std::string_view suffix = "") = 0;
 
-    // Appended after existing public virtuals so older bas-ui binaries keep matching vtable slots.
-    virtual std::shared_ptr<bas::security::UserStore> getUserStore();
-    virtual std::shared_ptr<bas::security::PolicyStore> getPolicyStore();
-
     void ls(std::string_view path, std::optional<ListOptions> options = std::nullopt);
     void tree(std::string_view path, const std::string& prefix = "",
               std::optional<ListOptions> options = std::nullopt);
 
   protected:
     friend class OverlayVolume;
-    friend class AccessControlledVolume;
+    
+    friend class bas::security::VolumeAccessor;
+
+    virtual std::string getDefaultLabel() const = 0;
 
     virtual std::string readUuid();
     virtual std::string readLabel();
@@ -317,14 +301,6 @@ class Volume {
     __unconst bool c_label_valid = false;
 
     int m_priority = 0;
-
-    // static constexpr std::string_view ROOT_PATH = "/";
-
-    std::string m_uuidFile = "UUID";
-    std::string m_labelFile = "LABEL";
-
-    std::shared_ptr<bas::security::UserStore> m_userStore;
-    std::shared_ptr<bas::security::PolicyStore> m_policyStore;
 
     // FSLang integration
     struct ExecutionResult {

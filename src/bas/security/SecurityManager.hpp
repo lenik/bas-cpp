@@ -21,6 +21,8 @@ class Volume;
 
 namespace bas::security {
 
+class VolumeAccessor;
+
 class SecurityManager : public ICommandSupport {
   public:
     SecurityManager(std::shared_ptr<PolicyStore> policyStore,
@@ -83,7 +85,7 @@ class SecurityManager : public ICommandSupport {
      * Wrap @a volume with a VolumeAccessor that enforces the volume's PolicyStore
      * against the active session (and optional one-shot elevation on the accessor).
      */
-    std::unique_ptr<Volume> accessVolume(Volume* volume);
+    std::unique_ptr<VolumeAccessor> accessVolume(Volume* volume);
 
     void setCommandDefaults(Realm defaultRealm, std::string defaultSubject);
 

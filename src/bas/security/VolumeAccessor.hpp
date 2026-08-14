@@ -47,8 +47,8 @@ class VolumeAccessor : public Volume {
     /** checkPermission; throws AccessDenied on deny. */
     void require(const Permission& permission) const;
 
-    std::shared_ptr<UserStore> getUserStore() override;
-    std::shared_ptr<PolicyStore> getPolicyStore() override;
+    std::shared_ptr<UserStore> getUserStore();
+    std::shared_ptr<PolicyStore> getPolicyStore();
 
     std::string getClass() const override;
     std::string getUrl() const override;
