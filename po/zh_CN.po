@@ -1400,8 +1400,7 @@ msgid "  -a, --all              include entries starting with . and .."
 msgstr "  -a, --all              包含以 . 和 .. 开头的条目"
 
 #: src/bas/volume/Volume_utils.cpp:157
-msgid ""
-"  -A, --almost-all       include entries starting with . except . and .."
+msgid "  -A, --almost-all       include entries starting with . except . and .."
 msgstr "  -A, --almost-all       包含以 . 开头的条目（不含 . 和 ..）"
 
 #: src/bas/volume/Volume_utils.cpp:158

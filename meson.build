@@ -1,12 +1,32 @@
 project(
     'bas-cpp',
     'cpp',
-    version: '1.0.4',
+    version: run_command(
+        'sh',
+        '-c', '''
+        v=$(
+            command -v zfr >/dev/null 2>&1 && zfr version 2>/dev/null || true
+        )
+        if [ -z "$v" ] && [ -f VERSION ]; then
+            v=$(head -n1 VERSION | tr -d '\r')
+            v=${v#v}
+        fi
+        if [ -z "$v" ]; then
+            v="0.0.0" # FIXED TO 0.0.0, DO NOT MODIFY
+        fi
+        printf '%s' "$v"
+        ''',
+        check: false,
+    ).stdout().strip(),
     default_options: [
         #        'warning_level=0',
         'cpp_std=c++17',
     ],
-)
+    license: 'AGPL-3.0-or-later')
+project_author = 'Lenik (谢继雷)'
+project_email = 'lenik@bodz.net'
+project_year = 2026
+
 
 pkgdatadir = get_option('datadir') / meson.project_name()
 localedir = get_option('prefix') / get_option('localedir')
@@ -446,3 +466,70 @@ run_target(
         ''',
     ],
 )
+
+asciidoctor = find_program('asciidoctor', required: true)
+
+prefix = get_option('prefix')
+bindir = prefix / get_option('bindir')
+datadir = prefix / get_option('datadir')
+mandir = prefix / get_option('mandir')
+pkgdocdir = datadir / 'doc' / meson.project_name()
+
+run_target(
+    'look',
+    command: [
+        'bash',
+        '-euc', '''
+            tmpdir=$(mktemp -d)
+            DESTDIR=$tmpdir meson install -C "@BUILD_ROOT@"
+            tree "$tmpdir"
+            rm -fr "$tmpdir"
+        ''',
+    ],
+)
+
+install_data(
+    [
+        'LICENSE',
+        'README.md',
+        'README-zh_CN.md',
+    ],
+    install_dir: pkgdocdir,
+)
+
+puffs = [
+    'vols',
+]
+foreach puff : puffs
+  custom_target(
+    puff + '-man',
+    input: 'man' / (puff + '.adoc'),
+    output: puff + '.1',
+    command: [
+      asciidoctor,
+      '-b', 'manpage',
+      '-a', 'project-version=' + meson.project_version(),
+      '-a', 'project-year=@0@'.format(project_year),
+      '-a', 'project-author=' + project_author,
+      '-a', 'project-email=' + project_email,
+      '-o', '@OUTPUT@',
+      '@INPUT@',
+    ],
+    build_by_default: true,
+    install: true,
+    install_dir: mandir / 'man1',
+  )
+endforeach
+
+bash_files = [
+    'completions/vols.bash',
+]
+
+foreach file : bash_files
+name = fs.stem(file)
+install_data(
+    file,
+    install_dir: datadir / 'bash-completion' / 'completions',
+    rename: name,
+)
+endforeach

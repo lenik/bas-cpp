@@ -189,8 +189,7 @@ msgstr "Chế độ tương tác acdemo. Gõ help để xem lệnh.\n"
 
 #: app/acdemo.cpp:522
 msgid "  Tab: complete   Up/Down: history   Emacs keys: Ctrl-A/E/F/B, Alt-F/B\n"
-msgstr ""
-"  Tab: hoàn thành   Lên/Xuống: lịch sử   Phím Emacs: Ctrl-A/E/F/B, Alt-F/B\n"
+msgstr "  Tab: hoàn thành   Lên/Xuống: lịch sử   Phím Emacs: Ctrl-A/E/F/B, Alt-F/B\n"
 
 #: app/acdemo.cpp:523
 msgid "  Ctrl-arrows: word   Ctrl-K/U/W Alt-BS: kill word   Ctrl-L: redraw\n"
@@ -264,8 +263,7 @@ msgstr "reg: -v/--verbose và -q/--quiet loại trừ lẫn nhau\n"
 
 #: app/reg.cpp:328
 msgid "reg: specify only one of --dump, --get, --set, --export, or --import\n"
-msgstr ""
-"reg: chỉ chỉ định một trong --dump, --get, --set, --export hoặc --import\n"
+msgstr "reg: chỉ chỉ định một trong --dump, --get, --set, --export hoặc --import\n"
 
 #: app/reg.cpp:349
 msgid "reg: invalid path "
@@ -447,8 +445,7 @@ msgstr "Demo Tank AC - kho user & ACL theo thiết bị"
 
 #: app/tanks_game.cpp:1025
 msgid "L login  arrows move  space fire  denied=elevate/login"
-msgstr ""
-"L đăng nhập  mũi tên di chuyển  space bắn  denied=nâng quyền/đăng nhập"
+msgstr "L đăng nhập  mũi tên di chuyển  space bắn  denied=nâng quyền/đăng nhập"
 
 #: app/tanks_game.cpp:1026
 msgid "tank-a: alice=operator(ACL) bob=gunner(grants) admin=commander"
@@ -960,9 +957,7 @@ msgstr " qua "
 
 #: src/bas/security/SecurityManagerCommand.cpp:111
 msgid "logged out all identities (auto-login suppressed until next login)\n"
-msgstr ""
-"đã đăng xuất tất cả danh tính (tắt đăng nhập tự động đến lần đăng nhập tiếp "
-"theo)\n"
+msgstr "đã đăng xuất tất cả danh tính (tắt đăng nhập tự động đến lần đăng nhập tiếp theo)\n"
 
 #: src/bas/security/SecurityManagerCommand.cpp:124
 msgid "usage: logout-realm [@realm|NAME]\n"
@@ -1405,8 +1400,7 @@ msgid "  -a, --all              include entries starting with . and .."
 msgstr "  -a, --all              gồm các mục bắt đầu bằng . và .."
 
 #: src/bas/volume/Volume_utils.cpp:157
-msgid ""
-"  -A, --almost-all       include entries starting with . except . and .."
+msgid "  -A, --almost-all       include entries starting with . except . and .."
 msgstr "  -A, --almost-all       gồm các mục bắt đầu bằng . trừ . và .."
 
 #: src/bas/volume/Volume_utils.cpp:158

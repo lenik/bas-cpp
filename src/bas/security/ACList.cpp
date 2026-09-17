@@ -110,7 +110,7 @@ int ACList::invoke(std::vector<std::string>& args) {
         return commandSuccess();
     }
 
-    std::cerr << _("unknown aclist command: ") << head << _(" (try: help)\n");
+    std::cerr << _("unknown aclist command:") << head << _("(try: help)\n");
     return commandFailure();
 }
 

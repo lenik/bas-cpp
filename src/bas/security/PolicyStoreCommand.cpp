@@ -84,7 +84,7 @@ int PolicyStore::invoke(std::vector<std::string>& args) {
         if (path.empty()) {
             std::cout << _("acl: in-memory\n");
         } else {
-            std::cout << _("acl file: ") << path << '\n';
+            std::cout << _("acl file:") << path << '\n';
         }
         return commandSuccess();
     }
@@ -98,7 +98,7 @@ int PolicyStore::invoke(std::vector<std::string>& args) {
             return commandFailure();
         }
         reloadFromDisk();
-        std::cout << _("reloaded ACL from ") << storePath() << '\n';
+        std::cout << _("reloaded ACL from") << storePath() << '\n';
         return commandSuccess();
     }
     if (head == "save") {
@@ -111,7 +111,7 @@ int PolicyStore::invoke(std::vector<std::string>& args) {
             return commandFailure();
         }
         persistToDisk();
-        std::cout << _("saved ACL to ") << storePath() << '\n';
+        std::cout << _("saved ACL to") << storePath() << '\n';
         return commandSuccess();
     }
 
@@ -120,7 +120,7 @@ int PolicyStore::invoke(std::vector<std::string>& args) {
         return commandSuccess();
     }
 
-    std::cerr << _("unknown acl command: ") << head << _(" (try: help)\n");
+    std::cerr << _("unknown acl command:") << head << _("(try: help)\n");
     return commandFailure();
 }
 

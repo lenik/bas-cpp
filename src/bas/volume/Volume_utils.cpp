@@ -151,15 +151,15 @@ std::optional<ListOptions> ListOptions::parse(int& argc, char**& argv) {
         case 1:
             std::puts(_("Usage: assets [OPTIONS] [PATH...]"));
             std::puts(_("Options:"));
-            std::puts(_("  -R, --recursive        list subdirectories recursively"));
-            std::puts(_("  -l, --long             use a long listing format"));
-            std::puts(_("  -a, --all              include entries starting with . and .."));
-            std::puts(_("  -A, --almost-all       include entries starting with . except . and .."));
-            std::puts(_("  -F, --classify         append file type indicators"));
-            std::puts(_("  -h, --human-readable   print sizes in human-readable form"));
-            std::puts(_("  -C, --color            enable colored output"));
-            std::puts(_("  -T, --tree             print as directory tree"));
-            std::puts(_("      --help             display this help and exit"));
+            std::puts(_("-R, --recursive        list subdirectories recursively"));
+            std::puts(_("-l, --long             use a long listing format"));
+            std::puts(_("-a, --all              include entries starting with . and .."));
+            std::puts(_("-A, --almost-all       include entries starting with . except . and .."));
+            std::puts(_("-F, --classify         append file type indicators"));
+            std::puts(_("-h, --human-readable   print sizes in human-readable form"));
+            std::puts(_("-C, --color            enable colored output"));
+            std::puts(_("-T, --tree             print as directory tree"));
+            std::puts(_("--help             display this help and exit"));
             return std::nullopt;
         case 'R':
             opts.recursive = true;

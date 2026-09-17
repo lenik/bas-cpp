@@ -19,8 +19,17 @@ bas-cpp (1.0.4) testing; urgency=medium
       results; path-backed devices fall back to blkid for UUID.
   * Robustness: treat /.rc soft-config as optional; LocalVolume status probes
     use error_code so permission-denied mounts do not throw.
+  * Security:
+    - VolumeAccessor::require evaluates volume-local policy; on Unknown,
+      optionally interactive-login for the volume realm and re-check.
+    - StoreIdentityService supports the volume realm type.
+    - SecurityManager exposes identityRegistry() and credentialManager().
+  * Zephyr packaging alignment:
+    - AGPL-3.0 LICENSE, AsciiDoc man/vols.adoc with asciidoctor manpage build.
+    - Meson version from zfr/VERSION, license and project author metadata.
+    - debian/rules uses dh meson; packaging/ stubs; L1 po locales (ar, es_MX).
 
- -- Lenik (谢继雷) <lenik@bodz.net>  Sat, 08 Aug 2026 21:06:00 +0900
+ -- Lenik (谢继雷) <lenik@bodz.net>  Thu, 17 Sep 2026 15:40:00 +0900
 
 bas-cpp (1.0.3) testing; urgency=medium
 

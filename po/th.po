@@ -188,8 +188,7 @@ msgstr "โหมดโต้ตอบ acdemo พิมพ์ help เพื่�
 
 #: app/acdemo.cpp:522
 msgid "  Tab: complete   Up/Down: history   Emacs keys: Ctrl-A/E/F/B, Alt-F/B\n"
-msgstr ""
-"  Tab: เติมเต็ม   ขึ้น/ลง: ประวัติ   ปุ่ม Emacs: Ctrl-A/E/F/B, Alt-F/B\n"
+msgstr "  Tab: เติมเต็ม   ขึ้น/ลง: ประวัติ   ปุ่ม Emacs: Ctrl-A/E/F/B, Alt-F/B\n"
 
 #: app/acdemo.cpp:523
 msgid "  Ctrl-arrows: word   Ctrl-K/U/W Alt-BS: kill word   Ctrl-L: redraw\n"
@@ -263,9 +262,7 @@ msgstr "reg: -v/--verbose และ -q/--quiet ใช้ร่วมกันไ
 
 #: app/reg.cpp:328
 msgid "reg: specify only one of --dump, --get, --set, --export, or --import\n"
-msgstr ""
-"reg: ระบุเพียงอย่างใดอย่างหนึ่งจาก --dump, --get, --set, --export หรือ "
-"--import\n"
+msgstr "reg: ระบุเพียงอย่างใดอย่างหนึ่งจาก --dump, --get, --set, --export หรือ --import\n"
 
 #: app/reg.cpp:349
 msgid "reg: invalid path "
@@ -959,9 +956,7 @@ msgstr " ผ่าน "
 
 #: src/bas/security/SecurityManagerCommand.cpp:111
 msgid "logged out all identities (auto-login suppressed until next login)\n"
-msgstr ""
-"ออกจากระบบตัวตนทั้งหมดแล้ว "
-"(ระงับเข้าสู่ระบบอัตโนมัติจนกว่าจะเข้าสู่ระบบครั้งถัดไป)\n"
+msgstr "ออกจากระบบตัวตนทั้งหมดแล้ว (ระงับเข้าสู่ระบบอัตโนมัติจนกว่าจะเข้าสู่ระบบครั้งถัดไป)\n"
 
 #: src/bas/security/SecurityManagerCommand.cpp:124
 msgid "usage: logout-realm [@realm|NAME]\n"
@@ -1404,8 +1399,7 @@ msgid "  -a, --all              include entries starting with . and .."
 msgstr "  -a, --all              รวมรายการที่ขึ้นต้นด้วย . และ .."
 
 #: src/bas/volume/Volume_utils.cpp:157
-msgid ""
-"  -A, --almost-all       include entries starting with . except . and .."
+msgid "  -A, --almost-all       include entries starting with . except . and .."
 msgstr "  -A, --almost-all       รวมรายการที่ขึ้นต้นด้วย . ยกเว้น . และ .."
 
 #: src/bas/volume/Volume_utils.cpp:158

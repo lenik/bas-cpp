@@ -46,7 +46,7 @@ void printIdentities(const SecurityManager& ac) {
         if (!id.displayName.empty() && id.displayName != id.name) {
             std::cout << " (" << id.displayName << ')';
         }
-        std::cout << _(" via ") << id.serviceId << '\n';
+        std::cout << _("via") << id.serviceId << '\n';
     }
 }
 
@@ -126,7 +126,7 @@ int SecurityManager::invoke(std::vector<std::string>& args) {
             return commandFailure();
         }
         logoutRealm(realm);
-        std::cout << _("logged out identities in realm ") << realm.displayLabel() << '\n';
+        std::cout << _("logged out identities in realm") << realm.displayLabel() << '\n';
         return commandSuccess();
     }
     if (cmd == "reload-creds") {
@@ -135,8 +135,8 @@ int SecurityManager::invoke(std::vector<std::string>& args) {
             return commandFailure();
         }
         m_credentialManager->reloadCredentials();
-        std::cout << _("reloaded ") << m_credentialManager->credentialPersistedCount()
-                  << _(" credential(s) from ") << m_credentialManager->credentialPath() << '\n';
+        std::cout << _("reloaded") << m_credentialManager->credentialPersistedCount()
+                  << _("credential(s) from") << m_credentialManager->credentialPath() << '\n';
         AccessRequestOptions options;
         activateCachedCredentials(options);
         printIdentities(*this);
@@ -196,7 +196,7 @@ int SecurityManager::invoke(std::vector<std::string>& args) {
         if (login(options)) {
             std::cout << _("login ok");
             if (!realm.empty()) {
-                std::cout << _(" realm=") << realm.displayLabel();
+                std::cout << _("realm=") << realm.displayLabel();
             }
             std::cout << '\n';
             printIdentities(*this);
@@ -206,7 +206,7 @@ int SecurityManager::invoke(std::vector<std::string>& args) {
         return commandFailure();
     }
 
-    std::cerr << _("unknown command: ") << cmd << _(" (try: help)\n");
+    std::cerr << _("unknown command:") << cmd << _("(try: help)\n");
     return commandFailure();
 }
 

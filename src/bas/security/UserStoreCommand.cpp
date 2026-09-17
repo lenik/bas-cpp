@@ -128,31 +128,31 @@ void printUserKeyHelp(std::ostream& out) {
 
 void printUserRecord(const UserRecord& record) {
     const auto& p = record.profile;
-    std::cout << _("  name: ") << p.name << '\n';
+    std::cout << _("name:") << p.name << '\n';
     if (!p.displayName.empty()) {
-        std::cout << _("  display: ") << p.displayName << '\n';
+        std::cout << _("display:") << p.displayName << '\n';
     }
     if (!p.email.empty()) {
-        std::cout << _("  email: ") << p.email << '\n';
+        std::cout << _("email:") << p.email << '\n';
     }
     if (auto* avatar = p.attributes.if_contains("avatar")) {
         if (avatar->is_string()) {
-            std::cout << _("  avatar: ") << avatar->as_string().c_str() << '\n';
+            std::cout << _("avatar:") << avatar->as_string().c_str() << '\n';
         }
     }
-    std::cout << _("  enabled: ") << (p.enabled ? _("yes") : _("no")) << '\n';
-    std::cout << _("  roles:");
+    std::cout << _("enabled:") << (p.enabled ? _("yes") : _("no")) << '\n';
+    std::cout << _("roles:");
     if (record.roles.empty()) {
-        std::cout << _(" (none)\n");
+        std::cout << _("(none)\n");
     } else {
         for (const auto& role : record.roles) {
             std::cout << ' ' << role;
         }
         std::cout << '\n';
     }
-    std::cout << _("  keys:\n");
+    std::cout << _("keys:\n");
     if (record.keys.empty()) {
-        std::cout << _("    (none)\n");
+        std::cout << _("(none)\n");
     } else {
         for (const auto& key : record.keys) {
             std::cout << "    " << key.id << " type=" << key.type << " name=" << key.name
@@ -254,7 +254,7 @@ bool parseUserWriteOptions(std::vector<std::string>& args, UserWriteOptions& opt
         const std::string& token = args[i];
         auto takeValue = [&](std::string& out) -> bool {
             if (i + 1 >= args.size()) {
-                error = std::string(_("missing value for ")) + token;
+                error = std::string(_("missing value for")) + token;
                 return false;
             }
             out = args[i + 1];
@@ -310,7 +310,7 @@ bool parseUserWriteOptions(std::vector<std::string>& args, UserWriteOptions& opt
             continue;
         }
         if (!token.empty() && token.front() == '-') {
-            error = std::string(_("unknown option: ")) + token;
+            error = std::string(_("unknown option:")) + token;
             return false;
         }
         ++i;
@@ -330,7 +330,7 @@ bool parseUserWriteOptions(std::vector<std::string>& args, UserWriteOptions& opt
         }
     }
     if (!args.empty()) {
-        error = std::string(_("unexpected argument: ")) + args.front();
+        error = std::string(_("unexpected argument:")) + args.front();
         return false;
     }
     if (requireUser && opts.userName.empty()) {
@@ -363,7 +363,7 @@ bool parseCheckOptions(std::vector<std::string>& args, UserWriteOptions& opts, s
         opts.wantPassword = true;
     }
     if (!args.empty()) {
-        error = std::string(_("unexpected argument: ")) + args.front();
+        error = std::string(_("unexpected argument:")) + args.front();
         return false;
     }
     return resolvePasswordInput(opts, error);
@@ -408,12 +408,12 @@ int runUserAdd(UserStore& store, std::vector<std::string> args) {
         return commandFailure();
     }
     if (store.hasUser(opts.userName)) {
-        std::cerr << _("user already exists: ") << opts.userName << '\n';
+        std::cerr << _("user already exists:") << opts.userName << '\n';
         return commandFailure();
     }
     if (opts.password.has_value() && !isPasswordStorageAlgorithm(opts.hashAlgo)) {
-        std::cerr << _("unsupported hash algorithm: ") << opts.hashAlgo
-                  << _(" (use plain, sha256, sha1, or md5)\n");
+        std::cerr << _("unsupported hash algorithm:") << opts.hashAlgo
+                  << _("(use plain, sha256, sha1, or md5)\n");
         return commandFailure();
     }
 
@@ -433,7 +433,7 @@ int runUserAdd(UserStore& store, std::vector<std::string> args) {
             makePasswordKeyForAlgorithm("pwd-main", *opts.password, opts.hashAlgo));
     }
     store.addUser(record);
-    std::cout << _("added user ") << opts.userName << '\n';
+    std::cout << _("added user") << opts.userName << '\n';
     return commandSuccess();
 }
 
@@ -453,18 +453,18 @@ int runUserUpdate(UserStore& store, std::vector<std::string> args) {
         return commandFailure();
     }
     if (!store.hasUser(opts.userName)) {
-        std::cerr << _("user not found: ") << opts.userName << '\n';
+        std::cerr << _("user not found:") << opts.userName << '\n';
         return commandFailure();
     }
     if (opts.password.has_value() && !isPasswordStorageAlgorithm(opts.hashAlgo)) {
-        std::cerr << _("unsupported hash algorithm: ") << opts.hashAlgo
-                  << _(" (use plain, sha256, sha1, or md5)\n");
+        std::cerr << _("unsupported hash algorithm:") << opts.hashAlgo
+                  << _("(use plain, sha256, sha1, or md5)\n");
         return commandFailure();
     }
 
     auto record = store.getUserRecord(opts.userName);
     if (!record.has_value()) {
-        std::cerr << _("user not found: ") << opts.userName << '\n';
+        std::cerr << _("user not found:") << opts.userName << '\n';
         return commandFailure();
     }
 
@@ -482,7 +482,7 @@ int runUserUpdate(UserStore& store, std::vector<std::string> args) {
     if (opts.password.has_value()) {
         setMainPasswordKey(store, opts.userName, *opts.password, opts.hashAlgo);
     }
-    std::cout << _("updated user ") << opts.userName << '\n';
+    std::cout << _("updated user") << opts.userName << '\n';
     return commandSuccess();
 }
 
@@ -502,14 +502,14 @@ int runUserCheck(const UserStore& store, std::vector<std::string> args) {
         return commandFailure();
     }
     if (!store.hasUser(opts.userName)) {
-        std::cerr << _("user not found: ") << opts.userName << '\n';
+        std::cerr << _("user not found:") << opts.userName << '\n';
         return commandFailure();
     }
     if (verifyUserPassword(store, opts.userName, *opts.password)) {
-        std::cout << _("password ok for ") << opts.userName << '\n';
+        std::cout << _("password ok for") << opts.userName << '\n';
         return commandSuccess();
     }
-    std::cerr << _("invalid password for ") << opts.userName << '\n';
+    std::cerr << _("invalid password for") << opts.userName << '\n';
     return commandFailure();
 }
 
@@ -517,11 +517,11 @@ bool resolveSubcommand(const std::vector<std::string>& commands, const std::stri
                        std::string& resolved) {
     const ResolvedCommand match = resolveCommandByPrefix(commands, token);
     if (match.match == CommandMatch::Ambiguous) {
-        std::cerr << _("ambiguous command: ") << token << '\n';
+        std::cerr << _("ambiguous command:") << token << '\n';
         return false;
     }
     if (match.match == CommandMatch::NotFound) {
-        std::cerr << _("unknown command: ") << token << '\n';
+        std::cerr << _("unknown command:") << token << '\n';
         return false;
     }
     resolved = match.value;
@@ -567,7 +567,7 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
                     std::cout << " (" << profile->displayName << ')';
                 }
                 if (!profile->enabled) {
-                    std::cout << _(" [disabled]");
+                    std::cout << _("[disabled]");
                 }
             }
             std::cout << '\n';
@@ -585,7 +585,7 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
         }
         const auto record = getUserRecord(args[0]);
         if (!record.has_value()) {
-            std::cerr << _("user not found: ") << args[0] << '\n';
+            std::cerr << _("user not found:") << args[0] << '\n';
             return commandFailure();
         }
         printUserRecord(*record);
@@ -610,11 +610,11 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
             return commandFailure();
         }
         if (!hasUser(args[0])) {
-            std::cerr << _("user not found: ") << args[0] << '\n';
+            std::cerr << _("user not found:") << args[0] << '\n';
             return commandFailure();
         }
         removeUser(args[0]);
-        std::cout << _("removed user ") << args[0] << '\n';
+        std::cout << _("removed user") << args[0] << '\n';
         return commandSuccess();
     }
     if (sub == "enable" || sub == "disable") {
@@ -627,15 +627,15 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
             return commandFailure();
         }
         if (!hasUser(args[0])) {
-            std::cerr << _("user not found: ") << args[0] << '\n';
+            std::cerr << _("user not found:") << args[0] << '\n';
             return commandFailure();
         }
         if (sub == "enable") {
             enableUser(args[0]);
-            std::cout << _("enabled user ") << args[0] << '\n';
+            std::cout << _("enabled user") << args[0] << '\n';
         } else {
             disableUser(args[0]);
-            std::cout << _("disabled user ") << args[0] << '\n';
+            std::cout << _("disabled user") << args[0] << '\n';
         }
         return commandSuccess();
     }
@@ -662,20 +662,20 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
             }
             const std::string userName = args[0];
             if (!hasUser(userName)) {
-                std::cerr << _("user not found: ") << userName << '\n';
+                std::cerr << _("user not found:") << userName << '\n';
                 return commandFailure();
             }
             const std::vector<std::string> roles(args.begin() + 1, args.end());
             setRoles(userName, roles);
-            std::cout << _("roles updated for ") << userName << '\n';
+            std::cout << _("roles updated for") << userName << '\n';
             return commandSuccess();
         }
         if (!hasUser(args[0])) {
-            std::cerr << _("user not found: ") << args[0] << '\n';
+            std::cerr << _("user not found:") << args[0] << '\n';
             return commandFailure();
         }
         for (const auto& role : getRoles(args[0])) {
-            std::cout << _("  role:") << role << '\n';
+            std::cout << _("role:") << role << '\n';
         }
         return commandSuccess();
     }
@@ -695,7 +695,7 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
         const std::string& userName = args[1];
         const std::string& role = args[2];
         if (!hasUser(userName)) {
-            std::cerr << _("user not found: ") << userName << '\n';
+            std::cerr << _("user not found:") << userName << '\n';
             return commandFailure();
         }
         if (op == "add") {
@@ -703,7 +703,7 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
         } else {
             removeRole(userName, role);
         }
-        std::cout << _("role ") << op << ' ' << role << _(" for ") << userName << '\n';
+        std::cout << _("role") << op << ' ' << role << _("for") << userName << '\n';
         return commandSuccess();
     }
     if (sub == "keys") {
@@ -716,7 +716,7 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
             return commandFailure();
         }
         if (!hasUser(args[0])) {
-            std::cerr << _("user not found: ") << args[0] << '\n';
+            std::cerr << _("user not found:") << args[0] << '\n';
             return commandFailure();
         }
         for (const auto& key : getKeys(args[0])) {
@@ -748,7 +748,7 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
                 return commandFailure();
             }
             removeKey(args[1], args[2]);
-            std::cout << _("removed key ") << args[2] << _(" from ") << args[1] << '\n';
+            std::cout << _("removed key") << args[2] << _("from") << args[1] << '\n';
             return commandSuccess();
         }
         if (takeHelpRequest(args)) {
@@ -764,7 +764,7 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
         const std::string keyType = args[3];
         std::vector<std::string> rest(args.begin() + 4, args.end());
         if (!hasUser(userName)) {
-            std::cerr << _("user not found: ") << userName << '\n';
+            std::cerr << _("user not found:") << userName << '\n';
             return commandFailure();
         }
         UserWriteOptions keyOpts;
@@ -785,7 +785,7 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
                 const std::string algo =
                     keyType == "password-plain" ? "plain" : keyOpts.hashAlgo;
                 if (!isPasswordStorageAlgorithm(algo)) {
-                    std::cerr << _("unsupported hash algorithm: ") << algo << '\n';
+                    std::cerr << _("unsupported hash algorithm:") << algo << '\n';
                     return commandFailure();
                 }
                 key = makePasswordKeyForAlgorithm(keyId, *keyOpts.password, algo);
@@ -802,11 +802,11 @@ int UserStore::invokeUser(std::vector<std::string>& args) {
             key.createdAt = std::chrono::system_clock::now();
         }
         addKey(userName, key);
-        std::cout << _("added key ") << keyId << _(" to ") << userName << '\n';
+        std::cout << _("added key") << keyId << _("to") << userName << '\n';
         return commandSuccess();
     }
 
-    std::cerr << _("unknown user subcommand: ") << sub << '\n';
+    std::cerr << _("unknown user subcommand:") << sub << '\n';
     return commandFailure();
 }
 
@@ -837,12 +837,12 @@ int UserStore::invoke(std::vector<std::string>& args) {
             std::cout << _("usage: path [-h]\n  Show user store file path and label.\n");
             return commandSuccess();
         }
-        std::cout << _("user store: ") << storeLabel() << '\n';
+        std::cout << _("user store:") << storeLabel() << '\n';
         const auto path = storePath();
         if (!path.empty()) {
-            std::cout << _("  file: ") << path << '\n';
+            std::cout << _("file:") << path << '\n';
         } else {
-            std::cout << _("  kind: in-memory\n");
+            std::cout << _("kind: in-memory\n");
         }
         return commandSuccess();
     }
@@ -856,7 +856,7 @@ int UserStore::invoke(std::vector<std::string>& args) {
             return commandFailure();
         }
         reloadFromDisk();
-        std::cout << _("reloaded user store from ") << storePath() << '\n';
+        std::cout << _("reloaded user store from") << storePath() << '\n';
         return commandSuccess();
     }
     if (head == "save") {
@@ -869,7 +869,7 @@ int UserStore::invoke(std::vector<std::string>& args) {
             return commandFailure();
         }
         saveToDisk();
-        std::cout << _("saved user store to ") << storePath() << '\n';
+        std::cout << _("saved user store to") << storePath() << '\n';
         return commandSuccess();
     }
     if (head == "user") {

@@ -189,20 +189,15 @@ msgstr "acdemo-Interaktivmodus. Tippen Sie help für Befehle.\n"
 
 #: app/acdemo.cpp:522
 msgid "  Tab: complete   Up/Down: history   Emacs keys: Ctrl-A/E/F/B, Alt-F/B\n"
-msgstr ""
-"  Tab: Vervollständigen   Auf/Ab: Verlauf   Emacs-Tasten: Ctrl-A/E/F/B, "
-"Alt-F/B\n"
+msgstr "  Tab: Vervollständigen   Auf/Ab: Verlauf   Emacs-Tasten: Ctrl-A/E/F/B, Alt-F/B\n"
 
 #: app/acdemo.cpp:523
 msgid "  Ctrl-arrows: word   Ctrl-K/U/W Alt-BS: kill word   Ctrl-L: redraw\n"
-msgstr ""
-"  Ctrl-Pfeile: Wort   Ctrl-K/U/W Alt-BS: Wort löschen   Ctrl-L: neu "
-"zeichnen\n"
+msgstr "  Ctrl-Pfeile: Wort   Ctrl-K/U/W Alt-BS: Wort löschen   Ctrl-L: neu zeichnen\n"
 
 #: app/acdemo.cpp:524
 msgid "  Shells: con, store, acl, man, reg, id (exit or Ctrl-D to leave)\n"
-msgstr ""
-"  Shells: con, store, acl, man, reg, id (exit oder Ctrl-D zum Verlassen)\n"
+msgstr "  Shells: con, store, acl, man, reg, id (exit oder Ctrl-D zum Verlassen)\n"
 
 #: app/acdemo.cpp:529 src/bas/security/CredentialManagerCommand.cpp:77
 msgid "credential file: "
@@ -268,9 +263,7 @@ msgstr "reg: -v/--verbose und -q/--quiet schließen sich gegenseitig aus\n"
 
 #: app/reg.cpp:328
 msgid "reg: specify only one of --dump, --get, --set, --export, or --import\n"
-msgstr ""
-"reg: geben Sie nur eines von --dump, --get, --set, --export oder --import "
-"an\n"
+msgstr "reg: geben Sie nur eines von --dump, --get, --set, --export oder --import an\n"
 
 #: app/reg.cpp:349
 msgid "reg: invalid path "
@@ -299,8 +292,7 @@ msgstr "Mindestens %dx%d nötig, aktuell %dx%d."
 
 #: app/tanks_game.cpp:216
 msgid "Resize the terminal and try again. Press any key to exit."
-msgstr ""
-"Terminalgröße anpassen und erneut versuchen. Beliebige Taste zum Beenden."
+msgstr "Terminalgröße anpassen und erneut versuchen. Beliebige Taste zum Beenden."
 
 #: app/tanks_game.cpp:411
 msgid "ENGINE ON "
@@ -965,9 +957,7 @@ msgstr " über "
 
 #: src/bas/security/SecurityManagerCommand.cpp:111
 msgid "logged out all identities (auto-login suppressed until next login)\n"
-msgstr ""
-"alle Identitäten abgemeldet (Auto-Login bis zur nächsten Anmeldung "
-"unterdrückt)\n"
+msgstr "alle Identitäten abgemeldet (Auto-Login bis zur nächsten Anmeldung unterdrückt)\n"
 
 #: src/bas/security/SecurityManagerCommand.cpp:124
 msgid "usage: logout-realm [@realm|NAME]\n"
@@ -1327,9 +1317,7 @@ msgstr " von "
 
 #: src/bas/security/UserStoreCommand.cpp:793
 msgid "password flags require key type password-hash or password-plain\n"
-msgstr ""
-"Passwort-Flags erfordern den Schlüsseltyp password-hash oder password-"
-"plain\n"
+msgstr "Passwort-Flags erfordern den Schlüsseltyp password-hash oder password-plain\n"
 
 #: src/bas/security/UserStoreCommand.cpp:805
 msgid "added key "
@@ -1409,15 +1397,11 @@ msgstr "  -l, --long             langes Listenformat verwenden"
 
 #: src/bas/volume/Volume_utils.cpp:156
 msgid "  -a, --all              include entries starting with . and .."
-msgstr ""
-"  -a, --all              Einträge einschließen, die mit . und .. beginnen"
+msgstr "  -a, --all              Einträge einschließen, die mit . und .. beginnen"
 
 #: src/bas/volume/Volume_utils.cpp:157
-msgid ""
-"  -A, --almost-all       include entries starting with . except . and .."
-msgstr ""
-"  -A, --almost-all       Einträge einschließen, die mit . beginnen, außer . "
-"und .."
+msgid "  -A, --almost-all       include entries starting with . except . and .."
+msgstr "  -A, --almost-all       Einträge einschließen, die mit . beginnen, außer . und .."
 
 #: src/bas/volume/Volume_utils.cpp:158
 msgid "  -F, --classify         append file type indicators"

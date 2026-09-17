@@ -19,23 +19,23 @@ void printIdentityServiceHelp(std::ostream& out) {
 }
 
 void printIdentityServiceInfo(const IdentityService& service) {
-    std::cout << _("  id: ") << service.id() << '\n';
-    std::cout << _("  type: ") << service.identityType() << '\n';
-    std::cout << _("  auto-login: ") << (service.canAutoLogin() ? _("yes") : _("no")) << '\n';
-    std::cout << _("  credentials:");
+    std::cout << _("id:") << service.id() << '\n';
+    std::cout << _("type:") << service.identityType() << '\n';
+    std::cout << _("auto-login:") << (service.canAutoLogin() ? _("yes") : _("no")) << '\n';
+    std::cout << _("credentials:");
     const auto credTypes = service.supportedCredentialTypes();
     if (credTypes.empty()) {
-        std::cout << _(" (none)\n");
+        std::cout << _("(none)\n");
     } else {
         for (const auto& type : credTypes) {
             std::cout << ' ' << type;
         }
         std::cout << '\n';
     }
-    std::cout << _("  realm-types:");
+    std::cout << _("realm-types:");
     const auto realmTypes = service.supportedRealmTypes();
     if (realmTypes.empty()) {
-        std::cout << _(" (any)\n");
+        std::cout << _("(any)\n");
     } else {
         for (const auto& type : realmTypes) {
             std::cout << ' ' << type;
@@ -44,7 +44,7 @@ void printIdentityServiceInfo(const IdentityService& service) {
     }
     const auto stores = service.getBackedStores();
     if (!stores.empty()) {
-        std::cout << _("  backed-stores: ") << stores.size() << '\n';
+        std::cout << _("backed-stores:") << stores.size() << '\n';
     }
 }
 
@@ -68,7 +68,7 @@ int IdentityService::invoke(std::vector<std::string>& args) {
         return commandSuccess();
     }
 
-    std::cerr << _("unknown identity service subcommand: ") << sub << _(" (try: help)\n");
+    std::cerr << _("unknown identity service subcommand:") << sub << _("(try: help)\n");
     return commandFailure();
 }
 

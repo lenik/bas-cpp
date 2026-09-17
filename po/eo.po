@@ -189,15 +189,11 @@ msgstr "acdemo interaga reĝimo. Tajpu help por komandoj.\n"
 
 #: app/acdemo.cpp:522
 msgid "  Tab: complete   Up/Down: history   Emacs keys: Ctrl-A/E/F/B, Alt-F/B\n"
-msgstr ""
-"  Tab: kompletigi   Supren/Malsupren: historio   Emacs-klavoj: Ctrl-A/E/F/B,"
-" Alt-F/B\n"
+msgstr "  Tab: kompletigi   Supren/Malsupren: historio   Emacs-klavoj: Ctrl-A/E/F/B, Alt-F/B\n"
 
 #: app/acdemo.cpp:523
 msgid "  Ctrl-arrows: word   Ctrl-K/U/W Alt-BS: kill word   Ctrl-L: redraw\n"
-msgstr ""
-"  Ctrl-sagoj: vorto   Ctrl-K/U/W Alt-BS: forigi vorton   Ctrl-L: "
-"redessigni\n"
+msgstr "  Ctrl-sagoj: vorto   Ctrl-K/U/W Alt-BS: forigi vorton   Ctrl-L: redessigni\n"
 
 #: app/acdemo.cpp:524
 msgid "  Shells: con, store, acl, man, reg, id (exit or Ctrl-D to leave)\n"
@@ -961,9 +957,7 @@ msgstr " per "
 
 #: src/bas/security/SecurityManagerCommand.cpp:111
 msgid "logged out all identities (auto-login suppressed until next login)\n"
-msgstr ""
-"elsalutis ĉiujn identecojn (aŭtomata salutigo subpremita ĝis la sekva "
-"salutigo)\n"
+msgstr "elsalutis ĉiujn identecojn (aŭtomata salutigo subpremita ĝis la sekva salutigo)\n"
 
 #: src/bas/security/SecurityManagerCommand.cpp:124
 msgid "usage: logout-realm [@realm|NAME]\n"
@@ -1406,10 +1400,8 @@ msgid "  -a, --all              include entries starting with . and .."
 msgstr "  -a, --all              inkluzivi erojn komenciĝantajn per . kaj .."
 
 #: src/bas/volume/Volume_utils.cpp:157
-msgid ""
-"  -A, --almost-all       include entries starting with . except . and .."
-msgstr ""
-"  -A, --almost-all       inkluzivi erojn komenciĝantajn per . krom . kaj .."
+msgid "  -A, --almost-all       include entries starting with . except . and .."
+msgstr "  -A, --almost-all       inkluzivi erojn komenciĝantajn per . krom . kaj .."
 
 #: src/bas/volume/Volume_utils.cpp:158
 msgid "  -F, --classify         append file type indicators"

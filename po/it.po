@@ -189,14 +189,11 @@ msgstr "Modalità interattiva acdemo. Digita help per i comandi.\n"
 
 #: app/acdemo.cpp:522
 msgid "  Tab: complete   Up/Down: history   Emacs keys: Ctrl-A/E/F/B, Alt-F/B\n"
-msgstr ""
-"  Tab: completa   Su/Giù: cronologia   Tasti Emacs: Ctrl-A/E/F/B, Alt-F/B\n"
+msgstr "  Tab: completa   Su/Giù: cronologia   Tasti Emacs: Ctrl-A/E/F/B, Alt-F/B\n"
 
 #: app/acdemo.cpp:523
 msgid "  Ctrl-arrows: word   Ctrl-K/U/W Alt-BS: kill word   Ctrl-L: redraw\n"
-msgstr ""
-"  Ctrl-frecce: parola   Ctrl-K/U/W Alt-BS: elimina parola   Ctrl-L: "
-"ridisegna\n"
+msgstr "  Ctrl-frecce: parola   Ctrl-K/U/W Alt-BS: elimina parola   Ctrl-L: ridisegna\n"
 
 #: app/acdemo.cpp:524
 msgid "  Shells: con, store, acl, man, reg, id (exit or Ctrl-D to leave)\n"
@@ -266,8 +263,7 @@ msgstr "reg: -v/--verbose e -q/--quiet sono mutuamente esclusivi\n"
 
 #: app/reg.cpp:328
 msgid "reg: specify only one of --dump, --get, --set, --export, or --import\n"
-msgstr ""
-"reg: specificare solo uno tra --dump, --get, --set, --export o --import\n"
+msgstr "reg: specificare solo uno tra --dump, --get, --set, --export o --import\n"
 
 #: app/reg.cpp:349
 msgid "reg: invalid path "
@@ -660,8 +656,7 @@ msgstr "nessuna credenziale in cache\n"
 
 #: src/bas/security/CredentialManagerCommand.cpp:40
 msgid "    (use login/request to verify; secrets not printed)\n"
-msgstr ""
-"    (usa login/request per verificare; i segreti non vengono stampati)\n"
+msgstr "    (usa login/request per verificare; i segreti non vengono stampati)\n"
 
 #: src/bas/security/CredentialManagerCommand.cpp:75
 msgid "credential store: in-memory\n"
@@ -962,9 +957,7 @@ msgstr " tramite "
 
 #: src/bas/security/SecurityManagerCommand.cpp:111
 msgid "logged out all identities (auto-login suppressed until next login)\n"
-msgstr ""
-"usciti da tutte le identità (accesso automatico sospeso fino al prossimo "
-"login)\n"
+msgstr "usciti da tutte le identità (accesso automatico sospeso fino al prossimo login)\n"
 
 #: src/bas/security/SecurityManagerCommand.cpp:124
 msgid "usage: logout-realm [@realm|NAME]\n"
@@ -1324,9 +1317,7 @@ msgstr " da "
 
 #: src/bas/security/UserStoreCommand.cpp:793
 msgid "password flags require key type password-hash or password-plain\n"
-msgstr ""
-"i flag della password richiedono il tipo di chiave password-hash o password-"
-"plain\n"
+msgstr "i flag della password richiedono il tipo di chiave password-hash o password-plain\n"
 
 #: src/bas/security/UserStoreCommand.cpp:805
 msgid "added key "
@@ -1409,10 +1400,8 @@ msgid "  -a, --all              include entries starting with . and .."
 msgstr "  -a, --all              include le voci che iniziano con . e .."
 
 #: src/bas/volume/Volume_utils.cpp:157
-msgid ""
-"  -A, --almost-all       include entries starting with . except . and .."
-msgstr ""
-"  -A, --almost-all       include le voci che iniziano con . eccetto . e .."
+msgid "  -A, --almost-all       include entries starting with . except . and .."
+msgstr "  -A, --almost-all       include le voci che iniziano con . eccetto . e .."
 
 #: src/bas/volume/Volume_utils.cpp:158
 msgid "  -F, --classify         append file type indicators"

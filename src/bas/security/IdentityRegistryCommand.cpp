@@ -30,7 +30,7 @@ void printRegistryServices(const IdentityRegistry& registry) {
         }
         std::cout << "  " << service->id() << " type=" << service->identityType();
         if (service->canAutoLogin()) {
-            std::cout << _(" [auto-login]");
+            std::cout << _("[auto-login]");
         }
         std::cout << '\n';
     }
@@ -46,7 +46,7 @@ void printRegistryRealms(const IdentityRegistry& registry) {
         const auto service = registry.load(realm);
         std::cout << "  " << realm.displayLabel() << " ->";
         if (!service) {
-            std::cout << _(" (no service)\n");
+            std::cout << _("(no service)\n");
         } else {
             std::cout << ' ' << service->id() << '\n';
         }
@@ -95,13 +95,13 @@ int IdentityRegistry::invoke(std::vector<std::string>& args) {
         const std::string serviceId = shiftArg(args);
         auto service = findById(serviceId);
         if (!service) {
-            std::cerr << _("identity service not found: ") << serviceId << '\n';
+            std::cerr << _("identity service not found:") << serviceId << '\n';
             return commandFailure();
         }
         return service->invoke(args);
     }
 
-    std::cerr << _("unknown registry subcommand: ") << sub << _(" (try: help)\n");
+    std::cerr << _("unknown registry subcommand:") << sub << _("(try: help)\n");
     return commandFailure();
 }
 

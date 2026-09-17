@@ -16,6 +16,7 @@ Build-Depends:
  libncurses-dev,
  libssl-dev,
  zlib1g-dev,
+ asciidoctor
 Standards-Version: 4.7.0
 Homepage: http://uni.bodz.net/lib/libbas-cpp
 Vcs-Browser: http://uni.bodz.net/lib/libbas-cpp

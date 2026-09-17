@@ -37,7 +37,7 @@ void printCredentials(const CredentialManager& credentials, bool verbose) {
         }
         std::cout << '\n';
         if (verbose) {
-            std::cout << _("    (use login/request to verify; secrets not printed)\n");
+            std::cout << _("(use login/request to verify; secrets not printed)\n");
         }
     }
 }
@@ -74,7 +74,7 @@ int CredentialManager::invoke(std::vector<std::string>& args) {
         if (path.empty()) {
             std::cout << _("credential store: in-memory\n");
         } else {
-            std::cout << _("credential file: ") << path << '\n';
+            std::cout << _("credential file:") << path << '\n';
         }
         return commandSuccess();
     }
@@ -84,7 +84,7 @@ int CredentialManager::invoke(std::vector<std::string>& args) {
             return commandFailure();
         }
         reloadCredentials();
-        std::cout << _("reloaded ") << credentialPersistedCount() << _(" credential(s) from ")
+        std::cout << _("reloaded") << credentialPersistedCount() << _("credential(s) from")
                   << credentialPath() << '\n';
         return commandSuccess();
     }
@@ -94,7 +94,7 @@ int CredentialManager::invoke(std::vector<std::string>& args) {
             return commandFailure();
         }
         saveCredentials();
-        std::cout << _("saved credentials to ") << credentialPath() << '\n';
+        std::cout << _("saved credentials to") << credentialPath() << '\n';
         return commandSuccess();
     }
     if (head == "clear") {
@@ -120,7 +120,7 @@ int CredentialManager::invoke(std::vector<std::string>& args) {
         return commandSuccess();
     }
 
-    std::cerr << _("unknown credential command: ") << head << _(" (try: help)\n");
+    std::cerr << _("unknown credential command:") << head << _("(try: help)\n");
     return commandFailure();
 }
 
