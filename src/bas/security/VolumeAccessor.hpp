@@ -12,6 +12,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <vector>
 
 namespace bas::security {
 
@@ -20,7 +21,7 @@ class UserStore;
 class PolicyStore;
 
 /** Build realm slot for a volume: type=volume, uuid=UUID (else name=url). */
-Realm realmForVolume(const Volume* volume);
+Realm realmForVolume(Volume* volume);
 
 /**
  * Guarded volume: every mutating / content / listing op is checked via the volume's
@@ -47,8 +48,8 @@ class VolumeAccessor : public Volume {
     /** checkPermission; throws AccessDenied on deny. */
     void require(const Permission& permission) const;
 
-    std::shared_ptr<UserStore> getUserStore();
-    std::shared_ptr<PolicyStore> getPolicyStore();
+    virtual std::shared_ptr<UserStore> getUserStore();
+    virtual std::shared_ptr<PolicyStore> getPolicyStore();
 
     std::string getClass() const override;
     std::string getUrl() const override;
@@ -81,6 +82,9 @@ class VolumeAccessor : public Volume {
                                std::string_view suffix = "") override;
 
   protected:
+    Permission perm(std::string_view action, std::string_view resource) const;
+    std::vector<Identity> authorizationIdentities() const;
+
     std::string getDefaultLabel() const override;
 
     std::vector<uint8_t> readFileUnchecked(std::string_view path, int64_t off = 0,
@@ -94,9 +98,6 @@ class VolumeAccessor : public Volume {
     void renameFileThrowsUnchecked(std::string_view src, std::string_view dest) override;
 
   private:
-    Permission perm(std::string_view action, std::string_view resource) const;
-    std::vector<Identity> authorizationIdentities() const;
-
     Volume* m_inner{nullptr};
     SecurityManager* m_sm{nullptr};
     Realm m_realm;

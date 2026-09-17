@@ -100,6 +100,10 @@ class SecurityManager : public ICommandSupport {
     /** @deprecated Use policyStore(). */
     std::shared_ptr<PolicyStore> acl() const { return m_policyStore; }
 
+    std::shared_ptr<IdentityRegistry> identityRegistry() const { return m_identityRegistry; }
+
+    std::shared_ptr<CredentialManager> credentialManager() const { return m_credentialManager; }
+
     int invoke(std::vector<std::string>& args) override;
 
     std::vector<std::string> complete(const std::vector<std::string>& args,

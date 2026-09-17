@@ -1,5 +1,6 @@
 #include "VolumeAccessor.hpp"
 
+#include "AccessDecision.hpp"
 #include "AccessDecisionResolver.hpp"
 #include "AccessDenied.hpp"
 #include "Identity.hpp"
@@ -85,8 +86,34 @@ AccessEffect VolumeAccessor::check(const Permission& permission) const {
 }
 
 void VolumeAccessor::require(const Permission& permission) const {
-    if (check(permission) != AccessEffect::Allow)
+    static DefaultPermissionMatcher matcher;
+    static DefaultACResolvePolicy resolver;
+
+    auto decide = [&]() {
+        const auto identities = authorizationIdentities();
+        auto store = const_cast<VolumeAccessor*>(this)->getPolicyStore();
+        return policyCheckAny(*store, identities, permission, matcher, resolver);
+    };
+
+    AccessEffect raw = decide();
+    if (raw == AccessEffect::Allow)
+        return;
+    if (raw == AccessEffect::Deny)
         throw AccessDenied(permission);
+
+    // Unknown: optional interactive login for this volume realm, then re-check local policy.
+    if (!m_elevation.has_value()) {
+        AccessRequestOptions opts;
+        opts.realmHint = m_realm;
+        opts.allowGuiInteraction = true;
+        opts.allowConsoleInteraction = false;
+        opts.allowAutoLogin = true;
+        (void)m_sm->login(opts);
+        raw = decide();
+        if (raw == AccessEffect::Allow)
+            return;
+    }
+    throw AccessDenied(permission);
 }
 
 std::shared_ptr<UserStore> VolumeAccessor::getUserStore() {

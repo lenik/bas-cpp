@@ -93,7 +93,7 @@ std::vector<std::string> StoreIdentityService::supportedCredentialTypes() const 
 }
 
 std::vector<std::string> StoreIdentityService::supportedRealmTypes() const {
-    return {"global", "device", "app"};
+    return {"global", "device", "app", "volume"};
 }
 
 LoginResult StoreIdentityService::login(const LoginRequest& request) {
