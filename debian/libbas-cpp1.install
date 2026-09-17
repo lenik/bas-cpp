@@ -1,1 +1,2 @@
 usr/lib/*/libbas-cpp.so.*
+usr/share/locale/*/LC_MESSAGES/*.mo

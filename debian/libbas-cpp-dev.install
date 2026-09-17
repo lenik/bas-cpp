@@ -3,3 +3,4 @@ usr/lib/*/libbas-cpp.so
 usr/lib/*/libbas-cpp.a
 usr/lib/*/pkgconfig/bas-cpp.pc
 usr/lib/*/pkgconfig/bas-cpp-static.pc
+usr/share/doc/bas-cpp/

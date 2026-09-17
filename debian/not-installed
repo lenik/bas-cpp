@@ -1,2 +1,2 @@
-usr/lib/*/libbas-cpp.a
-usr/lib/*/pkgconfig/bas-cpp-static.pc
+# date-tz is an internal Meson subproject; do not ship its pkg-config file.
+usr/lib/*/pkgconfig/date-tz.pc

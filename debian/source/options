@@ -1,0 +1,11 @@
+# Keep local sibling checkouts out of the native source package.
+# Debian builds use system libbas-c-dev; only in-tree Meson wraps stay.
+tar-ignore = "subprojects/bas-c"
+tar-ignore = "subprojects/bas-cpp"
+tar-ignore = "subprojects/bas-ui"
+tar-ignore = "subprojects/omnishell"
+tar-ignore = "subprojects/sfsdk"
+tar-ignore = "subprojects/fslang-parser"
+tar-ignore = "build"
+tar-ignore = "builddir"
+tar-ignore = ".cache"
