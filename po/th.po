@@ -6,8 +6,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: bas-cpp 1.0.3\n"
-"Report-Msgid-Bugs-To: bas-cpp@bodz.net\n"
-"POT-Creation-Date: 2026-07-13 16:39+0800\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-28 13:59+0800\n"
 "PO-Revision-Date: 2026-07-13 16:18+0800\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -64,7 +64,8 @@ msgid ""
 "  -h, --help                        show help and exit\n"
 "\n"
 "demo permissions (ACL is built-in):\n"
-"  fab.order.view / fab.order.modify / fab.order.delete / file.save\n"
+"  action=view;resource=fab.order / action=modify;resource=fab.order /\n"
+"  action=delete;resource=fab.order / action=save;resource=file\n"
 msgstr ""
 "acdemo — สาธิตสิทธิ์ ข้อมูลรับรอง และการเข้าสู่ระบบคอนโซลของ bas.security\n"
 "\n"
@@ -114,95 +115,95 @@ msgstr ""
 "สิทธิ์เดโม (ACL ในตัว):\n"
 "  fab.order.view / fab.order.modify / fab.order.delete / file.save\n"
 
-#: app/acdemo.cpp:210
+#: app/acdemo.cpp:211
 msgid "  (none)\n"
 msgstr "  (ไม่มี)\n"
 
-#: app/acdemo.cpp:213
+#: app/acdemo.cpp:214
 msgid "  label: "
 msgstr "  ป้าย: "
 
-#: app/acdemo.cpp:215 src/bas/security/IdentityServiceCommand.cpp:23
+#: app/acdemo.cpp:216
 msgid "  type: "
 msgstr "  ประเภท: "
 
-#: app/acdemo.cpp:218 src/bas/security/UserStoreCommand.cpp:131
+#: app/acdemo.cpp:219
 msgid "  name: "
 msgstr "  ชื่อ: "
 
-#: app/acdemo.cpp:221
+#: app/acdemo.cpp:222
 msgid "  uuid: "
 msgstr "  UUID: "
 
-#: app/acdemo.cpp:224
+#: app/acdemo.cpp:225
 msgid "  description: "
 msgstr "  คำอธิบาย: "
 
-#: app/acdemo.cpp:227
+#: app/acdemo.cpp:228
 msgid "  (current)\n"
 msgstr "  (ปัจจุบัน)\n"
 
-#: app/acdemo.cpp:236
+#: app/acdemo.cpp:237
 msgid "invalid realm token: "
 msgstr "โทเค็น realm ไม่ถูกต้อง: "
 
-#: app/acdemo.cpp:250
+#: app/acdemo.cpp:251
 msgid "current realm: "
 msgstr "realm ปัจจุบัน: "
 
-#: app/acdemo.cpp:276
+#: app/acdemo.cpp:277
 msgid "usage: realm show | realm NAME | realm @token\n"
 msgstr "วิธีใช้: realm show | realm NAME | realm @token\n"
 
-#: app/acdemo.cpp:281
+#: app/acdemo.cpp:282
 msgid "current realm:\n"
 msgstr "realm ปัจจุบัน:\n"
 
-#: app/acdemo.cpp:291
+#: app/acdemo.cpp:292
 msgid "no registered realms\n"
 msgstr "ไม่มี realm ที่ลงทะเบียน\n"
 
-#: app/acdemo.cpp:294
+#: app/acdemo.cpp:295
 msgid "registered realms:\n"
 msgstr "realm ที่ลงทะเบียน:\n"
 
-#: app/acdemo.cpp:298
+#: app/acdemo.cpp:299
 msgid " (current)"
 msgstr " (ปัจจุบัน)"
 
-#: app/acdemo.cpp:393
+#: app/acdemo.cpp:394
 msgid "entered "
 msgstr "เข้าสู่ "
 
-#: app/acdemo.cpp:393
+#: app/acdemo.cpp:394
 msgid " (exit or Ctrl-D to leave)\n"
 msgstr " (exit หรือ Ctrl-D เพื่อออก)\n"
 
-#: app/acdemo.cpp:443 app/acdemo.cpp:498
+#: app/acdemo.cpp:444 app/acdemo.cpp:499
 msgid "no identity service for current realm\n"
 msgstr "ไม่มีบริการตัวตนสำหรับ realm ปัจจุบัน\n"
 
-#: app/acdemo.cpp:521
+#: app/acdemo.cpp:522
 msgid "acdemo interactive mode. Type help for commands.\n"
 msgstr "โหมดโต้ตอบ acdemo พิมพ์ help เพื่อดูคำสั่ง\n"
 
-#: app/acdemo.cpp:522
+#: app/acdemo.cpp:523
 msgid "  Tab: complete   Up/Down: history   Emacs keys: Ctrl-A/E/F/B, Alt-F/B\n"
 msgstr "  Tab: เติมเต็ม   ขึ้น/ลง: ประวัติ   ปุ่ม Emacs: Ctrl-A/E/F/B, Alt-F/B\n"
 
-#: app/acdemo.cpp:523
+#: app/acdemo.cpp:524
 msgid "  Ctrl-arrows: word   Ctrl-K/U/W Alt-BS: kill word   Ctrl-L: redraw\n"
 msgstr "  Ctrl-ลูกศร: คำ   Ctrl-K/U/W Alt-BS: ลบคำ   Ctrl-L: วาดใหม่\n"
 
-#: app/acdemo.cpp:524
+#: app/acdemo.cpp:525
 msgid "  Shells: con, store, acl, man, reg, id (exit or Ctrl-D to leave)\n"
 msgstr "  เชลล์: con, store, acl, man, reg, id (exit หรือ Ctrl-D เพื่อออก)\n"
 
-#: app/acdemo.cpp:529 src/bas/security/CredentialManagerCommand.cpp:77
+#: app/acdemo.cpp:530
 msgid "credential file: "
 msgstr "ไฟล์ข้อมูลรับรอง: "
 
-#: app/acdemo.cpp:530 src/bas/security/UserStoreCommand.cpp:840
+#: app/acdemo.cpp:531
 msgid "user store: "
 msgstr "ที่เก็บผู้ใช้: "
 
@@ -285,7 +286,7 @@ msgid "Terminal too small for tanks_game."
 msgstr "เทอร์มินัลเล็กเกินไปสำหรับ tanks_game"
 
 #: app/tanks_game.cpp:215
-#, c-format
+#, python-format
 msgid "Need at least %dx%d, have %dx%d."
 msgstr "ต้องการอย่างน้อย %dx%d มี %dx%d"
 
@@ -314,12 +315,12 @@ msgid "Arrows move/turn  Space fire"
 msgstr "ลูกศร เคลื่อน/เลี้ยว  Space ยิง"
 
 #: app/tanks_game.cpp:426
-#, c-format
+#, python-format
 msgid "Active: %s"
 msgstr "ใช้งาน: %s"
 
 #: app/tanks_game.cpp:450
-#, c-format
+#, python-format
 msgid " Policy %s "
 msgstr " นโยบาย %s "
 
@@ -329,7 +330,7 @@ msgstr "การผูก"
 
 #: app/tanks_game.cpp:495
 msgid "identity      aclId"
-msgstr "identity      aclId"
+msgstr "ตัวตน        aclId"
 
 #: app/tanks_game.cpp:513 app/tanks_game.cpp:548 app/tanks_game.cpp:588
 msgid "(none)"
@@ -340,7 +341,6 @@ msgid "ACLS"
 msgstr "ACL"
 
 #: app/tanks_game.cpp:531
-#, c-format
 msgid "%-10s %zu entries"
 msgstr "%-10s %zu รายการ"
 
@@ -350,11 +350,11 @@ msgstr "สิทธิ์"
 
 #: app/tanks_game.cpp:566
 msgid "identity"
-msgstr "identity"
+msgstr "ตัวตน"
 
 #: app/tanks_game.cpp:566
 msgid "permission"
-msgstr "สิทธิ์"
+msgstr "สิทธิ์การเข้าถึง"
 
 #: app/tanks_game.cpp:596
 msgid " Event log "
@@ -369,7 +369,7 @@ msgid "Enter=retry   Esc=cancel"
 msgstr "Enter=ลองใหม่   Esc=ยกเลิก"
 
 #: app/tanks_game.cpp:770 app/tanks_game.cpp:848
-#, c-format
+#, python-format
 msgid " Login %s "
 msgstr " เข้าสู่ระบบ %s "
 
@@ -390,7 +390,7 @@ msgid "demo accounts (user/pass):"
 msgstr "บัญชีสาธิต (ผู้ใช้/รหัสผ่าน):"
 
 #: app/tanks_game.cpp:848
-#, c-format
+#, python-format
 msgid " Elevate %s "
 msgstr " ยกระดับ %s "
 
@@ -448,11 +448,11 @@ msgstr "L เข้าสู่ระบบ  ลูกศรเคลื่อ�
 
 #: app/tanks_game.cpp:1026
 msgid "tank-a: alice=operator(ACL) bob=gunner(grants) admin=commander"
-msgstr "tank-a: alice=operator(ACL) bob=gunner(grants) admin=commander"
+msgstr "tank-a: alice=ผู้ปฏิบัติการ(ACL) bob=พลยิง(การอนุญาต) admin=ผู้บัญชาการ"
 
 #: app/tanks_game.cpp:1027
 msgid "tank-b: charlie=cadet(ACL) dana=instructor(grants)"
-msgstr "tank-b: charlie=cadet(ACL) dana=instructor(grants)"
+msgstr "tank-b: charlie=นักเรียน(ACL) dana=ครูฝึก(การอนุญาต)"
 
 #: app/tanks_game.cpp:1051
 msgid "switch -> "
@@ -487,108 +487,150 @@ msgid "error: "
 msgstr "ข้อผิดพลาด: "
 
 #: app/vols.cpp:39
-msgid ""
-"usage: vols [options]\n"
-"  Field selection (default without any: -mdtlu; with -v: -mdtlurLD):\n"
-"    -a, --all            all columns\n"
-"    -c, --compact        same columns as -mdtlu (merges with explicit field flags)\n"
-"    -m, --mountpoint     mount point column\n"
-"    -d, --device         device column\n"
-"    -t, --type           type column\n"
-"    -l, --label          label column\n"
-"    -u, --uuid           UUID column\n"
-"    -r, --read-only      read-only (ro/rw) column\n"
-"    -L, --logical-type   logical type column\n"
-"    -D, --loop-device    loop device column\n"
-"    -o, --opts           per-mount (VFS) options from mountinfo\n"
-"    -O, --superopts      superblock options from mountinfo\n"
-"    -z, --root           root path within filesystem (mountinfo field)\n"
-"  Other:\n"
-"    -s, --symbols        include overlay filesystems in the scan (bind mounts always on)\n"
-"    -h, --help           show this help and exit\n"
-"    -w, --writable       list only writable mounts; implies -r\n"
-"    -v, --verbose        more log detail; default columns include logical type\n"
-"    -q, --quiet          only errors on stderr\n"
-msgstr ""
-"วิธีใช้: vols [options]\n"
-"  การเลือกฟิลด์ (ค่าเริ่มต้นเมื่อไม่ระบุ: -mdtlu; กับ -v: -mdtlurLD):\n"
-"    -a, --all            คอลัมน์ทั้งหมด\n"
-"    -c, --compact        คอลัมน์เดียวกับ -mdtlu (รวมกับแฟลกฟิลด์ที่ระบุ)\n"
-"    -m, --mountpoint     คอลัมน์จุดเมานต์\n"
-"    -d, --device         คอลัมน์อุปกรณ์\n"
-"    -t, --type           คอลัมน์ประเภท\n"
-"    -l, --label          คอลัมน์ป้าย\n"
-"    -u, --uuid           คอลัมน์ UUID\n"
-"    -r, --read-only      คอลัมน์อ่านอย่างเดียว (ro/rw)\n"
-"    -L, --logical-type   คอลัมน์ประเภทเชิงตรรกะ\n"
-"    -D, --loop-device    คอลัมน์อุปกรณ์ลูป\n"
-"    -o, --opts           ตัวเลือกต่อเมานต์ (VFS) จาก mountinfo\n"
-"    -O, --superopts      ตัวเลือกซูเปอร์บล็อกจาก mountinfo\n"
-"    -z, --root           เส้นทางรากในระบบไฟล์ (ฟิลด์ mountinfo)\n"
-"  อื่นๆ:\n"
-"    -s, --symbols        รวมระบบไฟล์ overlay ในการสแกน (bind mount เปิดเสมอ)\n"
-"    -h, --help           แสดงความช่วยเหลือนี้แล้วออก\n"
-"    -w, --writable       แสดงเฉพาะเมานต์ที่เขียนได้; หมายถึง -r\n"
-"    -v, --verbose        รายละเอียดบันทึกเพิ่มเติม; คอลัมน์เริ่มต้นรวมประเภทเชิงตรรกะ\n"
-"    -q, --quiet          ข้อผิดพลาดเท่านั้นบน stderr\n"
+msgid "usage: vols [options]"
+msgstr "วิธีใช้: vols [ตัวเลือก]"
 
-#: app/vols.cpp:119
+#: app/vols.cpp:40
+msgid "Field selection (default without any: -mdtlu; with -v: -mdtlurLD):"
+msgstr "การเลือกฟิลด์ (ค่าเริ่มต้นหากไม่ระบุ: -mdtlu; กับ -v: -mdtlurLD):"
+
+#: app/vols.cpp:41
+msgid "all columns"
+msgstr "ทุกคอลัมน์"
+
+#: app/vols.cpp:42
+msgid "same columns as -mdtlu (merges with explicit field flags)"
+msgstr "คอลัมน์เดียวกับ -mdtlu (รวมกับแฟล็กฟิลด์ที่ระบุชัดเจน)"
+
+#: app/vols.cpp:43
+msgid "mount point column"
+msgstr "จุดเมานต์"
+
+#: app/vols.cpp:44
+msgid "device column"
+msgstr "คอลัมน์อุปกรณ์"
+
+#: app/vols.cpp:45
+msgid "type column"
+msgstr "คอลัมน์ประเภท"
+
+#: app/vols.cpp:46
+msgid "UUID column"
+msgstr "คอลัมน์ UUID"
+
+#: app/vols.cpp:47
+msgid "label column"
+msgstr "คอลัมน์ป้ายชื่อ"
+
+#: app/vols.cpp:48
+msgid "read-only (ro/rw) column"
+msgstr "คอลัมน์อ่านอย่างเดียว (ro/rw)"
+
+#: app/vols.cpp:49
+msgid "logical type column"
+msgstr "ประเภทเชิงตรรกะ"
+
+#: app/vols.cpp:50
+msgid "loop device column"
+msgstr "อุปกรณ์ลูป"
+
+#: app/vols.cpp:51
+msgid "per-mount (VFS) options from mountinfo"
+msgstr "ตัวเลือกต่อเมานต์ (VFS) จาก mountinfo"
+
+#: app/vols.cpp:52
+msgid "superblock options from mountinfo"
+msgstr "ตัวเลือกซูเปอร์บล็อกจาก mountinfo"
+
+#: app/vols.cpp:53
+msgid "root path within filesystem (mountinfo field)"
+msgstr "เส้นทางรากภายในระบบไฟล์ (ฟิลด์ mountinfo)"
+
+#: app/vols.cpp:54
+msgid "Other:"
+msgstr "อื่นๆ:"
+
+#: app/vols.cpp:55
+msgid "include overlay filesystems in the scan (bind mounts always on)"
+msgstr "รวมระบบไฟล์ overlay ในการสแกน (bind mount รวมเสมอ)"
+
+#: app/vols.cpp:56
+msgid "include loopback mounts (excluded by default)"
+msgstr "รวมการเมานต์ loopback (ตัดออกโดยค่าเริ่มต้น)"
+
+#: app/vols.cpp:57
+msgid "show this help and exit"
+msgstr "แสดงความช่วยเหลือนี้แล้วออก"
+
+#: app/vols.cpp:58
+msgid "list only writable mounts; implies -r"
+msgstr "แสดงเฉพาะเมานต์ที่เขียนได้; หมายถึง -r"
+
+#: app/vols.cpp:59
+msgid "more log detail; default columns include logical type"
+msgstr "รายละเอียดบันทึกมากขึ้น; คอลัมน์เริ่มต้นรวมชนิดเชิงตรรกะ"
+
+#: app/vols.cpp:60
+msgid "only errors on stderr"
+msgstr "เฉพาะข้อผิดพลาดบน stderr"
+
+#: app/vols.cpp:120
 msgid "Mount Point"
 msgstr "จุดเมานต์"
 
-#: app/vols.cpp:120
+#: app/vols.cpp:121
 msgid "Root"
 msgstr "ราก"
 
-#: app/vols.cpp:121
+#: app/vols.cpp:122
 msgid "Device"
 msgstr "อุปกรณ์"
 
-#: app/vols.cpp:122
-msgid "Type"
-msgstr "ประเภท"
-
 #: app/vols.cpp:123
+msgid "Type"
+msgstr "ชนิดข้อมูล"
+
+#: app/vols.cpp:124
 msgid "Label"
 msgstr "ป้าย"
 
-#: app/vols.cpp:124
+#: app/vols.cpp:125
 msgid "UUID"
 msgstr "UUID"
 
-#: app/vols.cpp:125
+#: app/vols.cpp:126
 msgid "Read-Only"
 msgstr "อ่านอย่างเดียว"
 
-#: app/vols.cpp:126
+#: app/vols.cpp:127
 msgid "Logical Type"
 msgstr "ประเภทเชิงตรรกะ"
 
-#: app/vols.cpp:127
+#: app/vols.cpp:128
 msgid "Loop Device"
 msgstr "อุปกรณ์ลูป"
 
-#: app/vols.cpp:128
+#: app/vols.cpp:129
 msgid "VFS opts"
 msgstr "ตัวเลือก VFS"
 
-#: app/vols.cpp:129
+#: app/vols.cpp:130
 msgid "Super opts"
 msgstr "ตัวเลือกซูเปอร์บล็อก"
 
-#: app/vols.cpp:247
+#: app/vols.cpp:253
 msgid "vols: unexpected argument: "
 msgstr "vols: อาร์กิวเมนต์ไม่คาดคิด: "
 
-#: app/vols.cpp:258
+#: app/vols.cpp:264
 msgid "vols: -v/--verbose and -q/--quiet are mutually exclusive\n"
 msgstr "vols: -v/--verbose และ -q/--quiet ใช้ร่วมกันไม่ได้\n"
 
-#: app/vols.cpp:263
+#: app/vols.cpp:269
 msgid "vols: -a/--all and -c/--compact are mutually exclusive\n"
 msgstr "vols: -a/--all และ -c/--compact ใช้ร่วมกันไม่ได้\n"
 
-#: app/vols.cpp:303
+#: app/vols.cpp:309
 msgid "vols: no columns selected\n"
 msgstr "vols: ไม่ได้เลือกคอลัมน์\n"
 
@@ -617,16 +659,16 @@ msgstr ""
 "  แสดงรายการแถว ACE\n"
 
 #: src/bas/security/ACList.cpp:113
-msgid "unknown aclist command: "
+msgid "unknown aclist command:"
 msgstr "คำสั่ง aclist ไม่รู้จัก: "
 
 #: src/bas/security/ACList.cpp:113
 #: src/bas/security/CredentialManagerCommand.cpp:123
 #: src/bas/security/IdentityRegistryCommand.cpp:104
 #: src/bas/security/IdentityServiceCommand.cpp:71
-#: src/bas/security/PolicyStoreCommand.cpp:123
-#: src/bas/security/SecurityManagerCommand.cpp:208
-msgid " (try: help)\n"
+#: src/bas/security/PolicyStoreCommand.cpp:202
+#: src/bas/security/SecurityManagerCommand.cpp:236
+msgid "(try: help)\n"
 msgstr " (ลอง: help)\n"
 
 #: src/bas/security/CredentialManagerCommand.cpp:14
@@ -654,25 +696,29 @@ msgid "no cached credentials\n"
 msgstr "ไม่มีข้อมูลรับรองในแคช\n"
 
 #: src/bas/security/CredentialManagerCommand.cpp:40
-msgid "    (use login/request to verify; secrets not printed)\n"
+msgid "(use login/request to verify; secrets not printed)\n"
 msgstr "    (ใช้ login/request เพื่อตรวจสอบ; ไม่พิมพ์ความลับ)\n"
 
 #: src/bas/security/CredentialManagerCommand.cpp:75
 msgid "credential store: in-memory\n"
 msgstr "ที่เก็บข้อมูลรับรอง: ในหน่วยความจำ\n"
 
+#: src/bas/security/CredentialManagerCommand.cpp:77
+msgid "credential file:"
+msgstr "ไฟล์ข้อมูลรับรอง: "
+
 #: src/bas/security/CredentialManagerCommand.cpp:83
 msgid "reload only applies to file credential store\n"
 msgstr "reload ใช้ได้เฉพาะที่เก็บข้อมูลรับรองแบบไฟล์\n"
 
 #: src/bas/security/CredentialManagerCommand.cpp:87
-#: src/bas/security/SecurityManagerCommand.cpp:137
-msgid "reloaded "
+#: src/bas/security/SecurityManagerCommand.cpp:138
+msgid "reloaded"
 msgstr "โหลดใหม่แล้ว "
 
 #: src/bas/security/CredentialManagerCommand.cpp:87
-#: src/bas/security/SecurityManagerCommand.cpp:138
-msgid " credential(s) from "
+#: src/bas/security/SecurityManagerCommand.cpp:139
+msgid "credential(s) from"
 msgstr " รายการข้อมูลรับรองจาก "
 
 #: src/bas/security/CredentialManagerCommand.cpp:93
@@ -680,7 +726,7 @@ msgid "save only applies to file credential store\n"
 msgstr "save ใช้ได้เฉพาะที่เก็บข้อมูลรับรองแบบไฟล์\n"
 
 #: src/bas/security/CredentialManagerCommand.cpp:97
-msgid "saved credentials to "
+msgid "saved credentials to"
 msgstr "บันทึกข้อมูลรับรองไปยัง "
 
 #: src/bas/security/CredentialManagerCommand.cpp:102
@@ -696,7 +742,7 @@ msgid "removed credential ["
 msgstr "ลบข้อมูลรับรอง ["
 
 #: src/bas/security/CredentialManagerCommand.cpp:123
-msgid "unknown credential command: "
+msgid "unknown credential command:"
 msgstr "คำสั่งข้อมูลรับรองไม่รู้จัก: "
 
 #: src/bas/security/IdentityRegistryCommand.cpp:14
@@ -718,7 +764,7 @@ msgid "no identity services registered\n"
 msgstr "ไม่มีบริการตัวตนที่ลงทะเบียน\n"
 
 #: src/bas/security/IdentityRegistryCommand.cpp:33
-msgid " [auto-login]"
+msgid "[auto-login]"
 msgstr " [เข้าสู่ระบบอัตโนมัติ]"
 
 #: src/bas/security/IdentityRegistryCommand.cpp:42
@@ -726,7 +772,7 @@ msgid "no realms registered\n"
 msgstr "ไม่มี realm ที่ลงทะเบียน\n"
 
 #: src/bas/security/IdentityRegistryCommand.cpp:49
-msgid " (no service)\n"
+msgid "(no service)\n"
 msgstr " (ไม่มีบริการ)\n"
 
 #: src/bas/security/IdentityRegistryCommand.cpp:92
@@ -734,11 +780,11 @@ msgid "usage: service ID [SUBCMD …]\n"
 msgstr "วิธีใช้: service ID [SUBCMD …]\n"
 
 #: src/bas/security/IdentityRegistryCommand.cpp:98
-msgid "identity service not found: "
+msgid "identity service not found:"
 msgstr "ไม่พบบริการตัวตน: "
 
 #: src/bas/security/IdentityRegistryCommand.cpp:104
-msgid "unknown registry subcommand: "
+msgid "unknown registry subcommand:"
 msgstr "คำสั่งย่อยของรีจิสทรีไม่รู้จัก: "
 
 #: src/bas/security/IdentityServiceCommand.cpp:15
@@ -754,11 +800,15 @@ msgstr ""
 "  store SUBCMD …         (บริการ store) คำสั่งที่เก็บผู้ใช้\n"
 
 #: src/bas/security/IdentityServiceCommand.cpp:22
-msgid "  id: "
+msgid "id:"
 msgstr "  ID: "
 
+#: src/bas/security/IdentityServiceCommand.cpp:23
+msgid "type:"
+msgstr "  ประเภท: "
+
 #: src/bas/security/IdentityServiceCommand.cpp:24
-msgid "  auto-login: "
+msgid "auto-login:"
 msgstr "  เข้าสู่ระบบอัตโนมัติ: "
 
 #: src/bas/security/IdentityServiceCommand.cpp:24
@@ -773,31 +823,32 @@ msgstr "ใช่"
 #: src/bas/security/UserStoreCommand.cpp:159
 #: src/bas/security/UserStoreCommand.cpp:724
 msgid "no"
-msgstr "ไม่"
+msgstr "ไม่ใช่"
 
 #: src/bas/security/IdentityServiceCommand.cpp:25
-msgid "  credentials:"
+msgid "credentials:"
 msgstr "  ข้อมูลรับรอง:"
 
 #: src/bas/security/IdentityServiceCommand.cpp:28
 #: src/bas/security/UserStoreCommand.cpp:146
-msgid " (none)\n"
+#: src/bas/security/UserStoreCommand.cpp:155
+msgid "(none)\n"
 msgstr " (ไม่มี)\n"
 
 #: src/bas/security/IdentityServiceCommand.cpp:35
-msgid "  realm-types:"
+msgid "realm-types:"
 msgstr "  ประเภท realm:"
 
 #: src/bas/security/IdentityServiceCommand.cpp:38
-msgid " (any)\n"
+msgid "(any)\n"
 msgstr " (ใดก็ได้)\n"
 
 #: src/bas/security/IdentityServiceCommand.cpp:47
-msgid "  backed-stores: "
+msgid "backed-stores:"
 msgstr "  ที่เก็บข้อมูลสำรอง: "
 
 #: src/bas/security/IdentityServiceCommand.cpp:71
-msgid "unknown identity service subcommand: "
+msgid "unknown identity service subcommand:"
 msgstr "คำสั่งย่อยของบริการตัวตนไม่รู้จัก: "
 
 #: src/bas/security/IdentityServiceCommand.cpp:88
@@ -836,8 +887,13 @@ msgid ""
 "  path                   show ACL file path\n"
 "  reload                 reload file ACL from disk\n"
 "  save                   write file ACL to disk\n"
+"  allow IDENTITY PERM    add allow grant\n"
+"  deny IDENTITY PERM     add deny grant\n"
+"  revoke IDENTITY PERM   remove matching grant\n"
 "  help                   show this help\n"
 "  -h, --help             show this help\n"
+"  IDENTITY: name | user:name | role:name\n"
+"  PERM: action=read;resource=/path/**\n"
 msgstr ""
 "คำสั่ง ACL:\n"
 "  list                   แสดงรายการการอนุญาต ACL\n"
@@ -848,11 +904,11 @@ msgstr ""
 "  help                   แสดงความช่วยเหลือนี้\n"
 "  -h, --help             แสดงความช่วยเหลือนี้\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:28
+#: src/bas/security/PolicyStoreCommand.cpp:55
 msgid "no ACL grants\n"
 msgstr "ไม่มีการอนุญาต ACL\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:63
+#: src/bas/security/PolicyStoreCommand.cpp:90
 msgid ""
 "usage: list [-h]\n"
 "  List ACL grants.\n"
@@ -860,7 +916,7 @@ msgstr ""
 "วิธีใช้: list [-h]\n"
 "  แสดงรายการการอนุญาต ACL\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:71
+#: src/bas/security/PolicyStoreCommand.cpp:98
 msgid ""
 "usage: clear [-h]\n"
 "  Remove all ACL grants.\n"
@@ -868,11 +924,11 @@ msgstr ""
 "วิธีใช้: clear [-h]\n"
 "  ลบการอนุญาต ACL ทั้งหมด\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:75
+#: src/bas/security/PolicyStoreCommand.cpp:102
 msgid "cleared ACL\n"
 msgstr "ล้าง ACL แล้ว\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:80
+#: src/bas/security/PolicyStoreCommand.cpp:107
 msgid ""
 "usage: path [-h]\n"
 "  Show ACL file path.\n"
@@ -880,15 +936,15 @@ msgstr ""
 "วิธีใช้: path [-h]\n"
 "  แสดงเส้นทางไฟล์ ACL\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:85
+#: src/bas/security/PolicyStoreCommand.cpp:112
 msgid "acl: in-memory\n"
 msgstr "acl: ในหน่วยความจำ\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:87
-msgid "acl file: "
+#: src/bas/security/PolicyStoreCommand.cpp:114
+msgid "acl file:"
 msgstr "ไฟล์ ACL: "
 
-#: src/bas/security/PolicyStoreCommand.cpp:93
+#: src/bas/security/PolicyStoreCommand.cpp:120
 msgid ""
 "usage: reload [-h]\n"
 "  Reload file ACL from disk.\n"
@@ -896,15 +952,15 @@ msgstr ""
 "วิธีใช้: reload [-h]\n"
 "  โหลด ACL แบบไฟล์จากดิสก์ใหม่\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:97
+#: src/bas/security/PolicyStoreCommand.cpp:124
 msgid "reload only applies to file ACL (-a/--acl FILE)\n"
 msgstr "reload ใช้ได้เฉพาะ ACL แบบไฟล์ (-a/--acl FILE)\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:101
-msgid "reloaded ACL from "
+#: src/bas/security/PolicyStoreCommand.cpp:128
+msgid "reloaded ACL from"
 msgstr "โหลด ACL ใหม่จาก "
 
-#: src/bas/security/PolicyStoreCommand.cpp:106
+#: src/bas/security/PolicyStoreCommand.cpp:133
 msgid ""
 "usage: save [-h]\n"
 "  Write file ACL to disk.\n"
@@ -912,16 +968,49 @@ msgstr ""
 "วิธีใช้: save [-h]\n"
 "  เขียน ACL แบบไฟล์ลงดิสก์\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:110
+#: src/bas/security/PolicyStoreCommand.cpp:137
 msgid "save only applies to file ACL (-a/--acl FILE)\n"
 msgstr "save ใช้ได้เฉพาะ ACL แบบไฟล์ (-a/--acl FILE)\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:114
-msgid "saved ACL to "
+#: src/bas/security/PolicyStoreCommand.cpp:141
+msgid "saved ACL to"
 msgstr "บันทึก ACL ไปยัง "
 
-#: src/bas/security/PolicyStoreCommand.cpp:123
-msgid "unknown acl command: "
+#: src/bas/security/PolicyStoreCommand.cpp:146
+msgid ""
+"usage: allow|deny IDENTITY PERMISSION\n"
+"       grant IDENTITY PERMISSION [allow|deny]\n"
+msgstr ""
+"วิธีใช้: allow|deny ตัวตน สิทธิ์\n"
+"       grant ตัวตน สิทธิ์ [allow|deny]\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:153
+msgid "usage: grant IDENTITY PERMISSION [allow|deny]\n"
+msgstr "วิธีใช้: grant ตัวตน สิทธิ์ [allow|deny]\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:163
+msgid "unknown effect:"
+msgstr "ผลที่ไม่รู้จัก:"
+
+#: src/bas/security/PolicyStoreCommand.cpp:168
+msgid "usage:"
+msgstr "วิธีใช้:"
+
+#: src/bas/security/PolicyStoreCommand.cpp:168
+msgid "IDENTITY PERMISSION\n"
+msgstr "ตัวตน สิทธิ์\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:180
+#: src/bas/security/PolicyStoreCommand.cpp:184
+msgid "usage: revoke IDENTITY PERMISSION\n"
+msgstr "วิธีใช้: revoke ตัวตน สิทธิ์\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:192
+msgid "revoked"
+msgstr "เพิกถอนแล้ว"
+
+#: src/bas/security/PolicyStoreCommand.cpp:202
+msgid "unknown acl command:"
 msgstr "คำสั่ง ACL ไม่รู้จัก: "
 
 #: src/bas/security/SecurityManagerCommand.cpp:15
@@ -932,7 +1021,7 @@ msgid ""
 "  logout-realm [@realm|NAME]     clear identities in a realm\n"
 "  check [@realm] PERMISSION      check permission\n"
 "  request [@realm] PERM [USER]   request permission (login if needed)\n"
-"  login [@realm] [USER]          interactive login\n"
+"  login [@realm] [USER] [PASSWORD] interactive or non-interactive login\n"
 "  reload-creds                   reload credential file and restore logins\n"
 "  help                           show this help\n"
 msgstr ""
@@ -951,48 +1040,51 @@ msgid "no active identities\n"
 msgstr "ไม่มีตัวตนที่ใช้งานอยู่\n"
 
 #: src/bas/security/SecurityManagerCommand.cpp:49
-msgid " via "
+msgid "via"
 msgstr " ผ่าน "
 
-#: src/bas/security/SecurityManagerCommand.cpp:111
+#: src/bas/security/SecurityManagerCommand.cpp:112
 msgid "logged out all identities (auto-login suppressed until next login)\n"
 msgstr "ออกจากระบบตัวตนทั้งหมดแล้ว (ระงับเข้าสู่ระบบอัตโนมัติจนกว่าจะเข้าสู่ระบบครั้งถัดไป)\n"
 
-#: src/bas/security/SecurityManagerCommand.cpp:124
+#: src/bas/security/SecurityManagerCommand.cpp:125
 msgid "usage: logout-realm [@realm|NAME]\n"
 msgstr "วิธีใช้: logout-realm [@realm|NAME]\n"
 
-#: src/bas/security/SecurityManagerCommand.cpp:128
-msgid "logged out identities in realm "
+#: src/bas/security/SecurityManagerCommand.cpp:129
+msgid "logged out identities in realm"
 msgstr "ออกจากระบบตัวตนใน realm "
 
-#: src/bas/security/SecurityManagerCommand.cpp:133
+#: src/bas/security/SecurityManagerCommand.cpp:134
 msgid "no file credential store configured\n"
 msgstr "ยังไม่ได้ตั้งค่าที่เก็บข้อมูลรับรองแบบไฟล์\n"
 
-#: src/bas/security/SecurityManagerCommand.cpp:156
+#: src/bas/security/SecurityManagerCommand.cpp:157
 msgid "usage: check [@realm] PERMISSION\n"
 msgstr "วิธีใช้: check [@realm] PERMISSION\n"
 
-#: src/bas/security/SecurityManagerCommand.cpp:166
+#: src/bas/security/SecurityManagerCommand.cpp:167
 msgid "usage: request [@realm] PERMISSION [USER]\n"
 msgstr "วิธีใช้: request [@realm] PERMISSION [USER]\n"
 
-#: src/bas/security/SecurityManagerCommand.cpp:196
+#: src/bas/security/SecurityManagerCommand.cpp:211
+#: src/bas/security/SecurityManagerCommand.cpp:224
 msgid "login ok"
 msgstr "เข้าสู่ระบบสำเร็จ"
 
-#: src/bas/security/SecurityManagerCommand.cpp:198
-msgid " realm="
-msgstr " realm="
+#: src/bas/security/SecurityManagerCommand.cpp:213
+#: src/bas/security/SecurityManagerCommand.cpp:226
+msgid "realm="
+msgstr "ขอบเขต="
 
-#: src/bas/security/SecurityManagerCommand.cpp:204
+#: src/bas/security/SecurityManagerCommand.cpp:219
+#: src/bas/security/SecurityManagerCommand.cpp:232
 msgid "login failed\n"
 msgstr "เข้าสู่ระบบล้มเหลว\n"
 
-#: src/bas/security/SecurityManagerCommand.cpp:208
+#: src/bas/security/SecurityManagerCommand.cpp:236
 #: src/bas/security/UserStoreCommand.cpp:524
-msgid "unknown command: "
+msgid "unknown command:"
 msgstr "คำสั่งไม่รู้จัก: "
 
 #: src/bas/security/UserStoreCommand.cpp:34
@@ -1163,49 +1255,49 @@ msgstr ""
 "  --name LABEL          ชื่อที่แสดงของคีย์\n"
 "  -h, --help            แสดงความช่วยเหลือนี้\n"
 
+#: src/bas/security/UserStoreCommand.cpp:131
+msgid "name:"
+msgstr "  ชื่อ: "
+
 #: src/bas/security/UserStoreCommand.cpp:133
-msgid "  display: "
+msgid "display:"
 msgstr "  ชื่อที่แสดง: "
 
 #: src/bas/security/UserStoreCommand.cpp:136
-msgid "  email: "
+msgid "email:"
 msgstr "  อีเมล: "
 
 #: src/bas/security/UserStoreCommand.cpp:140
-msgid "  avatar: "
+msgid "avatar:"
 msgstr "  อวาตาร์: "
 
 #: src/bas/security/UserStoreCommand.cpp:143
-msgid "  enabled: "
+msgid "enabled:"
 msgstr "  เปิดใช้: "
 
 #: src/bas/security/UserStoreCommand.cpp:144
-msgid "  roles:"
+msgid "roles:"
 msgstr "  บทบาท:"
 
 #: src/bas/security/UserStoreCommand.cpp:153
-msgid "  keys:\n"
+msgid "keys:\n"
 msgstr "  คีย์:\n"
-
-#: src/bas/security/UserStoreCommand.cpp:155
-msgid "    (none)\n"
-msgstr "    (ไม่มี)\n"
 
 #: src/bas/security/UserStoreCommand.cpp:244
 msgid "failed to read password from stdin"
 msgstr "อ่านรหัสผ่านจาก stdin ไม่สำเร็จ"
 
 #: src/bas/security/UserStoreCommand.cpp:257
-msgid "missing value for "
+msgid "missing value for"
 msgstr "ไม่มีค่าสำหรับ "
 
 #: src/bas/security/UserStoreCommand.cpp:313
-msgid "unknown option: "
+msgid "unknown option:"
 msgstr "ตัวเลือกไม่รู้จัก: "
 
 #: src/bas/security/UserStoreCommand.cpp:333
 #: src/bas/security/UserStoreCommand.cpp:366
-msgid "unexpected argument: "
+msgid "unexpected argument:"
 msgstr "อาร์กิวเมนต์ไม่คาดคิด: "
 
 #: src/bas/security/UserStoreCommand.cpp:337
@@ -1214,22 +1306,22 @@ msgid "USER name required"
 msgstr "ต้องมีชื่อ USER"
 
 #: src/bas/security/UserStoreCommand.cpp:411
-msgid "user already exists: "
+msgid "user already exists:"
 msgstr "มีผู้ใช้อยู่แล้ว: "
 
 #: src/bas/security/UserStoreCommand.cpp:415
 #: src/bas/security/UserStoreCommand.cpp:460
 #: src/bas/security/UserStoreCommand.cpp:788
-msgid "unsupported hash algorithm: "
+msgid "unsupported hash algorithm:"
 msgstr "อัลกอริทึมแฮชไม่รองรับ: "
 
 #: src/bas/security/UserStoreCommand.cpp:416
 #: src/bas/security/UserStoreCommand.cpp:461
-msgid " (use plain, sha256, sha1, or md5)\n"
+msgid "(use plain, sha256, sha1, or md5)\n"
 msgstr " (ใช้ plain, sha256, sha1 หรือ md5)\n"
 
 #: src/bas/security/UserStoreCommand.cpp:436
-msgid "added user "
+msgid "added user"
 msgstr "เพิ่มผู้ใช้ "
 
 #: src/bas/security/UserStoreCommand.cpp:456
@@ -1243,11 +1335,11 @@ msgstr "เพิ่มผู้ใช้ "
 #: src/bas/security/UserStoreCommand.cpp:698
 #: src/bas/security/UserStoreCommand.cpp:719
 #: src/bas/security/UserStoreCommand.cpp:767
-msgid "user not found: "
+msgid "user not found:"
 msgstr "ไม่พบผู้ใช้: "
 
 #: src/bas/security/UserStoreCommand.cpp:485
-msgid "updated user "
+msgid "updated user"
 msgstr "อัปเดตผู้ใช้ "
 
 #: src/bas/security/UserStoreCommand.cpp:501
@@ -1255,15 +1347,15 @@ msgid "password required\n"
 msgstr "ต้องมีรหัสผ่าน\n"
 
 #: src/bas/security/UserStoreCommand.cpp:509
-msgid "password ok for "
+msgid "password ok for"
 msgstr "รหัสผ่านถูกต้องสำหรับ "
 
 #: src/bas/security/UserStoreCommand.cpp:512
-msgid "invalid password for "
+msgid "invalid password for"
 msgstr "รหัสผ่านไม่ถูกต้องสำหรับ "
 
 #: src/bas/security/UserStoreCommand.cpp:520
-msgid "ambiguous command: "
+msgid "ambiguous command:"
 msgstr "คำสั่งคลุมเครือ: "
 
 #: src/bas/security/UserStoreCommand.cpp:559
@@ -1271,19 +1363,19 @@ msgid "no users in store\n"
 msgstr "ไม่มีผู้ใช้ในที่เก็บ\n"
 
 #: src/bas/security/UserStoreCommand.cpp:570
-msgid " [disabled]"
+msgid "[disabled]"
 msgstr " [ปิดใช้]"
 
 #: src/bas/security/UserStoreCommand.cpp:617
-msgid "removed user "
+msgid "removed user"
 msgstr "ลบผู้ใช้ "
 
 #: src/bas/security/UserStoreCommand.cpp:635
-msgid "enabled user "
+msgid "enabled user"
 msgstr "เปิดใช้ผู้ใช้ "
 
 #: src/bas/security/UserStoreCommand.cpp:638
-msgid "disabled user "
+msgid "disabled user"
 msgstr "ปิดใช้ผู้ใช้ "
 
 #: src/bas/security/UserStoreCommand.cpp:660
@@ -1291,27 +1383,27 @@ msgid "usage: user roles set USER R…\n"
 msgstr "วิธีใช้: user roles set USER R…\n"
 
 #: src/bas/security/UserStoreCommand.cpp:670
-msgid "roles updated for "
+msgid "roles updated for"
 msgstr "อัปเดตบทบาทสำหรับ "
 
 #: src/bas/security/UserStoreCommand.cpp:678
-msgid "  role:"
+msgid "role:"
 msgstr "  บทบาท:"
 
 #: src/bas/security/UserStoreCommand.cpp:706
-msgid "role "
+msgid "role"
 msgstr "บทบาท "
 
 #: src/bas/security/UserStoreCommand.cpp:706
-msgid " for "
+msgid "for"
 msgstr " สำหรับ "
 
 #: src/bas/security/UserStoreCommand.cpp:751
-msgid "removed key "
+msgid "removed key"
 msgstr "ลบคีย์ "
 
 #: src/bas/security/UserStoreCommand.cpp:751
-msgid " from "
+msgid "from"
 msgstr " จาก "
 
 #: src/bas/security/UserStoreCommand.cpp:793
@@ -1319,15 +1411,15 @@ msgid "password flags require key type password-hash or password-plain\n"
 msgstr "แฟลกรหัสผ่านต้องใช้ประเภทคีย์ password-hash หรือ password-plain\n"
 
 #: src/bas/security/UserStoreCommand.cpp:805
-msgid "added key "
+msgid "added key"
 msgstr "เพิ่มคีย์ "
 
 #: src/bas/security/UserStoreCommand.cpp:805
-msgid " to "
+msgid "to"
 msgstr " ไปยัง "
 
 #: src/bas/security/UserStoreCommand.cpp:809
-msgid "unknown user subcommand: "
+msgid "unknown user subcommand:"
 msgstr "คำสั่งย่อยผู้ใช้ไม่รู้จัก: "
 
 #: src/bas/security/UserStoreCommand.cpp:837
@@ -1338,12 +1430,16 @@ msgstr ""
 "วิธีใช้: path [-h]\n"
 "  แสดงเส้นทางไฟล์และป้ายของที่เก็บผู้ใช้\n"
 
+#: src/bas/security/UserStoreCommand.cpp:840
+msgid "user store:"
+msgstr "ที่เก็บผู้ใช้: "
+
 #: src/bas/security/UserStoreCommand.cpp:843
-msgid "  file: "
+msgid "file:"
 msgstr "  ไฟล์: "
 
 #: src/bas/security/UserStoreCommand.cpp:845
-msgid "  kind: in-memory\n"
+msgid "kind: in-memory\n"
 msgstr "  ชนิด: ในหน่วยความจำ\n"
 
 #: src/bas/security/UserStoreCommand.cpp:851
@@ -1359,7 +1455,7 @@ msgid "reload only applies to file store (-d/--store FILE)\n"
 msgstr "reload ใช้ได้เฉพาะที่เก็บแบบไฟล์ (-d/--store FILE)\n"
 
 #: src/bas/security/UserStoreCommand.cpp:859
-msgid "reloaded user store from "
+msgid "reloaded user store from"
 msgstr "โหลดที่เก็บผู้ใช้ใหม่จาก "
 
 #: src/bas/security/UserStoreCommand.cpp:864
@@ -1375,7 +1471,7 @@ msgid "save only applies to file store (-d/--store FILE)\n"
 msgstr "save ใช้ได้เฉพาะที่เก็บแบบไฟล์ (-d/--store FILE)\n"
 
 #: src/bas/security/UserStoreCommand.cpp:872
-msgid "saved user store to "
+msgid "saved user store to"
 msgstr "บันทึกที่เก็บผู้ใช้ไปยัง "
 
 #: src/bas/volume/Volume_utils.cpp:152
@@ -1387,37 +1483,37 @@ msgid "Options:"
 msgstr "ตัวเลือก:"
 
 #: src/bas/volume/Volume_utils.cpp:154
-msgid "  -R, --recursive        list subdirectories recursively"
+msgid "-R, --recursive        list subdirectories recursively"
 msgstr "  -R, --recursive        แสดงรายการไดเรกทอรีย่อยแบบเรียกซ้ำ"
 
 #: src/bas/volume/Volume_utils.cpp:155
-msgid "  -l, --long             use a long listing format"
+msgid "-l, --long             use a long listing format"
 msgstr "  -l, --long             ใช้รูปแบบรายการแบบยาว"
 
 #: src/bas/volume/Volume_utils.cpp:156
-msgid "  -a, --all              include entries starting with . and .."
+msgid "-a, --all              include entries starting with . and .."
 msgstr "  -a, --all              รวมรายการที่ขึ้นต้นด้วย . และ .."
 
 #: src/bas/volume/Volume_utils.cpp:157
-msgid "  -A, --almost-all       include entries starting with . except . and .."
+msgid "-A, --almost-all       include entries starting with . except . and .."
 msgstr "  -A, --almost-all       รวมรายการที่ขึ้นต้นด้วย . ยกเว้น . และ .."
 
 #: src/bas/volume/Volume_utils.cpp:158
-msgid "  -F, --classify         append file type indicators"
+msgid "-F, --classify         append file type indicators"
 msgstr "  -F, --classify         ต่อท้ายตัวบ่งชี้ประเภทไฟล์"
 
 #: src/bas/volume/Volume_utils.cpp:159
-msgid "  -h, --human-readable   print sizes in human-readable form"
+msgid "-h, --human-readable   print sizes in human-readable form"
 msgstr "  -h, --human-readable   แสดงขนาดในรูปแบบที่อ่านง่าย"
 
 #: src/bas/volume/Volume_utils.cpp:160
-msgid "  -C, --color            enable colored output"
+msgid "-C, --color            enable colored output"
 msgstr "  -C, --color            เปิดใช้เอาต์พุตสี"
 
 #: src/bas/volume/Volume_utils.cpp:161
-msgid "  -T, --tree             print as directory tree"
+msgid "-T, --tree             print as directory tree"
 msgstr "  -T, --tree             แสดงเป็นต้นไม้ไดเรกทอรี"
 
 #: src/bas/volume/Volume_utils.cpp:162
-msgid "      --help             display this help and exit"
+msgid "--help             display this help and exit"
 msgstr "      --help             แสดงความช่วยเหลือนี้แล้วออก"

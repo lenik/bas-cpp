@@ -18,7 +18,7 @@ void printAcHelp(std::ostream& out) {
              "  logout-realm [@realm|NAME]     clear identities in a realm\n"
              "  check [@realm] PERMISSION      check permission\n"
              "  request [@realm] PERM [USER]   request permission (login if needed)\n"
-             "  login [@realm] [USER]          interactive login\n"
+             "  login [@realm] [USER] [PASSWORD] interactive or non-interactive login\n"
              "  reload-creds                   reload credential file and restore logins\n"
              "  help                           show this help\n");
 }
@@ -193,6 +193,33 @@ int SecurityManager::invoke(std::vector<std::string>& args) {
         } else if (!m_cmdDefaultSubject.empty()) {
             options.nameHint = m_cmdDefaultSubject;
         }
+
+        // Non-interactive: login [@realm] USER PASSWORD
+        if (args.size() >= 2) {
+            options.allowGuiInteraction = false;
+            options.allowConsoleInteraction = false;
+            options.preferredIdentityTypes = {"user"};
+            Credential cred;
+            cred.meta.type = "password";
+            cred.meta.subjectHint = args[0];
+            cred.meta.realm = realm;
+            cred.secret = SecretValue(args[1]);
+            auto identities = authenticate(std::move(cred), options);
+            if (identities) {
+                activate(*identities);
+                m_suppressAutoLogin = false;
+                std::cout << _("login ok");
+                if (!realm.empty()) {
+                    std::cout << ' ' << _("realm=") << realm.displayLabel();
+                }
+                std::cout << '\n';
+                printIdentities(*this);
+                return commandSuccess();
+            }
+            std::cerr << _("login failed\n");
+            return commandFailure();
+        }
+
         if (login(options)) {
             std::cout << _("login ok");
             if (!realm.empty()) {

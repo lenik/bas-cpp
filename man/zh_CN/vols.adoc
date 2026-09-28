@@ -1,0 +1,84 @@
+= vols(1)
+{project-author} <{project-email}>
+v{project-version}, {project-year}
+:doctype: manpage
+:manmanual: 用户命令
+:mansource: vols
+:man-linkstyle: blue R <>
+:nofooter:
+
+== NAME
+
+vols - 列出 bas-cpp 检测到的本地卷
+
+== SYNOPSIS
+
+*vols* [_选项_]
+
+== DESCRIPTION
+
+*vols* 枚举 bas-cpp 卷子系统已知的本地卷，先打印一行表头，再为每个卷打印一行。各列为制表符分隔。
+
+若未传入任何字段选择选项（*-a*、*-c*、*-m*、*-d*、*-t*、*-l*、*-u*、*-r*、*-L*、*-D*、*-o*、*-O*、*-z*），默认列为 *-mdtlu*（挂载点、设备、类型、标签、UUID）。使用 *-v* / *--verbose* 时，默认列为 *-mdtlurLD*（上述五列再加上只读标志、逻辑类型、回环设备）。*-c / --compact* 仅选择紧凑列集（*-mdtlu*），即使同时使用 *-v*。*-a / --all* 选择全部列（等同于组合所有字段标志）。
+
+扫描始终包含 bind 挂载。传入 *-s* / *--symbols*，或选择了逻辑类型列（*-L* / *--logical-type*，或 *-v* 默认）时，才会加入 overlay 文件系统。
+
+*-w / --writable* 仅列出可写挂载，并隐含只读列（*-r*），以便每行仍显示 *ro* / *rw*。
+
+== OPTIONS
+
+=== 字段列
+
+*-a*, *--all*::
+  打印全部可用列。
+*-c*, *--compact*::
+  使用紧凑列集（*-mdtlu*）；若同时给出显式字段标志，则与这些列按位或合并。
+*-m*, *--mountpoint*::
+  挂载点（或根路径）。
+*-d*, *--device*::
+  设备路径（或 -）。
+*-t*, *--type*::
+  卷类型。
+*-l*, *--label*::
+  标签。
+*-u*, *--uuid*::
+  UUID。
+*-r*, *--read-only*::
+  只读标志（*ro* / *rw*）。
+*-L*, *--logical-type*::
+  逻辑挂载种类（*-*、*bind*、*overlay*）。
+*-D*, *--loop-device*::
+  回环设备标记（*loop* / *-*）。
+*-o*, *--opts*::
+  来自 */proc/self/mountinfo* 的每挂载（VFS）选项字符串。
+*-O*, *--superopts*::
+  来自 */proc/self/mountinfo* 的超级块选项字符串。
+*-z*, *--root*::
+  文件系统内的根路径（mountinfo 的 “root” 字段，在挂载点之前）。
+
+=== 其他
+
+*-s*, *--symbols*::
+  在卷扫描中包含 overlay 文件系统（bind 挂载始终包含）。
+*-h*, *--help*::
+  打印用法并以成功状态退出。
+*-w*, *--writable*::
+  省略只读卷；隐含 *-r*。
+*-v*, *--verbose*::
+  降低库日志阈值（stderr 上有更多消息）。未指定字段标志时，选择详细模式的默认列集。
+*-q*, *--quiet*::
+  抑制 stderr 上的库警告（仅保留错误）。
+
+*-v* 与 *-q* 不能同时使用。*-a* 与 *-c* 不能同时使用。
+
+== EXIT STATUS
+
+成功时退出码为 0；无效选项、冲突标志或意外参数时为 2。
+
+== AUTHORS
+
+作为 bas-cpp 项目的一部分编写。
+
+== SEE ALSO
+
+*bas-cpp*(7)

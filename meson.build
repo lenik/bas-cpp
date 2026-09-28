@@ -446,24 +446,10 @@ subdir('tests')
 run_target(
     'posync',
     command: [
-        'bash',
-        '-euc', '''
-            cd "@SOURCE_ROOT@/po"
-            poflags=(--no-wrap)
-            xgettext "${poflags[@]}" --from-code=UTF-8 --keyword=_ --keyword=N_ --language=C++ --directory=.. --output=bas_cpp.pot --files-from=POTFILES
-            while IFS= read -r lang; do
-                [ -n "$lang" ] || continue
-                case "$lang" in
-                    '#'* ) continue ;;
-                esac
-                po_file="$lang.po"
-                if [ ! -f "$po_file" ]; then
-                    msginit "${poflags[@]}" --no-translator --input=bas_cpp.pot --locale="$lang" --output-file="$po_file"
-                fi
-                msgmerge "${poflags[@]}" --update --backup=none "$po_file" bas_cpp.pot
-                msgattrib "${poflags[@]}" --no-obsolete --output-file="$po_file" "$po_file"
-            done < LINGUAS
-        ''',
+        find_program('zfr'),
+        'translate',
+        '--sync',
+        '-C', meson.project_source_root(),
     ],
 )
 
@@ -478,13 +464,11 @@ pkgdocdir = datadir / 'doc' / meson.project_name()
 run_target(
     'look',
     command: [
-        'bash',
-        '-euc', '''
-            tmpdir=$(mktemp -d)
-            DESTDIR=$tmpdir meson install -C "@BUILD_ROOT@"
-            tree "$tmpdir"
-            rm -fr "$tmpdir"
-        ''',
+        find_program('zfr'),
+        'build',
+        '--look',
+        '-C', meson.project_source_root(),
+        '-b', meson.project_build_root(),
     ],
 )
 
@@ -500,6 +484,13 @@ install_data(
 puffs = [
     'vols',
 ]
+man_i18n_langs = []
+foreach lang : ['fr', 'it', 'de', 'es_MX', 'zh_CN', 'ja', 'ko', 'ar']
+  if fs.is_dir('man' / lang)
+    man_i18n_langs += [lang]
+  endif
+endforeach
+
 foreach puff : puffs
   custom_target(
     puff + '-man',
@@ -519,6 +510,33 @@ foreach puff : puffs
     install: true,
     install_dir: mandir / 'man1',
   )
+  foreach lang : man_i18n_langs
+    _man_i18n = custom_target(
+      puff + '-' + lang + '-man',
+      input: 'man' / lang / (puff + '.adoc'),
+      output: puff + '-' + lang + '.1',
+      command: [
+        asciidoctor,
+        '-b', 'manpage',
+        '-a', 'project-version=' + meson.project_version(),
+        '-a', 'project-year=@0@'.format(project_year),
+        '-a', 'project-author=' + project_author,
+        '-a', 'project-email=' + project_email,
+        '-o', '@OUTPUT@',
+        '@INPUT@',
+      ],
+      build_by_default: true,
+    )
+    meson.add_install_script(
+      'sh',
+      '-c',
+      'mkdir -p "${DESTDIR:-}$1" && install -m644 "$2" "${DESTDIR:-}$1/$3.1"',
+      '_',
+      mandir / lang / 'man1',
+      _man_i18n,
+      puff,
+    )
+  endforeach
 endforeach
 
 bash_files = [

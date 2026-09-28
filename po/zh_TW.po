@@ -7,8 +7,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: bas-cpp 1.0.3\n"
-"Report-Msgid-Bugs-To: bas-cpp@bodz.net\n"
-"POT-Creation-Date: 2026-07-13 16:39+0800\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-28 13:59+0800\n"
 "PO-Revision-Date: 2026-07-13 16:18+0800\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -65,7 +65,8 @@ msgid ""
 "  -h, --help                        show help and exit\n"
 "\n"
 "demo permissions (ACL is built-in):\n"
-"  fab.order.view / fab.order.modify / fab.order.delete / file.save\n"
+"  action=view;resource=fab.order / action=modify;resource=fab.order /\n"
+"  action=delete;resource=fab.order / action=save;resource=file\n"
 msgstr ""
 "acdemo — bas.security 權限、憑證與主控台登入示範\n"
 "\n"
@@ -115,95 +116,95 @@ msgstr ""
 "示範權限（ACL 內建）：\n"
 "  fab.order.view / fab.order.modify / fab.order.delete / file.save\n"
 
-#: app/acdemo.cpp:210
+#: app/acdemo.cpp:211
 msgid "  (none)\n"
 msgstr "  (無)\n"
 
-#: app/acdemo.cpp:213
+#: app/acdemo.cpp:214
 msgid "  label: "
 msgstr "  標籤： "
 
-#: app/acdemo.cpp:215 src/bas/security/IdentityServiceCommand.cpp:23
+#: app/acdemo.cpp:216
 msgid "  type: "
 msgstr "  類型: "
 
-#: app/acdemo.cpp:218 src/bas/security/UserStoreCommand.cpp:131
+#: app/acdemo.cpp:219
 msgid "  name: "
 msgstr "  名稱: "
 
-#: app/acdemo.cpp:221
+#: app/acdemo.cpp:222
 msgid "  uuid: "
 msgstr "  UUID: "
 
-#: app/acdemo.cpp:224
+#: app/acdemo.cpp:225
 msgid "  description: "
 msgstr "  描述: "
 
-#: app/acdemo.cpp:227
+#: app/acdemo.cpp:228
 msgid "  (current)\n"
 msgstr "  (目前)\n"
 
-#: app/acdemo.cpp:236
+#: app/acdemo.cpp:237
 msgid "invalid realm token: "
 msgstr "無效的領域權杖: "
 
-#: app/acdemo.cpp:250
+#: app/acdemo.cpp:251
 msgid "current realm: "
 msgstr "目前領域: "
 
-#: app/acdemo.cpp:276
+#: app/acdemo.cpp:277
 msgid "usage: realm show | realm NAME | realm @token\n"
 msgstr "用法：realm show | realm NAME | realm @token\n"
 
-#: app/acdemo.cpp:281
+#: app/acdemo.cpp:282
 msgid "current realm:\n"
 msgstr "目前領域:\n"
 
-#: app/acdemo.cpp:291
+#: app/acdemo.cpp:292
 msgid "no registered realms\n"
 msgstr "沒有已註冊的領域\n"
 
-#: app/acdemo.cpp:294
+#: app/acdemo.cpp:295
 msgid "registered realms:\n"
 msgstr "已註冊領域:\n"
 
-#: app/acdemo.cpp:298
+#: app/acdemo.cpp:299
 msgid " (current)"
 msgstr " (目前)"
 
-#: app/acdemo.cpp:393
+#: app/acdemo.cpp:394
 msgid "entered "
 msgstr "已進入 "
 
-#: app/acdemo.cpp:393
+#: app/acdemo.cpp:394
 msgid " (exit or Ctrl-D to leave)\n"
 msgstr " (exit 或 Ctrl-D 離開)\n"
 
-#: app/acdemo.cpp:443 app/acdemo.cpp:498
+#: app/acdemo.cpp:444 app/acdemo.cpp:499
 msgid "no identity service for current realm\n"
 msgstr "目前領域沒有身分服務\n"
 
-#: app/acdemo.cpp:521
+#: app/acdemo.cpp:522
 msgid "acdemo interactive mode. Type help for commands.\n"
 msgstr "acdemo 互動模式。輸入 help 查看指令。\n"
 
-#: app/acdemo.cpp:522
+#: app/acdemo.cpp:523
 msgid "  Tab: complete   Up/Down: history   Emacs keys: Ctrl-A/E/F/B, Alt-F/B\n"
 msgstr "  Tab: 補全   上下: 歷史   Emacs 鍵: Ctrl-A/E/F/B, Alt-F/B\n"
 
-#: app/acdemo.cpp:523
+#: app/acdemo.cpp:524
 msgid "  Ctrl-arrows: word   Ctrl-K/U/W Alt-BS: kill word   Ctrl-L: redraw\n"
 msgstr "  Ctrl-方向鍵: 按詞移動   Ctrl-K/U/W Alt-BS: 刪除詞   Ctrl-L: 重繪\n"
 
-#: app/acdemo.cpp:524
+#: app/acdemo.cpp:525
 msgid "  Shells: con, store, acl, man, reg, id (exit or Ctrl-D to leave)\n"
 msgstr "  子殼: con, store, acl, man, reg, id (exit 或 Ctrl-D 離開)\n"
 
-#: app/acdemo.cpp:529 src/bas/security/CredentialManagerCommand.cpp:77
+#: app/acdemo.cpp:530
 msgid "credential file: "
 msgstr "憑證檔案: "
 
-#: app/acdemo.cpp:530 src/bas/security/UserStoreCommand.cpp:840
+#: app/acdemo.cpp:531
 msgid "user store: "
 msgstr "使用者存放區: "
 
@@ -286,7 +287,7 @@ msgid "Terminal too small for tanks_game."
 msgstr "終端太小，無法執行 tanks_game。"
 
 #: app/tanks_game.cpp:215
-#, c-format
+#, python-format
 msgid "Need at least %dx%d, have %dx%d."
 msgstr "至少需要 %dx%d，目前為 %dx%d。"
 
@@ -315,12 +316,12 @@ msgid "Arrows move/turn  Space fire"
 msgstr "方向鍵移動/轉向  空白鍵開火"
 
 #: app/tanks_game.cpp:426
-#, c-format
+#, python-format
 msgid "Active: %s"
 msgstr "目前: %s"
 
 #: app/tanks_game.cpp:450
-#, c-format
+#, python-format
 msgid " Policy %s "
 msgstr " 原則 %s "
 
@@ -341,7 +342,6 @@ msgid "ACLS"
 msgstr "ACL"
 
 #: app/tanks_game.cpp:531
-#, c-format
 msgid "%-10s %zu entries"
 msgstr "%-10s %zu 筆"
 
@@ -370,9 +370,9 @@ msgid "Enter=retry   Esc=cancel"
 msgstr "Enter=重試   Esc=取消"
 
 #: app/tanks_game.cpp:770 app/tanks_game.cpp:848
-#, c-format
+#, python-format
 msgid " Login %s "
-msgstr " 登入 %s "
+msgstr "登入 %s "
 
 #: app/tanks_game.cpp:771 app/tanks_game.cpp:850
 msgid "user: "
@@ -391,7 +391,7 @@ msgid "demo accounts (user/pass):"
 msgstr "示範帳號（使用者/密碼）:"
 
 #: app/tanks_game.cpp:848
-#, c-format
+#, python-format
 msgid " Elevate %s "
 msgstr " 提權 %s "
 
@@ -488,108 +488,150 @@ msgid "error: "
 msgstr "錯誤: "
 
 #: app/vols.cpp:39
-msgid ""
-"usage: vols [options]\n"
-"  Field selection (default without any: -mdtlu; with -v: -mdtlurLD):\n"
-"    -a, --all            all columns\n"
-"    -c, --compact        same columns as -mdtlu (merges with explicit field flags)\n"
-"    -m, --mountpoint     mount point column\n"
-"    -d, --device         device column\n"
-"    -t, --type           type column\n"
-"    -l, --label          label column\n"
-"    -u, --uuid           UUID column\n"
-"    -r, --read-only      read-only (ro/rw) column\n"
-"    -L, --logical-type   logical type column\n"
-"    -D, --loop-device    loop device column\n"
-"    -o, --opts           per-mount (VFS) options from mountinfo\n"
-"    -O, --superopts      superblock options from mountinfo\n"
-"    -z, --root           root path within filesystem (mountinfo field)\n"
-"  Other:\n"
-"    -s, --symbols        include overlay filesystems in the scan (bind mounts always on)\n"
-"    -h, --help           show this help and exit\n"
-"    -w, --writable       list only writable mounts; implies -r\n"
-"    -v, --verbose        more log detail; default columns include logical type\n"
-"    -q, --quiet          only errors on stderr\n"
-msgstr ""
-"用法：vols [options]\n"
-"  欄位選擇（未指定時預設：-mdtlu；搭配 -v 時：-mdtlurLD）：\n"
-"    -a, --all            全部欄\n"
-"    -c, --compact        與 -mdtlu 相同的欄（與明確欄位旗標合併）\n"
-"    -m, --mountpoint     掛載點欄\n"
-"    -d, --device         裝置欄\n"
-"    -t, --type           類型欄\n"
-"    -l, --label          標籤欄\n"
-"    -u, --uuid           UUID 欄\n"
-"    -r, --read-only      唯讀（ro/rw）欄\n"
-"    -L, --logical-type   邏輯類型欄\n"
-"    -D, --loop-device    迴圈裝置欄\n"
-"    -o, --opts           來自 mountinfo 的每掛載（VFS）選項\n"
-"    -O, --superopts      來自 mountinfo 的超級區塊選項\n"
-"    -z, --root           檔案系統內的根路徑（mountinfo 欄位）\n"
-"  其他：\n"
-"    -s, --symbols        掃描時包含 overlay 檔案系統（綁定掛載一律開啟）\n"
-"    -h, --help           顯示此說明並結束\n"
-"    -w, --writable       僅列出可寫掛載；隱含 -r\n"
-"    -v, --verbose        更多日誌細節；預設欄包含邏輯類型\n"
-"    -q, --quiet          僅將錯誤輸出到 stderr\n"
+msgid "usage: vols [options]"
+msgstr "用法：vols [選項]"
 
-#: app/vols.cpp:119
+#: app/vols.cpp:40
+msgid "Field selection (default without any: -mdtlu; with -v: -mdtlurLD):"
+msgstr "欄位選擇（未指定時預設 -mdtlu；加 -v 時為 -mdtlurLD）："
+
+#: app/vols.cpp:41
+msgid "all columns"
+msgstr "所有欄"
+
+#: app/vols.cpp:42
+msgid "same columns as -mdtlu (merges with explicit field flags)"
+msgstr "與 -mdtlu 相同的欄（與明確欄位旗標合併）"
+
+#: app/vols.cpp:43
+msgid "mount point column"
+msgstr "掛載點"
+
+#: app/vols.cpp:44
+msgid "device column"
+msgstr "裝置欄"
+
+#: app/vols.cpp:45
+msgid "type column"
+msgstr "類型欄"
+
+#: app/vols.cpp:46
+msgid "UUID column"
+msgstr "UUID 欄"
+
+#: app/vols.cpp:47
+msgid "label column"
+msgstr "標籤欄"
+
+#: app/vols.cpp:48
+msgid "read-only (ro/rw) column"
+msgstr "唯讀（ro/rw）欄"
+
+#: app/vols.cpp:49
+msgid "logical type column"
+msgstr "邏輯類型"
+
+#: app/vols.cpp:50
+msgid "loop device column"
+msgstr "迴圈裝置"
+
+#: app/vols.cpp:51
+msgid "per-mount (VFS) options from mountinfo"
+msgstr "來自 mountinfo 的每掛載（VFS）選項"
+
+#: app/vols.cpp:52
+msgid "superblock options from mountinfo"
+msgstr "來自 mountinfo 的超級區塊選項"
+
+#: app/vols.cpp:53
+msgid "root path within filesystem (mountinfo field)"
+msgstr "檔案系統內的根路徑（mountinfo 欄位）"
+
+#: app/vols.cpp:54
+msgid "Other:"
+msgstr "其他："
+
+#: app/vols.cpp:55
+msgid "include overlay filesystems in the scan (bind mounts always on)"
+msgstr "掃描時包含 overlay 檔案系統（bind 掛載一律包含）"
+
+#: app/vols.cpp:56
+msgid "include loopback mounts (excluded by default)"
+msgstr "包含 loopback 掛載（預設排除）"
+
+#: app/vols.cpp:57
+msgid "show this help and exit"
+msgstr "顯示此說明並結束"
+
+#: app/vols.cpp:58
+msgid "list only writable mounts; implies -r"
+msgstr "僅列出可寫掛載；隱含 -r"
+
+#: app/vols.cpp:59
+msgid "more log detail; default columns include logical type"
+msgstr "更詳細的日誌；預設欄包含邏輯類型"
+
+#: app/vols.cpp:60
+msgid "only errors on stderr"
+msgstr "僅在 stderr 輸出錯誤"
+
+#: app/vols.cpp:120
 msgid "Mount Point"
 msgstr "掛載點"
 
-#: app/vols.cpp:120
+#: app/vols.cpp:121
 msgid "Root"
 msgstr "根路徑"
 
-#: app/vols.cpp:121
+#: app/vols.cpp:122
 msgid "Device"
 msgstr "裝置"
 
-#: app/vols.cpp:122
+#: app/vols.cpp:123
 msgid "Type"
 msgstr "類型"
 
-#: app/vols.cpp:123
+#: app/vols.cpp:124
 msgid "Label"
 msgstr "標籤"
 
-#: app/vols.cpp:124
+#: app/vols.cpp:125
 msgid "UUID"
 msgstr "UUID"
 
-#: app/vols.cpp:125
+#: app/vols.cpp:126
 msgid "Read-Only"
 msgstr "唯讀"
 
-#: app/vols.cpp:126
+#: app/vols.cpp:127
 msgid "Logical Type"
 msgstr "邏輯類型"
 
-#: app/vols.cpp:127
+#: app/vols.cpp:128
 msgid "Loop Device"
 msgstr "迴圈裝置"
 
-#: app/vols.cpp:128
+#: app/vols.cpp:129
 msgid "VFS opts"
 msgstr "VFS 選項"
 
-#: app/vols.cpp:129
+#: app/vols.cpp:130
 msgid "Super opts"
 msgstr "超級區塊選項"
 
-#: app/vols.cpp:247
+#: app/vols.cpp:253
 msgid "vols: unexpected argument: "
 msgstr "vols: 意外的參數: "
 
-#: app/vols.cpp:258
+#: app/vols.cpp:264
 msgid "vols: -v/--verbose and -q/--quiet are mutually exclusive\n"
 msgstr "vols: -v/--verbose 與 -q/--quiet 不能同時使用\n"
 
-#: app/vols.cpp:263
+#: app/vols.cpp:269
 msgid "vols: -a/--all and -c/--compact are mutually exclusive\n"
 msgstr "vols: -a/--all 與 -c/--compact 不能同時使用\n"
 
-#: app/vols.cpp:303
+#: app/vols.cpp:309
 msgid "vols: no columns selected\n"
 msgstr "vols: 未選取任何欄\n"
 
@@ -618,16 +660,16 @@ msgstr ""
 "  列出 ACE 列。\n"
 
 #: src/bas/security/ACList.cpp:113
-msgid "unknown aclist command: "
+msgid "unknown aclist command:"
 msgstr "未知的 aclist 指令: "
 
 #: src/bas/security/ACList.cpp:113
 #: src/bas/security/CredentialManagerCommand.cpp:123
 #: src/bas/security/IdentityRegistryCommand.cpp:104
 #: src/bas/security/IdentityServiceCommand.cpp:71
-#: src/bas/security/PolicyStoreCommand.cpp:123
-#: src/bas/security/SecurityManagerCommand.cpp:208
-msgid " (try: help)\n"
+#: src/bas/security/PolicyStoreCommand.cpp:202
+#: src/bas/security/SecurityManagerCommand.cpp:236
+msgid "(try: help)\n"
 msgstr " (請試: help)\n"
 
 #: src/bas/security/CredentialManagerCommand.cpp:14
@@ -655,25 +697,29 @@ msgid "no cached credentials\n"
 msgstr "沒有快取的憑證\n"
 
 #: src/bas/security/CredentialManagerCommand.cpp:40
-msgid "    (use login/request to verify; secrets not printed)\n"
+msgid "(use login/request to verify; secrets not printed)\n"
 msgstr "    (使用 login/request 驗證; 不列印機密)\n"
 
 #: src/bas/security/CredentialManagerCommand.cpp:75
 msgid "credential store: in-memory\n"
 msgstr "憑證存放區: 記憶體\n"
 
+#: src/bas/security/CredentialManagerCommand.cpp:77
+msgid "credential file:"
+msgstr "憑證檔案: "
+
 #: src/bas/security/CredentialManagerCommand.cpp:83
 msgid "reload only applies to file credential store\n"
 msgstr "reload 僅適用於檔案憑證存放區\n"
 
 #: src/bas/security/CredentialManagerCommand.cpp:87
-#: src/bas/security/SecurityManagerCommand.cpp:137
-msgid "reloaded "
+#: src/bas/security/SecurityManagerCommand.cpp:138
+msgid "reloaded"
 msgstr "已重新載入 "
 
 #: src/bas/security/CredentialManagerCommand.cpp:87
-#: src/bas/security/SecurityManagerCommand.cpp:138
-msgid " credential(s) from "
+#: src/bas/security/SecurityManagerCommand.cpp:139
+msgid "credential(s) from"
 msgstr " 個憑證，來自 "
 
 #: src/bas/security/CredentialManagerCommand.cpp:93
@@ -681,7 +727,7 @@ msgid "save only applies to file credential store\n"
 msgstr "save 僅適用於檔案憑證存放區\n"
 
 #: src/bas/security/CredentialManagerCommand.cpp:97
-msgid "saved credentials to "
+msgid "saved credentials to"
 msgstr "已將憑證儲存到 "
 
 #: src/bas/security/CredentialManagerCommand.cpp:102
@@ -697,7 +743,7 @@ msgid "removed credential ["
 msgstr "已刪除憑證 ["
 
 #: src/bas/security/CredentialManagerCommand.cpp:123
-msgid "unknown credential command: "
+msgid "unknown credential command:"
 msgstr "未知的憑證指令: "
 
 #: src/bas/security/IdentityRegistryCommand.cpp:14
@@ -719,7 +765,7 @@ msgid "no identity services registered\n"
 msgstr "沒有已註冊的身分服務\n"
 
 #: src/bas/security/IdentityRegistryCommand.cpp:33
-msgid " [auto-login]"
+msgid "[auto-login]"
 msgstr " [自動登入]"
 
 #: src/bas/security/IdentityRegistryCommand.cpp:42
@@ -727,7 +773,7 @@ msgid "no realms registered\n"
 msgstr "沒有已註冊的領域\n"
 
 #: src/bas/security/IdentityRegistryCommand.cpp:49
-msgid " (no service)\n"
+msgid "(no service)\n"
 msgstr " (無服務)\n"
 
 #: src/bas/security/IdentityRegistryCommand.cpp:92
@@ -735,11 +781,11 @@ msgid "usage: service ID [SUBCMD …]\n"
 msgstr "用法：service ID [SUBCMD …]\n"
 
 #: src/bas/security/IdentityRegistryCommand.cpp:98
-msgid "identity service not found: "
+msgid "identity service not found:"
 msgstr "找不到身分服務: "
 
 #: src/bas/security/IdentityRegistryCommand.cpp:104
-msgid "unknown registry subcommand: "
+msgid "unknown registry subcommand:"
 msgstr "未知的登錄庫子指令: "
 
 #: src/bas/security/IdentityServiceCommand.cpp:15
@@ -755,11 +801,15 @@ msgstr ""
 "  store SUBCMD …         （存放服務）使用者存放區指令\n"
 
 #: src/bas/security/IdentityServiceCommand.cpp:22
-msgid "  id: "
+msgid "id:"
 msgstr "  ID: "
 
+#: src/bas/security/IdentityServiceCommand.cpp:23
+msgid "type:"
+msgstr "  類型: "
+
 #: src/bas/security/IdentityServiceCommand.cpp:24
-msgid "  auto-login: "
+msgid "auto-login:"
 msgstr "  自動登入: "
 
 #: src/bas/security/IdentityServiceCommand.cpp:24
@@ -777,28 +827,29 @@ msgid "no"
 msgstr "否"
 
 #: src/bas/security/IdentityServiceCommand.cpp:25
-msgid "  credentials:"
+msgid "credentials:"
 msgstr "  憑證:"
 
 #: src/bas/security/IdentityServiceCommand.cpp:28
 #: src/bas/security/UserStoreCommand.cpp:146
-msgid " (none)\n"
+#: src/bas/security/UserStoreCommand.cpp:155
+msgid "(none)\n"
 msgstr " (無)\n"
 
 #: src/bas/security/IdentityServiceCommand.cpp:35
-msgid "  realm-types:"
+msgid "realm-types:"
 msgstr "  領域類型:"
 
 #: src/bas/security/IdentityServiceCommand.cpp:38
-msgid " (any)\n"
+msgid "(any)\n"
 msgstr " (任意)\n"
 
 #: src/bas/security/IdentityServiceCommand.cpp:47
-msgid "  backed-stores: "
+msgid "backed-stores:"
 msgstr "  後端存放區: "
 
 #: src/bas/security/IdentityServiceCommand.cpp:71
-msgid "unknown identity service subcommand: "
+msgid "unknown identity service subcommand:"
 msgstr "未知的身分服務子指令: "
 
 #: src/bas/security/IdentityServiceCommand.cpp:88
@@ -837,8 +888,13 @@ msgid ""
 "  path                   show ACL file path\n"
 "  reload                 reload file ACL from disk\n"
 "  save                   write file ACL to disk\n"
+"  allow IDENTITY PERM    add allow grant\n"
+"  deny IDENTITY PERM     add deny grant\n"
+"  revoke IDENTITY PERM   remove matching grant\n"
 "  help                   show this help\n"
 "  -h, --help             show this help\n"
+"  IDENTITY: name | user:name | role:name\n"
+"  PERM: action=read;resource=/path/**\n"
 msgstr ""
 "ACL 指令:\n"
 "  list                   列出 ACL 授權\n"
@@ -849,11 +905,11 @@ msgstr ""
 "  help                   顯示此說明\n"
 "  -h, --help             顯示此說明\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:28
+#: src/bas/security/PolicyStoreCommand.cpp:55
 msgid "no ACL grants\n"
 msgstr "沒有 ACL 授權\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:63
+#: src/bas/security/PolicyStoreCommand.cpp:90
 msgid ""
 "usage: list [-h]\n"
 "  List ACL grants.\n"
@@ -861,7 +917,7 @@ msgstr ""
 "用法：list [-h]\n"
 "  列出 ACL 授權。\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:71
+#: src/bas/security/PolicyStoreCommand.cpp:98
 msgid ""
 "usage: clear [-h]\n"
 "  Remove all ACL grants.\n"
@@ -869,11 +925,11 @@ msgstr ""
 "用法：clear [-h]\n"
 "  移除全部 ACL 授權。\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:75
+#: src/bas/security/PolicyStoreCommand.cpp:102
 msgid "cleared ACL\n"
 msgstr "已清除 ACL\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:80
+#: src/bas/security/PolicyStoreCommand.cpp:107
 msgid ""
 "usage: path [-h]\n"
 "  Show ACL file path.\n"
@@ -881,15 +937,15 @@ msgstr ""
 "用法：path [-h]\n"
 "  顯示 ACL 檔案路徑。\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:85
+#: src/bas/security/PolicyStoreCommand.cpp:112
 msgid "acl: in-memory\n"
 msgstr "acl: 記憶體\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:87
-msgid "acl file: "
+#: src/bas/security/PolicyStoreCommand.cpp:114
+msgid "acl file:"
 msgstr "ACL 檔案: "
 
-#: src/bas/security/PolicyStoreCommand.cpp:93
+#: src/bas/security/PolicyStoreCommand.cpp:120
 msgid ""
 "usage: reload [-h]\n"
 "  Reload file ACL from disk.\n"
@@ -897,15 +953,15 @@ msgstr ""
 "用法：reload [-h]\n"
 "  從磁碟重新載入檔案 ACL。\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:97
+#: src/bas/security/PolicyStoreCommand.cpp:124
 msgid "reload only applies to file ACL (-a/--acl FILE)\n"
 msgstr "reload 僅適用於檔案 ACL (-a/--acl FILE)\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:101
-msgid "reloaded ACL from "
+#: src/bas/security/PolicyStoreCommand.cpp:128
+msgid "reloaded ACL from"
 msgstr "已從以下位置重新載入 ACL: "
 
-#: src/bas/security/PolicyStoreCommand.cpp:106
+#: src/bas/security/PolicyStoreCommand.cpp:133
 msgid ""
 "usage: save [-h]\n"
 "  Write file ACL to disk.\n"
@@ -913,16 +969,49 @@ msgstr ""
 "用法：save [-h]\n"
 "  將檔案 ACL 寫入磁碟。\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:110
+#: src/bas/security/PolicyStoreCommand.cpp:137
 msgid "save only applies to file ACL (-a/--acl FILE)\n"
 msgstr "save 僅適用於檔案 ACL (-a/--acl FILE)\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:114
-msgid "saved ACL to "
+#: src/bas/security/PolicyStoreCommand.cpp:141
+msgid "saved ACL to"
 msgstr "已將 ACL 儲存到 "
 
-#: src/bas/security/PolicyStoreCommand.cpp:123
-msgid "unknown acl command: "
+#: src/bas/security/PolicyStoreCommand.cpp:146
+msgid ""
+"usage: allow|deny IDENTITY PERMISSION\n"
+"       grant IDENTITY PERMISSION [allow|deny]\n"
+msgstr ""
+"用法：allow|deny 身分 權限\n"
+"       grant 身分 權限 [allow|deny]\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:153
+msgid "usage: grant IDENTITY PERMISSION [allow|deny]\n"
+msgstr "用法：grant 身分 權限 [allow|deny]\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:163
+msgid "unknown effect:"
+msgstr "未知效果:"
+
+#: src/bas/security/PolicyStoreCommand.cpp:168
+msgid "usage:"
+msgstr "用法："
+
+#: src/bas/security/PolicyStoreCommand.cpp:168
+msgid "IDENTITY PERMISSION\n"
+msgstr "身分 權限\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:180
+#: src/bas/security/PolicyStoreCommand.cpp:184
+msgid "usage: revoke IDENTITY PERMISSION\n"
+msgstr "用法：revoke 身分 權限\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:192
+msgid "revoked"
+msgstr "已撤銷"
+
+#: src/bas/security/PolicyStoreCommand.cpp:202
+msgid "unknown acl command:"
 msgstr "未知的 ACL 指令: "
 
 #: src/bas/security/SecurityManagerCommand.cpp:15
@@ -933,7 +1022,7 @@ msgid ""
 "  logout-realm [@realm|NAME]     clear identities in a realm\n"
 "  check [@realm] PERMISSION      check permission\n"
 "  request [@realm] PERM [USER]   request permission (login if needed)\n"
-"  login [@realm] [USER]          interactive login\n"
+"  login [@realm] [USER] [PASSWORD] interactive or non-interactive login\n"
 "  reload-creds                   reload credential file and restore logins\n"
 "  help                           show this help\n"
 msgstr ""
@@ -952,48 +1041,51 @@ msgid "no active identities\n"
 msgstr "沒有作用中的身分\n"
 
 #: src/bas/security/SecurityManagerCommand.cpp:49
-msgid " via "
+msgid "via"
 msgstr " 經由 "
 
-#: src/bas/security/SecurityManagerCommand.cpp:111
+#: src/bas/security/SecurityManagerCommand.cpp:112
 msgid "logged out all identities (auto-login suppressed until next login)\n"
 msgstr "已登出全部身分（在下次登入前抑制自動登入）\n"
 
-#: src/bas/security/SecurityManagerCommand.cpp:124
+#: src/bas/security/SecurityManagerCommand.cpp:125
 msgid "usage: logout-realm [@realm|NAME]\n"
 msgstr "用法：logout-realm [@realm|NAME]\n"
 
-#: src/bas/security/SecurityManagerCommand.cpp:128
-msgid "logged out identities in realm "
+#: src/bas/security/SecurityManagerCommand.cpp:129
+msgid "logged out identities in realm"
 msgstr "已登出領域中的身分: "
 
-#: src/bas/security/SecurityManagerCommand.cpp:133
+#: src/bas/security/SecurityManagerCommand.cpp:134
 msgid "no file credential store configured\n"
 msgstr "未設定檔案憑證存放區\n"
 
-#: src/bas/security/SecurityManagerCommand.cpp:156
+#: src/bas/security/SecurityManagerCommand.cpp:157
 msgid "usage: check [@realm] PERMISSION\n"
 msgstr "用法：check [@realm] PERMISSION\n"
 
-#: src/bas/security/SecurityManagerCommand.cpp:166
+#: src/bas/security/SecurityManagerCommand.cpp:167
 msgid "usage: request [@realm] PERMISSION [USER]\n"
 msgstr "用法：request [@realm] PERMISSION [USER]\n"
 
-#: src/bas/security/SecurityManagerCommand.cpp:196
+#: src/bas/security/SecurityManagerCommand.cpp:211
+#: src/bas/security/SecurityManagerCommand.cpp:224
 msgid "login ok"
 msgstr "登入成功"
 
-#: src/bas/security/SecurityManagerCommand.cpp:198
-msgid " realm="
-msgstr " realm="
+#: src/bas/security/SecurityManagerCommand.cpp:213
+#: src/bas/security/SecurityManagerCommand.cpp:226
+msgid "realm="
+msgstr "領域="
 
-#: src/bas/security/SecurityManagerCommand.cpp:204
+#: src/bas/security/SecurityManagerCommand.cpp:219
+#: src/bas/security/SecurityManagerCommand.cpp:232
 msgid "login failed\n"
 msgstr "登入失敗\n"
 
-#: src/bas/security/SecurityManagerCommand.cpp:208
+#: src/bas/security/SecurityManagerCommand.cpp:236
 #: src/bas/security/UserStoreCommand.cpp:524
-msgid "unknown command: "
+msgid "unknown command:"
 msgstr "未知指令: "
 
 #: src/bas/security/UserStoreCommand.cpp:34
@@ -1164,49 +1256,49 @@ msgstr ""
 "  --name LABEL          金鑰顯示名稱\n"
 "  -h, --help            顯示此說明\n"
 
+#: src/bas/security/UserStoreCommand.cpp:131
+msgid "name:"
+msgstr "  名稱: "
+
 #: src/bas/security/UserStoreCommand.cpp:133
-msgid "  display: "
+msgid "display:"
 msgstr "  顯示名稱: "
 
 #: src/bas/security/UserStoreCommand.cpp:136
-msgid "  email: "
+msgid "email:"
 msgstr "  電子郵件: "
 
 #: src/bas/security/UserStoreCommand.cpp:140
-msgid "  avatar: "
+msgid "avatar:"
 msgstr "  頭像: "
 
 #: src/bas/security/UserStoreCommand.cpp:143
-msgid "  enabled: "
+msgid "enabled:"
 msgstr "  已啟用: "
 
 #: src/bas/security/UserStoreCommand.cpp:144
-msgid "  roles:"
+msgid "roles:"
 msgstr "  角色:"
 
 #: src/bas/security/UserStoreCommand.cpp:153
-msgid "  keys:\n"
+msgid "keys:\n"
 msgstr "  金鑰:\n"
-
-#: src/bas/security/UserStoreCommand.cpp:155
-msgid "    (none)\n"
-msgstr "    (無)\n"
 
 #: src/bas/security/UserStoreCommand.cpp:244
 msgid "failed to read password from stdin"
 msgstr "無法從標準輸入讀取密碼"
 
 #: src/bas/security/UserStoreCommand.cpp:257
-msgid "missing value for "
+msgid "missing value for"
 msgstr "缺少值: "
 
 #: src/bas/security/UserStoreCommand.cpp:313
-msgid "unknown option: "
+msgid "unknown option:"
 msgstr "未知選項: "
 
 #: src/bas/security/UserStoreCommand.cpp:333
 #: src/bas/security/UserStoreCommand.cpp:366
-msgid "unexpected argument: "
+msgid "unexpected argument:"
 msgstr "意外的參數: "
 
 #: src/bas/security/UserStoreCommand.cpp:337
@@ -1215,22 +1307,22 @@ msgid "USER name required"
 msgstr "需要 USER 名稱"
 
 #: src/bas/security/UserStoreCommand.cpp:411
-msgid "user already exists: "
+msgid "user already exists:"
 msgstr "使用者已存在: "
 
 #: src/bas/security/UserStoreCommand.cpp:415
 #: src/bas/security/UserStoreCommand.cpp:460
 #: src/bas/security/UserStoreCommand.cpp:788
-msgid "unsupported hash algorithm: "
+msgid "unsupported hash algorithm:"
 msgstr "不支援的雜湊演算法: "
 
 #: src/bas/security/UserStoreCommand.cpp:416
 #: src/bas/security/UserStoreCommand.cpp:461
-msgid " (use plain, sha256, sha1, or md5)\n"
+msgid "(use plain, sha256, sha1, or md5)\n"
 msgstr " (請使用 plain、sha256、sha1 或 md5)\n"
 
 #: src/bas/security/UserStoreCommand.cpp:436
-msgid "added user "
+msgid "added user"
 msgstr "已新增使用者 "
 
 #: src/bas/security/UserStoreCommand.cpp:456
@@ -1244,11 +1336,11 @@ msgstr "已新增使用者 "
 #: src/bas/security/UserStoreCommand.cpp:698
 #: src/bas/security/UserStoreCommand.cpp:719
 #: src/bas/security/UserStoreCommand.cpp:767
-msgid "user not found: "
+msgid "user not found:"
 msgstr "找不到使用者: "
 
 #: src/bas/security/UserStoreCommand.cpp:485
-msgid "updated user "
+msgid "updated user"
 msgstr "已更新使用者 "
 
 #: src/bas/security/UserStoreCommand.cpp:501
@@ -1256,15 +1348,15 @@ msgid "password required\n"
 msgstr "需要密碼\n"
 
 #: src/bas/security/UserStoreCommand.cpp:509
-msgid "password ok for "
+msgid "password ok for"
 msgstr "密碼正確: "
 
 #: src/bas/security/UserStoreCommand.cpp:512
-msgid "invalid password for "
+msgid "invalid password for"
 msgstr "密碼無效: "
 
 #: src/bas/security/UserStoreCommand.cpp:520
-msgid "ambiguous command: "
+msgid "ambiguous command:"
 msgstr "指令不明確: "
 
 #: src/bas/security/UserStoreCommand.cpp:559
@@ -1272,19 +1364,19 @@ msgid "no users in store\n"
 msgstr "存放區中沒有使用者\n"
 
 #: src/bas/security/UserStoreCommand.cpp:570
-msgid " [disabled]"
+msgid "[disabled]"
 msgstr " [已停用]"
 
 #: src/bas/security/UserStoreCommand.cpp:617
-msgid "removed user "
+msgid "removed user"
 msgstr "已刪除使用者 "
 
 #: src/bas/security/UserStoreCommand.cpp:635
-msgid "enabled user "
+msgid "enabled user"
 msgstr "已啟用使用者 "
 
 #: src/bas/security/UserStoreCommand.cpp:638
-msgid "disabled user "
+msgid "disabled user"
 msgstr "已停用使用者 "
 
 #: src/bas/security/UserStoreCommand.cpp:660
@@ -1292,27 +1384,27 @@ msgid "usage: user roles set USER R…\n"
 msgstr "用法：user roles set USER R…\n"
 
 #: src/bas/security/UserStoreCommand.cpp:670
-msgid "roles updated for "
+msgid "roles updated for"
 msgstr "已更新角色: "
 
 #: src/bas/security/UserStoreCommand.cpp:678
-msgid "  role:"
+msgid "role:"
 msgstr "  角色:"
 
 #: src/bas/security/UserStoreCommand.cpp:706
-msgid "role "
+msgid "role"
 msgstr "角色 "
 
 #: src/bas/security/UserStoreCommand.cpp:706
-msgid " for "
+msgid "for"
 msgstr " 用於 "
 
 #: src/bas/security/UserStoreCommand.cpp:751
-msgid "removed key "
+msgid "removed key"
 msgstr "已刪除金鑰 "
 
 #: src/bas/security/UserStoreCommand.cpp:751
-msgid " from "
+msgid "from"
 msgstr " 從 "
 
 #: src/bas/security/UserStoreCommand.cpp:793
@@ -1320,15 +1412,15 @@ msgid "password flags require key type password-hash or password-plain\n"
 msgstr "密碼相關選項需要金鑰類型為 password-hash 或 password-plain\n"
 
 #: src/bas/security/UserStoreCommand.cpp:805
-msgid "added key "
+msgid "added key"
 msgstr "已新增金鑰 "
 
 #: src/bas/security/UserStoreCommand.cpp:805
-msgid " to "
+msgid "to"
 msgstr " 到 "
 
 #: src/bas/security/UserStoreCommand.cpp:809
-msgid "unknown user subcommand: "
+msgid "unknown user subcommand:"
 msgstr "未知的使用者子指令: "
 
 #: src/bas/security/UserStoreCommand.cpp:837
@@ -1339,12 +1431,16 @@ msgstr ""
 "用法：path [-h]\n"
 "  顯示使用者存放區的檔案路徑與標籤。\n"
 
+#: src/bas/security/UserStoreCommand.cpp:840
+msgid "user store:"
+msgstr "使用者存放區: "
+
 #: src/bas/security/UserStoreCommand.cpp:843
-msgid "  file: "
+msgid "file:"
 msgstr "  檔案: "
 
 #: src/bas/security/UserStoreCommand.cpp:845
-msgid "  kind: in-memory\n"
+msgid "kind: in-memory\n"
 msgstr "  類型: 記憶體\n"
 
 #: src/bas/security/UserStoreCommand.cpp:851
@@ -1360,7 +1456,7 @@ msgid "reload only applies to file store (-d/--store FILE)\n"
 msgstr "reload 僅適用於檔案存放區 (-d/--store FILE)\n"
 
 #: src/bas/security/UserStoreCommand.cpp:859
-msgid "reloaded user store from "
+msgid "reloaded user store from"
 msgstr "已從以下位置重新載入使用者存放區: "
 
 #: src/bas/security/UserStoreCommand.cpp:864
@@ -1376,7 +1472,7 @@ msgid "save only applies to file store (-d/--store FILE)\n"
 msgstr "save 僅適用於檔案存放區 (-d/--store FILE)\n"
 
 #: src/bas/security/UserStoreCommand.cpp:872
-msgid "saved user store to "
+msgid "saved user store to"
 msgstr "已將使用者存放區儲存到 "
 
 #: src/bas/volume/Volume_utils.cpp:152
@@ -1388,37 +1484,37 @@ msgid "Options:"
 msgstr "選項："
 
 #: src/bas/volume/Volume_utils.cpp:154
-msgid "  -R, --recursive        list subdirectories recursively"
+msgid "-R, --recursive        list subdirectories recursively"
 msgstr "  -R, --recursive        遞迴列出子目錄"
 
 #: src/bas/volume/Volume_utils.cpp:155
-msgid "  -l, --long             use a long listing format"
+msgid "-l, --long             use a long listing format"
 msgstr "  -l, --long             使用長列表格式"
 
 #: src/bas/volume/Volume_utils.cpp:156
-msgid "  -a, --all              include entries starting with . and .."
+msgid "-a, --all              include entries starting with . and .."
 msgstr "  -a, --all              包含以 . 和 .. 開頭的項目"
 
 #: src/bas/volume/Volume_utils.cpp:157
-msgid "  -A, --almost-all       include entries starting with . except . and .."
+msgid "-A, --almost-all       include entries starting with . except . and .."
 msgstr "  -A, --almost-all       包含以 . 開頭的項目（不含 . 和 ..）"
 
 #: src/bas/volume/Volume_utils.cpp:158
-msgid "  -F, --classify         append file type indicators"
+msgid "-F, --classify         append file type indicators"
 msgstr "  -F, --classify         附加檔案類型指示符"
 
 #: src/bas/volume/Volume_utils.cpp:159
-msgid "  -h, --human-readable   print sizes in human-readable form"
+msgid "-h, --human-readable   print sizes in human-readable form"
 msgstr "  -h, --human-readable   以人類可讀形式列印大小"
 
 #: src/bas/volume/Volume_utils.cpp:160
-msgid "  -C, --color            enable colored output"
+msgid "-C, --color            enable colored output"
 msgstr "  -C, --color            啟用彩色輸出"
 
 #: src/bas/volume/Volume_utils.cpp:161
-msgid "  -T, --tree             print as directory tree"
+msgid "-T, --tree             print as directory tree"
 msgstr "  -T, --tree             以目錄樹形式列印"
 
 #: src/bas/volume/Volume_utils.cpp:162
-msgid "      --help             display this help and exit"
+msgid "--help             display this help and exit"
 msgstr "      --help             顯示此說明並結束"

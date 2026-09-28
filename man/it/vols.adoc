@@ -1,0 +1,84 @@
+= vols(1)
+{project-author} <{project-email}>
+v{project-version}, {project-year}
+:doctype: manpage
+:manmanual: Comandi utente
+:mansource: vols
+:man-linkstyle: blue R <>
+:nofooter:
+
+== NAME
+
+vols - elenca i volumi locali rilevati da bas-cpp
+
+== SYNOPSIS
+
+*vols* [_opzioni_]
+
+== DESCRIPTION
+
+*vols* enumera i volumi locali noti al sottosistema volumi di bas-cpp e stampa una riga di intestazione più una riga per volume. Le colonne sono separate da tabulazioni.
+
+Se non si passa alcuna opzione di selezione dei campi (*-a*, *-c*, *-m*, *-d*, *-t*, *-l*, *-u*, *-r*, *-L*, *-D*, *-o*, *-O*, *-z*), le colonne predefinite sono *-mdtlu* (punto di mount, dispositivo, tipo, etichetta, UUID). Con *-v* / *--verbose*, le colonne predefinite sono *-mdtlurLD* (quelle cinque più sola lettura, tipo logico, dispositivo loop). *-c / --compact* seleziona solo l'insieme compatto (*-mdtlu*), anche con *-v*. *-a / --all* seleziona ogni colonna (come combinare tutti i flag di campo).
+
+I bind mount sono sempre inclusi nella scansione. I filesystem overlay vengono aggiunti quando si passa *-s* / *--symbols*, o quando è selezionata la colonna del tipo logico (*-L* / *--logical-type*, o i valori predefiniti di *-v*).
+
+*-w / --writable* elenca solo i mount scrivibili e implica la colonna di sola lettura (*-r*) così ogni riga stampata mostra ancora *ro* / *rw*.
+
+== OPTIONS
+
+=== Colonne di campo
+
+*-a*, *--all*::
+  Stampa ogni colonna disponibile.
+*-c*, *--compact*::
+  Usa l'insieme compatto (*-mdtlu*); con flag di campo espliciti, compact è unito (OR) a quelle colonne.
+*-m*, *--mountpoint*::
+  Punto di mount (o percorso radice).
+*-d*, *--device*::
+  Percorso del dispositivo (o -).
+*-t*, *--type*::
+  Tipo di volume.
+*-l*, *--label*::
+  Etichetta.
+*-u*, *--uuid*::
+  UUID.
+*-r*, *--read-only*::
+  Flag di sola lettura (*ro* / *rw*).
+*-L*, *--logical-type*::
+  Natura logica del mount (*-*, *bind*, *overlay*).
+*-D*, *--loop-device*::
+  Marcatore di dispositivo loop (*loop* / *-*).
+*-o*, *--opts*::
+  Stringa di opzioni per-mount (VFS) da */proc/self/mountinfo*.
+*-O*, *--superopts*::
+  Stringa di opzioni del superblocco da */proc/self/mountinfo*.
+*-z*, *--root*::
+  Percorso radice nel filesystem (campo «root» di mountinfo, prima del punto di mount).
+
+=== Altro
+
+*-s*, *--symbols*::
+  Includere i filesystem overlay nella scansione dei volumi (i bind mount sono sempre inclusi).
+*-h*, *--help*::
+  Stampa l'uso ed esce con successo.
+*-w*, *--writable*::
+  Omette i volumi in sola lettura; implica *-r*.
+*-v*, *--verbose*::
+  Abbassa la soglia di log della libreria (più messaggi su stderr). Senza flag di campo, seleziona l'insieme di colonne predefinito verboso.
+*-q*, *--quiet*::
+  Sopprime gli avvisi della libreria su stderr (solo errori).
+
+*-v* e *-q* non possono essere usati insieme. *-a* e *-c* non possono essere usati insieme.
+
+== EXIT STATUS
+
+Esce con 0 in caso di successo, 2 per opzioni non valide, flag in conflitto o argomenti imprevisti.
+
+== AUTHORS
+
+Scritto come parte del progetto bas-cpp.
+
+== SEE ALSO
+
+*bas-cpp*(7)

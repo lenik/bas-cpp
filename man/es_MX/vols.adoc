@@ -1,0 +1,84 @@
+= vols(1)
+{project-author} <{project-email}>
+v{project-version}, {project-year}
+:doctype: manpage
+:manmanual: Comandos de usuario
+:mansource: vols
+:man-linkstyle: blue R <>
+:nofooter:
+
+== NAME
+
+vols - enumerar los volúmenes locales detectados por bas-cpp
+
+== SYNOPSIS
+
+*vols* [_opciones_]
+
+== DESCRIPTION
+
+*vols* enumera los volúmenes locales conocidos por el subsistema de volúmenes de bas-cpp e imprime una fila de encabezado más una línea por volumen. Las columnas están separadas por tabuladores.
+
+Si no pasa ninguna opción de selección de campos (*-a*, *-c*, *-m*, *-d*, *-t*, *-l*, *-u*, *-r*, *-L*, *-D*, *-o*, *-O*, *-z*), las columnas predeterminadas son *-mdtlu* (punto de montaje, dispositivo, tipo, etiqueta, UUID). Con *-v* / *--verbose*, las columnas predeterminadas son *-mdtlurLD* (esas cinco más solo lectura, tipo lógico, dispositivo loop). *-c / --compact* selecciona solo el conjunto compacto (*-mdtlu*), incluso con *-v*. *-a / --all* selecciona todas las columnas (igual que combinar todos los flags de campo).
+
+Los montajes bind siempre se incluyen en el análisis. Los sistemas de archivos overlay se agregan cuando pasa *-s* / *--symbols*, o cuando se selecciona la columna de tipo lógico (*-L* / *--logical-type*, o los valores predeterminados de *-v*).
+
+*-w / --writable* enumera solo montajes escribibles e implica la columna de solo lectura (*-r*) para que cada fila impresa aún muestre *ro* / *rw*.
+
+== OPTIONS
+
+=== Columnas de campo
+
+*-a*, *--all*::
+  Imprimir todas las columnas disponibles.
+*-c*, *--compact*::
+  Usar el conjunto compacto (*-mdtlu*); con flags de campo explícitos, compact se combina (OR) con esas columnas.
+*-m*, *--mountpoint*::
+  Punto de montaje (o ruta raíz).
+*-d*, *--device*::
+  Ruta del dispositivo (o -).
+*-t*, *--type*::
+  Tipo de volumen.
+*-l*, *--label*::
+  Etiqueta.
+*-u*, *--uuid*::
+  UUID.
+*-r*, *--read-only*::
+  Indicador de solo lectura (*ro* / *rw*).
+*-L*, *--logical-type*::
+  Clase lógica del montaje (*-*, *bind*, *overlay*).
+*-D*, *--loop-device*::
+  Marcador de dispositivo loop (*loop* / *-*).
+*-o*, *--opts*::
+  Cadena de opciones por montaje (VFS) desde */proc/self/mountinfo*.
+*-O*, *--superopts*::
+  Cadena de opciones del superbloque desde */proc/self/mountinfo*.
+*-z*, *--root*::
+  Ruta raíz dentro del sistema de archivos (campo «root» de mountinfo, antes del punto de montaje).
+
+=== Otros
+
+*-s*, *--symbols*::
+  Incluir sistemas de archivos overlay en el análisis de volúmenes (los montajes bind siempre se incluyen).
+*-h*, *--help*::
+  Imprimir el uso y salir con éxito.
+*-w*, *--writable*::
+  Omitir volúmenes de solo lectura; implica *-r*.
+*-v*, *--verbose*::
+  Bajar el umbral de registro de la biblioteca (más mensajes en stderr). Sin flags de campo, selecciona el conjunto de columnas predeterminado detallado.
+*-q*, *--quiet*::
+  Suprimir advertencias de la biblioteca en stderr (solo errores).
+
+*-v* y *-q* no se pueden usar juntos. *-a* y *-c* no se pueden usar juntos.
+
+== EXIT STATUS
+
+Sale con 0 en caso de éxito, 2 ante opciones inválidas, flags en conflicto o argumentos inesperados.
+
+== AUTHORS
+
+Escrito como parte del proyecto bas-cpp.
+
+== SEE ALSO
+
+*bas-cpp*(7)

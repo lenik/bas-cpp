@@ -1,0 +1,84 @@
+= vols(1)
+{project-author} <{project-email}>
+v{project-version}, {project-year}
+:doctype: manpage
+:manmanual: Benutzerbefehle
+:mansource: vols
+:man-linkstyle: blue R <>
+:nofooter:
+
+== NAME
+
+vols - lokale von bas-cpp erkannte Volumes auflisten
+
+== SYNOPSIS
+
+*vols* [_Optionen_]
+
+== DESCRIPTION
+
+*vols* zählt lokale Volumes auf, die dem Volume-Subsystem von bas-cpp bekannt sind, und gibt eine Kopfzeile sowie eine Zeile pro Volume aus. Die Spalten sind tabulatorgetrennt.
+
+Wenn Sie keine Feldauswahloption übergeben (*-a*, *-c*, *-m*, *-d*, *-t*, *-l*, *-u*, *-r*, *-L*, *-D*, *-o*, *-O*, *-z*), sind die Standardspalten *-mdtlu* (Einhängepunkt, Gerät, Typ, Bezeichnung, UUID). Mit *-v* / *--verbose* sind die Standardspalten *-mdtlurLD* (jene fünf plus Schreibschutz, logischer Typ, Loop-Gerät). *-c / --compact* wählt nur die kompakte Spaltenmenge (*-mdtlu*), auch mit *-v*. *-a / --all* wählt jede Spalte (entspricht der Kombination aller Feldflags).
+
+Bind-Mounts werden immer in den Scan einbezogen. Overlay-Dateisysteme werden hinzugefügt, wenn Sie *-s* / *--symbols* übergeben, oder wenn die Spalte für den logischen Typ ausgewählt ist (*-L* / *--logical-type*, oder *-v*-Standard).
+
+*-w / --writable* listet nur beschreibbare Mounts und impliziert die Schreibschutz-Spalte (*-r*), sodass jede ausgegebene Zeile weiterhin *ro* / *rw* zeigt.
+
+== OPTIONS
+
+=== Feldspalten
+
+*-a*, *--all*::
+  Alle verfügbaren Spalten ausgeben.
+*-c*, *--compact*::
+  Die kompakte Spaltenmenge (*-mdtlu*) verwenden; mit expliziten Feldflags wird compact mit diesen Spalten ODER-verknüpft.
+*-m*, *--mountpoint*::
+  Einhängepunkt (oder Wurzelpfad).
+*-d*, *--device*::
+  Gerätepfad (oder -).
+*-t*, *--type*::
+  Volume-Typ.
+*-l*, *--label*::
+  Bezeichnung.
+*-u*, *--uuid*::
+  UUID.
+*-r*, *--read-only*::
+  Schreibschutz-Kennzeichnung (*ro* / *rw*).
+*-L*, *--logical-type*::
+  Logische Mount-Art (*-*, *bind*, *overlay*).
+*-D*, *--loop-device*::
+  Loop-Geräte-Markierung (*loop* / *-*).
+*-o*, *--opts*::
+  Pro-Mount-(VFS-)Optionszeichenkette aus */proc/self/mountinfo*.
+*-O*, *--superopts*::
+  Superblock-Optionszeichenkette aus */proc/self/mountinfo*.
+*-z*, *--root*::
+  Wurzelpfad innerhalb des Dateisystems (mountinfo-Feld „root“, vor dem Einhängepunkt).
+
+=== Sonstiges
+
+*-s*, *--symbols*::
+  Overlay-Dateisysteme in den Volume-Scan einbeziehen (Bind-Mounts sind immer enthalten).
+*-h*, *--help*::
+  Hilfe ausgeben und erfolgreich beenden.
+*-w*, *--writable*::
+  Schreibgeschützte Volumes weglassen; impliziert *-r*.
+*-v*, *--verbose*::
+  Die Protokollschwelle der Bibliothek senken (mehr Meldungen auf stderr). Ohne Feldflags wird die ausführliche Standard-Spaltenmenge gewählt.
+*-q*, *--quiet*::
+  Bibliothekswarnungen auf stderr unterdrücken (nur Fehler).
+
+*-v* und *-q* können nicht zusammen verwendet werden. *-a* und *-c* können nicht zusammen verwendet werden.
+
+== EXIT STATUS
+
+Beendet mit 0 bei Erfolg, mit 2 bei ungültigen Optionen, widersprüchlichen Flags oder unerwarteten Argumenten.
+
+== AUTHORS
+
+Geschrieben als Teil des bas-cpp-Projekts.
+
+== SEE ALSO
+
+*bas-cpp*(7)

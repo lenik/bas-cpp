@@ -7,8 +7,8 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: bas-cpp 1.0.3\n"
-"Report-Msgid-Bugs-To: bas-cpp@bodz.net\n"
-"POT-Creation-Date: 2026-07-13 16:39+0800\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-09-28 13:59+0800\n"
 "PO-Revision-Date: 2026-07-13 16:39+0800\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -20,7 +20,7 @@ msgstr ""
 
 #: app/acdemo.cpp:102
 msgid ""
-"acdemo â bas.security permissions, credentials, and console login demo\n"
+"acdemo — bas.security permissions, credentials, and console login demo\n"
 "\n"
 "usage: acdemo [options] [command [args...]]\n"
 "\n"
@@ -29,7 +29,7 @@ msgid ""
 "commands:\n"
 "  check [@realm] PERMISSION       check permission (optional realm scope)\n"
 "  request [@realm] PERMISSION [USER]  request permission (login if needed)\n"
-"  login [@realm] [USER]             interactive login â active identities\n"
+"  login [@realm] [USER]             interactive login → active identities\n"
 "  whoami                            list active identities\n"
 "  creds [-v]                        list cached credentials (no secrets)\n"
 "  sm                                enter security manager shell\n"
@@ -46,7 +46,7 @@ msgid ""
 "  help                              show this help\n"
 "\n"
 "  Interactive shells: sm, store, acl, cm, reg, id (exit or Ctrl-D to leave)\n"
-"  One-shot: store SUBCMD â¦ | cm SUBCMD â¦ | creds [-v]\n"
+"  One-shot: store SUBCMD … | cm SUBCMD … | creds [-v]\n"
 "\n"
 "  @realm syntax:\n"
 "    @factory-a          realm name\n"
@@ -54,7 +54,7 @@ msgid ""
 "    @device             realm type only\n"
 "\n"
 "options:\n"
-"  (global options must appear before the subcommand, e.g. acdemo -d user.db store â¦)\n"
+"  (global options must appear before the subcommand, e.g. acdemo -d user.db store …)\n"
 "  -f, --credential-db PATH          credential cache file\n"
 "  -d, --user-db FILE                user store JSON file (default: built-in demo)\n"
 "  -p, --policy-db FILE              policy store JSON file (default: built-in demo)\n"
@@ -66,105 +66,154 @@ msgid ""
 "  -h, --help                        show help and exit\n"
 "\n"
 "demo permissions (ACL is built-in):\n"
-"  fab.order.view / fab.order.modify / fab.order.delete / file.save\n"
+"  action=view;resource=fab.order / action=modify;resource=fab.order /\n"
+"  action=delete;resource=fab.order / action=save;resource=file\n"
 msgstr ""
+"acdemo — demo bas.security de permisos, credenciales e inicio de sesión en consola\n"
+"\n"
+"uso: acdemo [options] [command [args...]]\n"
+"\n"
+"  Sin comando, inicia un shell interactivo.\n"
+"\n"
+"comandos:\n"
+"  check [@realm] PERMISSION       comprobar permiso (ámbito de realm opcional)\n"
+"  request [@realm] PERMISSION [USER]  solicitar permiso (login si hace falta)\n"
+"  login [@realm] [USER]             login interactivo → identidades activas\n"
+"  whoami                            listar identidades activas\n"
+"  creds [-v]                        listar credenciales en caché (sin secretos)\n"
+"  sm                                entrar al shell del gestor de seguridad\n"
+"  us                                entrar al shell del almacén de usuarios\n"
+"  cm                                entrar al shell del gestor de credenciales\n"
+"  ps                                entrar al shell del almacén de políticas\n"
+"  reg                               entrar al shell del registro de identidades\n"
+"  id                                entrar al shell del servicio de identidad (realm actual)\n"
+"  realm show|NAME|@realm            mostrar o cambiar el realm actual\n"
+"  realms                            listar realms registrados\n"
+"  logout                            borrar todas las identidades activas\n"
+"  logout-realm [NAME]               borrar identidades de un realm\n"
+"  reload-creds                      recargar credenciales y restaurar logins en caché\n"
+"  help                              mostrar esta ayuda\n"
+"\n"
+"  Shells interactivos: sm, store, acl, cm, reg, id (exit o Ctrl-D para salir)\n"
+"  Una vez: store SUBCMD … | cm SUBCMD … | creds [-v]\n"
+"\n"
+"  Sintaxis @realm:\n"
+"    @factory-a          nombre de realm\n"
+"    @device:tablet-1    tipo de realm + nombre (tipos: global, device, app)\n"
+"    @device             solo tipo de realm\n"
+"\n"
+"options:\n"
+"  (las opciones globales deben ir antes del subcomando, p. ej. acdemo -d user.db store …)\n"
+"  -f, --credential-db PATH          archivo de caché de credenciales\n"
+"  -d, --user-db FILE                archivo JSON del almacén de usuarios (predeterminado: demo integrada)\n"
+"  -p, --policy-db FILE              archivo JSON del almacén de políticas (predeterminado: demo integrada)\n"
+"  -u, --subject USER                sujeto predeterminado\n"
+"  -r, --realm NAME                  nombre de realm predeterminado\n"
+"      --realm-type TYPE             tipo de realm predeterminado (global|device|app)\n"
+"      --realm-uuid UUID             uuid de realm predeterminado\n"
+"      --version                     imprimir versión y salir\n"
+"  -h, --help                        mostrar ayuda y salir\n"
+"\n"
+"permisos de demo (ACL integrada):\n"
+"  action=view;resource=fab.order / action=modify;resource=fab.order /\n"
+"  action=delete;resource=fab.order / action=save;resource=file\n"
 
-#: app/acdemo.cpp:210
+#: app/acdemo.cpp:211
 msgid "  (none)\n"
-msgstr ""
+msgstr "  (ninguno)\n"
 
-#: app/acdemo.cpp:213
+#: app/acdemo.cpp:214
 msgid "  label: "
-msgstr ""
+msgstr "  etiqueta: "
 
-#: app/acdemo.cpp:215 src/bas/security/IdentityServiceCommand.cpp:23
+#: app/acdemo.cpp:216
 msgid "  type: "
-msgstr ""
+msgstr "  tipo: "
 
-#: app/acdemo.cpp:218 src/bas/security/UserStoreCommand.cpp:131
+#: app/acdemo.cpp:219
 msgid "  name: "
-msgstr ""
+msgstr "  nombre: "
 
-#: app/acdemo.cpp:221
+#: app/acdemo.cpp:222
 msgid "  uuid: "
-msgstr ""
+msgstr "  UUID: "
 
-#: app/acdemo.cpp:224
+#: app/acdemo.cpp:225
 msgid "  description: "
-msgstr ""
+msgstr "  descripción: "
 
-#: app/acdemo.cpp:227
+#: app/acdemo.cpp:228
 msgid "  (current)\n"
-msgstr ""
+msgstr "  (actual)\n"
 
-#: app/acdemo.cpp:236
+#: app/acdemo.cpp:237
 msgid "invalid realm token: "
-msgstr ""
+msgstr "token de realm inválido: "
 
-#: app/acdemo.cpp:250
+#: app/acdemo.cpp:251
 msgid "current realm: "
-msgstr ""
+msgstr "realm actual: "
 
-#: app/acdemo.cpp:276
+#: app/acdemo.cpp:277
 msgid "usage: realm show | realm NAME | realm @token\n"
-msgstr ""
+msgstr "uso: realm show | realm NAME | realm @token\n"
 
-#: app/acdemo.cpp:281
+#: app/acdemo.cpp:282
 msgid "current realm:\n"
-msgstr ""
+msgstr "realm actual:\n"
 
-#: app/acdemo.cpp:291
+#: app/acdemo.cpp:292
 msgid "no registered realms\n"
-msgstr ""
+msgstr "no hay realms registrados\n"
 
-#: app/acdemo.cpp:294
+#: app/acdemo.cpp:295
 msgid "registered realms:\n"
-msgstr ""
+msgstr "realms registrados:\n"
 
-#: app/acdemo.cpp:298
+#: app/acdemo.cpp:299
 msgid " (current)"
-msgstr ""
+msgstr " (actual)"
 
-#: app/acdemo.cpp:393
+#: app/acdemo.cpp:394
 msgid "entered "
-msgstr ""
+msgstr "entró en "
 
-#: app/acdemo.cpp:393
+#: app/acdemo.cpp:394
 msgid " (exit or Ctrl-D to leave)\n"
-msgstr ""
+msgstr " (exit o Ctrl-D para salir)\n"
 
-#: app/acdemo.cpp:443 app/acdemo.cpp:498
+#: app/acdemo.cpp:444 app/acdemo.cpp:499
 msgid "no identity service for current realm\n"
-msgstr ""
-
-#: app/acdemo.cpp:521
-msgid "acdemo interactive mode. Type help for commands.\n"
-msgstr ""
+msgstr "no hay servicio de identidad para el realm actual\n"
 
 #: app/acdemo.cpp:522
-msgid "  Tab: complete   Up/Down: history   Emacs keys: Ctrl-A/E/F/B, Alt-F/B\n"
-msgstr ""
+msgid "acdemo interactive mode. Type help for commands.\n"
+msgstr "modo interactivo acdemo. Escriba help para comandos.\n"
 
 #: app/acdemo.cpp:523
-msgid "  Ctrl-arrows: word   Ctrl-K/U/W Alt-BS: kill word   Ctrl-L: redraw\n"
-msgstr ""
+msgid "  Tab: complete   Up/Down: history   Emacs keys: Ctrl-A/E/F/B, Alt-F/B\n"
+msgstr "  Tab: completar   Arriba/Abajo: historial   Teclas Emacs: Ctrl-A/E/F/B, Alt-F/B\n"
 
 #: app/acdemo.cpp:524
+msgid "  Ctrl-arrows: word   Ctrl-K/U/W Alt-BS: kill word   Ctrl-L: redraw\n"
+msgstr "  Ctrl-flechas: palabra   Ctrl-K/U/W Alt-BS: borrar palabra   Ctrl-L: redibujar\n"
+
+#: app/acdemo.cpp:525
 msgid "  Shells: con, store, acl, man, reg, id (exit or Ctrl-D to leave)\n"
-msgstr ""
+msgstr "  Shells: con, store, acl, man, reg, id (exit o Ctrl-D para salir)\n"
 
-#: app/acdemo.cpp:529 src/bas/security/CredentialManagerCommand.cpp:77
+#: app/acdemo.cpp:530
 msgid "credential file: "
-msgstr ""
+msgstr "archivo de credenciales: "
 
-#: app/acdemo.cpp:530 src/bas/security/UserStoreCommand.cpp:840
+#: app/acdemo.cpp:531
 msgid "user store: "
-msgstr ""
+msgstr "almacén de usuarios: "
 
 #: app/reg.cpp:33
 msgid ""
 "usage: reg [options]\n"
-"  -r, --root DIR|FILE   registry root (directory â LocalRegistry, file â JsonRegistry)\n"
+"  -r, --root DIR|FILE   registry root (directory → LocalRegistry, file → JsonRegistry)\n"
 "  -d, --dump PATH       list all keys under PATH (path=value lines)\n"
 "  -g, --get PATH        print registry value (valueToString)\n"
 "  -s, --set PATH VALUE  set registry value (parseOption)\n"
@@ -175,345 +224,418 @@ msgid ""
 "      --version         print version and exit\n"
 "  -h, --help            show this help and exit\n"
 msgstr ""
+"uso: reg [options]\n"
+"  -r, --root DIR|FILE   raíz del registro (directorio → LocalRegistry, archivo → JsonRegistry)\n"
+"  -d, --dump PATH       listar todas las claves bajo PATH (líneas path=value)\n"
+"  -g, --get PATH        imprimir valor del registro (valueToString)\n"
+"  -s, --set PATH VALUE  establecer valor del registro (parseOption)\n"
+"  -e, --export PATH     exportar subárbol en PATH como JSON a stdout\n"
+"  -i, --import PATH     leer JSON desde stdin y fusionar en PATH\n"
+"  -v, --verbose         registro de depuración\n"
+"  -q, --quiet           solo errores en stderr\n"
+"      --version         imprimir versión y salir\n"
+"  -h, --help            mostrar esta ayuda y salir\n"
 
 #: app/reg.cpp:180
 msgid "reg: cannot create "
-msgstr ""
+msgstr "reg: no se puede crear "
 
 #: app/reg.cpp:185
 msgid "reg: cannot create directory "
-msgstr ""
+msgstr "reg: no se puede crear el directorio "
 
 #: app/reg.cpp:201 app/reg.cpp:382 app/reg.cpp:389
 msgid "reg: "
-msgstr ""
+msgstr "reg: "
 
 #: app/reg.cpp:208
 msgid "reg: root is neither a directory nor a regular file: "
-msgstr ""
+msgstr "reg: la raíz no es ni directorio ni archivo regular: "
 
 #: app/reg.cpp:261
 msgid "reg: --set requires a value argument\n"
-msgstr ""
+msgstr "reg: --set requiere un argumento de valor\n"
 
 #: app/reg.cpp:291
 msgid "reg: unexpected argument: "
-msgstr ""
+msgstr "reg: argumento inesperado: "
 
 #: app/reg.cpp:307
 msgid "reg: -v/--verbose and -q/--quiet are mutually exclusive\n"
-msgstr ""
+msgstr "reg: -v/--verbose y -q/--quiet son mutuamente excluyentes\n"
 
 #: app/reg.cpp:328
 msgid "reg: specify only one of --dump, --get, --set, --export, or --import\n"
-msgstr ""
+msgstr "reg: especifique solo uno de --dump, --get, --set, --export o --import\n"
 
 #: app/reg.cpp:349
 msgid "reg: invalid path "
-msgstr ""
+msgstr "reg: ruta inválida "
 
 #: app/reg.cpp:357
 msgid "reg: no value at "
-msgstr ""
+msgstr "reg: no hay valor en "
 
 #: app/reg.cpp:366
 msgid "reg: failed to set "
-msgstr ""
+msgstr "reg: error al establecer "
 
 #: app/tanks_game.cpp:207
 msgid " TANK AC - dual device access control demo "
-msgstr ""
+msgstr " TANK AC - demo de control de acceso dual "
 
 #: app/tanks_game.cpp:214
 msgid "Terminal too small for tanks_game."
-msgstr ""
+msgstr "Terminal demasiado pequeño para tanks_game."
 
 #: app/tanks_game.cpp:215
-#, c-format
+#, python-format
 msgid "Need at least %dx%d, have %dx%d."
-msgstr ""
+msgstr "Se necesitan al menos %dx%d; hay %dx%d."
 
 #: app/tanks_game.cpp:216
 msgid "Resize the terminal and try again. Press any key to exit."
-msgstr ""
+msgstr "Redimensione la terminal e inténtelo de nuevo. Pulse una tecla para salir."
 
 #: app/tanks_game.cpp:411
 msgid "ENGINE ON "
-msgstr ""
+msgstr "MOTOR ON "
 
 #: app/tanks_game.cpp:414
 msgid "ENGINE OFF"
-msgstr ""
+msgstr "MOTOR OFF"
 
 #: app/tanks_game.cpp:423
 msgid " Controls "
-msgstr ""
+msgstr " Controles "
 
 #: app/tanks_game.cpp:424
 msgid "TAB device  L login  F1/F2 engine  Q quit"
-msgstr ""
+msgstr "TAB dispositivo  L login  F1/F2 motor  Q salir"
 
 #: app/tanks_game.cpp:425
 msgid "Arrows move/turn  Space fire"
-msgstr ""
+msgstr "Flechas mover/girar  Espacio disparar"
 
 #: app/tanks_game.cpp:426
-#, c-format
+#, python-format
 msgid "Active: %s"
-msgstr ""
+msgstr "Activo: %s"
 
 #: app/tanks_game.cpp:450
-#, c-format
+#, python-format
 msgid " Policy %s "
-msgstr ""
+msgstr " Directiva %s "
 
 #: app/tanks_game.cpp:491
 msgid "BINDINGS"
-msgstr ""
+msgstr "ENLACES"
 
 #: app/tanks_game.cpp:495
 msgid "identity      aclId"
-msgstr ""
+msgstr "identidad    aclId"
 
 #: app/tanks_game.cpp:513 app/tanks_game.cpp:548 app/tanks_game.cpp:588
 msgid "(none)"
-msgstr ""
+msgstr "(ninguno)"
 
 #: app/tanks_game.cpp:522
 msgid "ACLS"
-msgstr ""
+msgstr "ACLs"
 
 #: app/tanks_game.cpp:531
-#, c-format
 msgid "%-10s %zu entries"
-msgstr ""
+msgstr "%-10s %zu entradas"
 
 #: app/tanks_game.cpp:557
 msgid "GRANTS"
-msgstr ""
+msgstr "CONCESIONES"
 
 #: app/tanks_game.cpp:566
 msgid "identity"
-msgstr ""
+msgstr "identidad"
 
 #: app/tanks_game.cpp:566
 msgid "permission"
-msgstr ""
+msgstr "permiso"
 
 #: app/tanks_game.cpp:596
 msgid " Event log "
-msgstr ""
+msgstr " Registro de eventos "
 
 #: app/tanks_game.cpp:703
 msgid "Enter/Esc=OK"
-msgstr ""
+msgstr "Enter/Esc=Aceptar"
 
 #: app/tanks_game.cpp:739
 msgid "Enter=retry   Esc=cancel"
-msgstr ""
+msgstr "Enter=reintentar   Esc=cancelar"
 
 #: app/tanks_game.cpp:770 app/tanks_game.cpp:848
-#, c-format
+#, python-format
 msgid " Login %s "
-msgstr ""
+msgstr " Inicio de sesión %s "
 
 #: app/tanks_game.cpp:771 app/tanks_game.cpp:850
 msgid "user: "
-msgstr ""
+msgstr "usuario: "
 
 #: app/tanks_game.cpp:772 app/tanks_game.cpp:851
 msgid "pass: "
-msgstr ""
+msgstr "clave: "
 
 #: app/tanks_game.cpp:773
 msgid "Up/Down demo user  Enter=OK  Esc=cancel"
-msgstr ""
+msgstr "Arriba/Abajo usuario demo  Enter=Aceptar  Esc=cancelar"
 
 #: app/tanks_game.cpp:774 app/tanks_game.cpp:855
 msgid "demo accounts (user/pass):"
-msgstr ""
+msgstr "cuentas demo (usuario/clave):"
 
 #: app/tanks_game.cpp:848
-#, c-format
+#, python-format
 msgid " Elevate %s "
-msgstr ""
+msgstr " Elevar %s "
 
 #: app/tanks_game.cpp:853
 msgid "Up/Down demo user  Enter=login  Esc=cancel"
-msgstr ""
+msgstr "Arriba/Abajo usuario demo  Enter=entrar  Esc=cancelar"
 
 #: app/tanks_game.cpp:854
 msgid "Up/Down demo user  Enter=authorize  Esc=cancel"
-msgstr ""
+msgstr "Arriba/Abajo usuario demo  Enter=autorizar  Esc=cancelar"
 
 #: app/tanks_game.cpp:902
 msgid ": login cancelled"
-msgstr ""
+msgstr ": inicio de sesión cancelado"
 
 #: app/tanks_game.cpp:906 app/tanks_game.cpp:971
 msgid ": logged in as "
-msgstr ""
+msgstr ": sesión iniciada como "
 
 #: app/tanks_game.cpp:909
 msgid " login failed for "
-msgstr ""
+msgstr " fallo de inicio de sesión para "
 
 #: app/tanks_game.cpp:910 app/tanks_game.cpp:952
 msgid "Invalid username or password for "
-msgstr ""
+msgstr "Usuario o contraseña inválidos para "
 
 #: app/tanks_game.cpp:911
 msgid "Login Failed"
-msgstr ""
+msgstr "Inicio de sesión fallido"
 
 #: app/tanks_game.cpp:951
 msgid "Auth Failed"
-msgstr ""
+msgstr "Autenticación fallida"
 
 #: app/tanks_game.cpp:961
 msgid " lacks "
-msgstr ""
+msgstr " carece de "
 
 #: app/tanks_game.cpp:961
 msgid " on "
-msgstr ""
+msgstr " en "
 
 #: app/tanks_game.cpp:962
 msgid "Access Denied"
-msgstr ""
+msgstr "Acceso denegado"
 
 #: app/tanks_game.cpp:1024
 msgid "Tank AC demo - per-device user store & ACL"
-msgstr ""
+msgstr "Demo Tank AC - almacén de usuarios y ACL por dispositivo"
 
 #: app/tanks_game.cpp:1025
 msgid "L login  arrows move  space fire  denied=elevate/login"
-msgstr ""
+msgstr "L login  flechas mover  espacio disparar  denegado=elevar/login"
 
 #: app/tanks_game.cpp:1026
 msgid "tank-a: alice=operator(ACL) bob=gunner(grants) admin=commander"
-msgstr ""
+msgstr "tank-a: alice=operador(ACL) bob=artillero(concesiones) admin=comandante"
 
 #: app/tanks_game.cpp:1027
 msgid "tank-b: charlie=cadet(ACL) dana=instructor(grants)"
-msgstr ""
+msgstr "tank-b: charlie=cadete(ACL) dana=instructor(concesiones)"
 
 #: app/tanks_game.cpp:1051
 msgid "switch -> "
-msgstr ""
+msgstr "cambio -> "
 
 #: app/tanks_game.cpp:1090
 msgid "usage: "
-msgstr ""
+msgstr "uso: "
 
 #: app/tanks_game.cpp:1090
 msgid " [--batch]\n"
-msgstr ""
+msgstr " [--batch]\n"
 
 #: app/tanks_game.cpp:1091
 msgid "  default: ncurses tank game (TAB switch, arrows, F1/F2, space)\n"
-msgstr ""
+msgstr "  predeterminado: juego de tanques ncurses (TAB cambiar, flechas, F1/F2, espacio)\n"
 
 #: app/tanks_game.cpp:1092
 msgid "  --batch: line-oriented mode for scripts\n"
-msgstr ""
+msgstr "  --batch: modo por líneas para scripts\n"
 
 #: app/tanks_game.cpp:1107
 msgid "unknown argument: "
-msgstr ""
+msgstr "argumento desconocido: "
 
 #: app/tanks_game.cpp:1122
 msgid "access denied: "
-msgstr ""
+msgstr "acceso denegado: "
 
 #: app/tanks_game.cpp:1125
 msgid "error: "
-msgstr ""
+msgstr "fallo: "
 
 #: app/vols.cpp:39
-msgid ""
-"usage: vols [options]\n"
-"  Field selection (default without any: -mdtlu; with -v: -mdtlurLD):\n"
-"    -a, --all            all columns\n"
-"    -c, --compact        same columns as -mdtlu (merges with explicit field flags)\n"
-"    -m, --mountpoint     mount point column\n"
-"    -d, --device         device column\n"
-"    -t, --type           type column\n"
-"    -l, --label          label column\n"
-"    -u, --uuid           UUID column\n"
-"    -r, --read-only      read-only (ro/rw) column\n"
-"    -L, --logical-type   logical type column\n"
-"    -D, --loop-device    loop device column\n"
-"    -o, --opts           per-mount (VFS) options from mountinfo\n"
-"    -O, --superopts      superblock options from mountinfo\n"
-"    -z, --root           root path within filesystem (mountinfo field)\n"
-"  Other:\n"
-"    -s, --symbols        include overlay filesystems in the scan (bind mounts always on)\n"
-"    -h, --help           show this help and exit\n"
-"    -w, --writable       list only writable mounts; implies -r\n"
-"    -v, --verbose        more log detail; default columns include logical type\n"
-"    -q, --quiet          only errors on stderr\n"
-msgstr ""
+msgid "usage: vols [options]"
+msgstr "uso: vols [opciones]"
 
-#: app/vols.cpp:119
-msgid "Mount Point"
-msgstr ""
+#: app/vols.cpp:40
+msgid "Field selection (default without any: -mdtlu; with -v: -mdtlurLD):"
+msgstr "Selección de campos (predeterminado sin opciones: -mdtlu; con -v: -mdtlurLD):"
+
+#: app/vols.cpp:41
+msgid "all columns"
+msgstr "todas las columnas"
+
+#: app/vols.cpp:42
+msgid "same columns as -mdtlu (merges with explicit field flags)"
+msgstr "mismas columnas que -mdtlu (se combinan con flags de campo explícitos)"
+
+#: app/vols.cpp:43
+msgid "mount point column"
+msgstr "columna de punto de montaje"
+
+#: app/vols.cpp:44
+msgid "device column"
+msgstr "columna de dispositivo"
+
+#: app/vols.cpp:45
+msgid "type column"
+msgstr "columna de tipo"
+
+#: app/vols.cpp:46
+msgid "UUID column"
+msgstr "columna UUID"
+
+#: app/vols.cpp:47
+msgid "label column"
+msgstr "columna de etiqueta"
+
+#: app/vols.cpp:48
+msgid "read-only (ro/rw) column"
+msgstr "columna de solo lectura (ro/rw)"
+
+#: app/vols.cpp:49
+msgid "logical type column"
+msgstr "columna de tipo lógico"
+
+#: app/vols.cpp:50
+msgid "loop device column"
+msgstr "columna de dispositivo loop"
+
+#: app/vols.cpp:51
+msgid "per-mount (VFS) options from mountinfo"
+msgstr "opciones por montaje (VFS) desde mountinfo"
+
+#: app/vols.cpp:52
+msgid "superblock options from mountinfo"
+msgstr "opciones de superbloque desde mountinfo"
+
+#: app/vols.cpp:53
+msgid "root path within filesystem (mountinfo field)"
+msgstr "ruta raíz dentro del sistema de archivos (campo mountinfo)"
+
+#: app/vols.cpp:54
+msgid "Other:"
+msgstr "Otros:"
+
+#: app/vols.cpp:55
+msgid "include overlay filesystems in the scan (bind mounts always on)"
+msgstr "incluir sistemas de archivos overlay en el análisis (los bind mounts siempre se incluyen)"
+
+#: app/vols.cpp:56
+msgid "include loopback mounts (excluded by default)"
+msgstr "incluir montajes loopback (excluidos por defecto)"
+
+#: app/vols.cpp:57
+msgid "show this help and exit"
+msgstr "mostrar esta ayuda y salir"
+
+#: app/vols.cpp:58
+msgid "list only writable mounts; implies -r"
+msgstr "enumerar solo montajes escribibles; implica -r"
+
+#: app/vols.cpp:59
+msgid "more log detail; default columns include logical type"
+msgstr "más detalle en el registro; las columnas predeterminadas incluyen el tipo lógico"
+
+#: app/vols.cpp:60
+msgid "only errors on stderr"
+msgstr "solo errores en stderr"
 
 #: app/vols.cpp:120
-msgid "Root"
-msgstr ""
+msgid "Mount Point"
+msgstr "Punto de montaje"
 
 #: app/vols.cpp:121
-msgid "Device"
-msgstr ""
+msgid "Root"
+msgstr "Raíz"
 
 #: app/vols.cpp:122
-msgid "Type"
-msgstr ""
+msgid "Device"
+msgstr "Dispositivo"
 
 #: app/vols.cpp:123
-msgid "Label"
-msgstr ""
+msgid "Type"
+msgstr "Tipo"
 
 #: app/vols.cpp:124
-msgid "UUID"
-msgstr ""
+msgid "Label"
+msgstr "Etiqueta"
 
 #: app/vols.cpp:125
-msgid "Read-Only"
-msgstr ""
+msgid "UUID"
+msgstr "UUID"
 
 #: app/vols.cpp:126
-msgid "Logical Type"
-msgstr ""
+msgid "Read-Only"
+msgstr "Solo lectura"
 
 #: app/vols.cpp:127
-msgid "Loop Device"
-msgstr ""
+msgid "Logical Type"
+msgstr "Tipo lógico"
 
 #: app/vols.cpp:128
-msgid "VFS opts"
-msgstr ""
+msgid "Loop Device"
+msgstr "Dispositivo loop"
 
 #: app/vols.cpp:129
+msgid "VFS opts"
+msgstr "Opts VFS"
+
+#: app/vols.cpp:130
 msgid "Super opts"
-msgstr ""
+msgstr "Opts superbloque"
 
-#: app/vols.cpp:247
+#: app/vols.cpp:253
 msgid "vols: unexpected argument: "
-msgstr ""
+msgstr "vols: argumento inesperado: "
 
-#: app/vols.cpp:258
+#: app/vols.cpp:264
 msgid "vols: -v/--verbose and -q/--quiet are mutually exclusive\n"
-msgstr ""
+msgstr "vols: -v/--verbose y -q/--quiet son mutuamente excluyentes\n"
 
-#: app/vols.cpp:263
+#: app/vols.cpp:269
 msgid "vols: -a/--all and -c/--compact are mutually exclusive\n"
-msgstr ""
+msgstr "vols: -a/--all y -c/--compact son mutuamente excluyentes\n"
 
-#: app/vols.cpp:303
+#: app/vols.cpp:309
 msgid "vols: no columns selected\n"
-msgstr ""
+msgstr "vols: no se seleccionó ninguna columna\n"
 
 #: src/bas/security/ACList.cpp:26
 msgid ""
@@ -522,29 +644,35 @@ msgid ""
 "  help                   show this help\n"
 "  -h, --help             show this help\n"
 msgstr ""
+"comandos aclist:\n"
+"  list                   listar filas ACE\n"
+"  help                   mostrar esta ayuda\n"
+"  -h, --help             mostrar esta ayuda\n"
 
 #: src/bas/security/ACList.cpp:34
 msgid "no ACE rows\n"
-msgstr ""
+msgstr "no hay filas ACE\n"
 
 #: src/bas/security/ACList.cpp:101
 msgid ""
 "usage: list [-h]\n"
 "  List ACE rows.\n"
 msgstr ""
+"uso: list [-h]\n"
+"  Listar filas ACE.\n"
 
 #: src/bas/security/ACList.cpp:113
-msgid "unknown aclist command: "
-msgstr ""
+msgid "unknown aclist command:"
+msgstr "comando aclist desconocido:"
 
 #: src/bas/security/ACList.cpp:113
 #: src/bas/security/CredentialManagerCommand.cpp:123
 #: src/bas/security/IdentityRegistryCommand.cpp:104
 #: src/bas/security/IdentityServiceCommand.cpp:71
-#: src/bas/security/PolicyStoreCommand.cpp:123
-#: src/bas/security/SecurityManagerCommand.cpp:208
-msgid " (try: help)\n"
-msgstr ""
+#: src/bas/security/PolicyStoreCommand.cpp:202
+#: src/bas/security/SecurityManagerCommand.cpp:236
+msgid "(try: help)\n"
+msgstr "(pruebe: help)\n"
 
 #: src/bas/security/CredentialManagerCommand.cpp:14
 msgid ""
@@ -557,176 +685,202 @@ msgid ""
 "  save                   write credentials to disk\n"
 "  help                   show this help\n"
 msgstr ""
+"comandos de credenciales:\n"
+"  list [-v]              listar credenciales en caché (sin secretos)\n"
+"  del STORE ID           eliminar credencial por referencia\n"
+"  clear                  eliminar todas las credenciales\n"
+"  path                   mostrar ruta del archivo de credenciales\n"
+"  reload                 recargar desde disco\n"
+"  save                   escribir credenciales en disco\n"
+"  help                   mostrar esta ayuda\n"
 
 #: src/bas/security/CredentialManagerCommand.cpp:28
 msgid "no cached credentials\n"
-msgstr ""
+msgstr "no hay credenciales en caché\n"
 
 #: src/bas/security/CredentialManagerCommand.cpp:40
-msgid "    (use login/request to verify; secrets not printed)\n"
-msgstr ""
+msgid "(use login/request to verify; secrets not printed)\n"
+msgstr "(use login/request para verificar; los secretos no se imprimen)\n"
 
 #: src/bas/security/CredentialManagerCommand.cpp:75
 msgid "credential store: in-memory\n"
-msgstr ""
+msgstr "almacén de credenciales: en memoria\n"
+
+#: src/bas/security/CredentialManagerCommand.cpp:77
+msgid "credential file:"
+msgstr "archivo de credenciales:"
 
 #: src/bas/security/CredentialManagerCommand.cpp:83
 msgid "reload only applies to file credential store\n"
-msgstr ""
-
-#: src/bas/security/CredentialManagerCommand.cpp:87
-#: src/bas/security/SecurityManagerCommand.cpp:137
-msgid "reloaded "
-msgstr ""
+msgstr "reload solo aplica al almacén de credenciales en archivo\n"
 
 #: src/bas/security/CredentialManagerCommand.cpp:87
 #: src/bas/security/SecurityManagerCommand.cpp:138
-msgid " credential(s) from "
-msgstr ""
+msgid "reloaded"
+msgstr "recargado"
+
+#: src/bas/security/CredentialManagerCommand.cpp:87
+#: src/bas/security/SecurityManagerCommand.cpp:139
+msgid "credential(s) from"
+msgstr "credencial(es) desde"
 
 #: src/bas/security/CredentialManagerCommand.cpp:93
 msgid "save only applies to file credential store\n"
-msgstr ""
+msgstr "save solo aplica al almacén de credenciales en archivo\n"
 
 #: src/bas/security/CredentialManagerCommand.cpp:97
-msgid "saved credentials to "
-msgstr ""
+msgid "saved credentials to"
+msgstr "credenciales guardadas en"
 
 #: src/bas/security/CredentialManagerCommand.cpp:102
 msgid "cleared all credentials\n"
-msgstr ""
+msgstr "se borraron todas las credenciales\n"
 
 #: src/bas/security/CredentialManagerCommand.cpp:107
 msgid "usage: del STORE ID\n"
-msgstr ""
+msgstr "uso: del STORE ID\n"
 
 #: src/bas/security/CredentialManagerCommand.cpp:114
 msgid "removed credential ["
-msgstr ""
+msgstr "credencial eliminada ["
 
 #: src/bas/security/CredentialManagerCommand.cpp:123
-msgid "unknown credential command: "
-msgstr ""
+msgid "unknown credential command:"
+msgstr "comando de credenciales desconocido:"
 
 #: src/bas/security/IdentityRegistryCommand.cpp:14
 msgid ""
 "identity registry commands:\n"
 "  list                   list registered identity services\n"
-"  realms                 list realm â service bindings\n"
-"  service ID [SUBCMD â¦]  run commands on a service by id\n"
+"  realms                 list realm → service bindings\n"
+"  service ID [SUBCMD …]  run commands on a service by id\n"
 "  help                   show this help\n"
 msgstr ""
+"comandos del registro de identidades:\n"
+"  list                   listar servicios de identidad registrados\n"
+"  realms                 listar enlaces realm → servicio\n"
+"  service ID [SUBCMD …]  ejecutar comandos en un servicio por id\n"
+"  help                   mostrar esta ayuda\n"
 
 #: src/bas/security/IdentityRegistryCommand.cpp:24
 msgid "no identity services registered\n"
-msgstr ""
+msgstr "no hay servicios de identidad registrados\n"
 
 #: src/bas/security/IdentityRegistryCommand.cpp:33
-msgid " [auto-login]"
-msgstr ""
+msgid "[auto-login]"
+msgstr "[inicio automático]"
 
 #: src/bas/security/IdentityRegistryCommand.cpp:42
 msgid "no realms registered\n"
-msgstr ""
+msgstr "no hay realms registrados\n"
 
 #: src/bas/security/IdentityRegistryCommand.cpp:49
-msgid " (no service)\n"
-msgstr ""
+msgid "(no service)\n"
+msgstr "(sin servicio)\n"
 
 #: src/bas/security/IdentityRegistryCommand.cpp:92
-msgid "usage: service ID [SUBCMD â¦]\n"
-msgstr ""
+msgid "usage: service ID [SUBCMD …]\n"
+msgstr "uso: service ID [SUBCMD …]\n"
 
 #: src/bas/security/IdentityRegistryCommand.cpp:98
-msgid "identity service not found: "
-msgstr ""
+msgid "identity service not found:"
+msgstr "servicio de identidad no encontrado:"
 
 #: src/bas/security/IdentityRegistryCommand.cpp:104
-msgid "unknown registry subcommand: "
-msgstr ""
+msgid "unknown registry subcommand:"
+msgstr "subcomando de registro desconocido:"
 
 #: src/bas/security/IdentityServiceCommand.cpp:15
 msgid ""
 "identity service commands:\n"
 "  info                   show service id, type, credentials, realms\n"
 "  help                   show this help\n"
-"  store SUBCMD â¦         (store service) user-store commands\n"
+"  store SUBCMD …         (store service) user-store commands\n"
 msgstr ""
+"comandos del servicio de identidad:\n"
+"  info                   mostrar id, tipo, credenciales y realms del servicio\n"
+"  help                   mostrar esta ayuda\n"
+"  store SUBCMD …         (servicio store) comandos del almacén de usuarios\n"
 
 #: src/bas/security/IdentityServiceCommand.cpp:22
-msgid "  id: "
-msgstr ""
+msgid "id:"
+msgstr "ID:"
+
+#: src/bas/security/IdentityServiceCommand.cpp:23
+msgid "type:"
+msgstr "tipo:"
 
 #: src/bas/security/IdentityServiceCommand.cpp:24
-msgid "  auto-login: "
-msgstr ""
+msgid "auto-login:"
+msgstr "inicio automático:"
 
 #: src/bas/security/IdentityServiceCommand.cpp:24
 #: src/bas/security/UserStoreCommand.cpp:143
 #: src/bas/security/UserStoreCommand.cpp:159
 #: src/bas/security/UserStoreCommand.cpp:724
 msgid "yes"
-msgstr ""
+msgstr "sí"
 
 #: src/bas/security/IdentityServiceCommand.cpp:24
 #: src/bas/security/UserStoreCommand.cpp:143
 #: src/bas/security/UserStoreCommand.cpp:159
 #: src/bas/security/UserStoreCommand.cpp:724
 msgid "no"
-msgstr ""
+msgstr "No"
 
 #: src/bas/security/IdentityServiceCommand.cpp:25
-msgid "  credentials:"
-msgstr ""
+msgid "credentials:"
+msgstr "credenciales:"
 
 #: src/bas/security/IdentityServiceCommand.cpp:28
 #: src/bas/security/UserStoreCommand.cpp:146
-msgid " (none)\n"
-msgstr ""
+#: src/bas/security/UserStoreCommand.cpp:155
+msgid "(none)\n"
+msgstr "(ninguno)\n"
 
 #: src/bas/security/IdentityServiceCommand.cpp:35
-msgid "  realm-types:"
-msgstr ""
+msgid "realm-types:"
+msgstr "tipos de realm:"
 
 #: src/bas/security/IdentityServiceCommand.cpp:38
-msgid " (any)\n"
-msgstr ""
+msgid "(any)\n"
+msgstr "(cualquiera)\n"
 
 #: src/bas/security/IdentityServiceCommand.cpp:47
-msgid "  backed-stores: "
-msgstr ""
+msgid "backed-stores:"
+msgstr "almacenes asociados:"
 
 #: src/bas/security/IdentityServiceCommand.cpp:71
-msgid "unknown identity service subcommand: "
-msgstr ""
+msgid "unknown identity service subcommand:"
+msgstr "subcomando de servicio de identidad desconocido:"
 
 #: src/bas/security/IdentityServiceCommand.cpp:88
 msgid "user store not configured\n"
-msgstr ""
+msgstr "almacén de usuarios no configurado\n"
 
 #: src/bas/security/IdentityService.cpp:106
 msgid "User Login"
-msgstr ""
+msgstr "Inicio de sesión"
 
 #: src/bas/security/IdentityService.cpp:110
 msgid "Realm type"
-msgstr ""
+msgstr "Tipo de realm"
 
 #: src/bas/security/IdentityService.cpp:120
 msgid "Realm name"
-msgstr ""
+msgstr "Nombre de realm"
 
 #: src/bas/security/IdentityService.cpp:128
 msgid "Realm UUID"
-msgstr ""
+msgstr "UUID del realm"
 
 #: src/bas/security/IdentityService.cpp:136
 msgid "Username"
-msgstr ""
+msgstr "Nombre de usuario"
 
 #: src/bas/security/IdentityService.cpp:141
 msgid "Password"
-msgstr ""
+msgstr "Contraseña"
 
 #: src/bas/security/PolicyStoreCommand.cpp:15
 msgid ""
@@ -736,75 +890,136 @@ msgid ""
 "  path                   show ACL file path\n"
 "  reload                 reload file ACL from disk\n"
 "  save                   write file ACL to disk\n"
+"  allow IDENTITY PERM    add allow grant\n"
+"  deny IDENTITY PERM     add deny grant\n"
+"  revoke IDENTITY PERM   remove matching grant\n"
 "  help                   show this help\n"
 "  -h, --help             show this help\n"
+"  IDENTITY: name | user:name | role:name\n"
+"  PERM: action=read;resource=/path/**\n"
 msgstr ""
+"comandos acl:\n"
+"  list                   listar concesiones ACL\n"
+"  clear                  eliminar todas las concesiones\n"
+"  path                   mostrar ruta del archivo ACL\n"
+"  reload                 recargar ACL de archivo desde disco\n"
+"  save                   escribir ACL de archivo en disco\n"
+"  allow IDENTITY PERM    agregar concesión allow\n"
+"  deny IDENTITY PERM     agregar concesión deny\n"
+"  revoke IDENTITY PERM   eliminar concesión coincidente\n"
+"  help                   mostrar esta ayuda\n"
+"  -h, --help             mostrar esta ayuda\n"
+"  IDENTITY: name | user:name | role:name\n"
+"  PERM: action=read;resource=/path/**\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:28
+#: src/bas/security/PolicyStoreCommand.cpp:55
 msgid "no ACL grants\n"
-msgstr ""
+msgstr "no hay concesiones ACL\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:63
+#: src/bas/security/PolicyStoreCommand.cpp:90
 msgid ""
 "usage: list [-h]\n"
 "  List ACL grants.\n"
 msgstr ""
+"uso: list [-h]\n"
+"  Listar concesiones ACL.\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:71
+#: src/bas/security/PolicyStoreCommand.cpp:98
 msgid ""
 "usage: clear [-h]\n"
 "  Remove all ACL grants.\n"
 msgstr ""
+"uso: clear [-h]\n"
+"  Eliminar todas las concesiones ACL.\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:75
+#: src/bas/security/PolicyStoreCommand.cpp:102
 msgid "cleared ACL\n"
-msgstr ""
+msgstr "ACL borrada\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:80
+#: src/bas/security/PolicyStoreCommand.cpp:107
 msgid ""
 "usage: path [-h]\n"
 "  Show ACL file path.\n"
 msgstr ""
+"uso: path [-h]\n"
+"  Mostrar ruta del archivo ACL.\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:85
+#: src/bas/security/PolicyStoreCommand.cpp:112
 msgid "acl: in-memory\n"
-msgstr ""
+msgstr "acl: en memoria\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:87
-msgid "acl file: "
-msgstr ""
+#: src/bas/security/PolicyStoreCommand.cpp:114
+msgid "acl file:"
+msgstr "archivo ACL:"
 
-#: src/bas/security/PolicyStoreCommand.cpp:93
+#: src/bas/security/PolicyStoreCommand.cpp:120
 msgid ""
 "usage: reload [-h]\n"
 "  Reload file ACL from disk.\n"
 msgstr ""
+"uso: reload [-h]\n"
+"  Recargar ACL de archivo desde disco.\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:97
+#: src/bas/security/PolicyStoreCommand.cpp:124
 msgid "reload only applies to file ACL (-a/--acl FILE)\n"
-msgstr ""
+msgstr "reload solo aplica a ACL de archivo (-a/--acl FILE)\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:101
-msgid "reloaded ACL from "
-msgstr ""
+#: src/bas/security/PolicyStoreCommand.cpp:128
+msgid "reloaded ACL from"
+msgstr "ACL recargada desde"
 
-#: src/bas/security/PolicyStoreCommand.cpp:106
+#: src/bas/security/PolicyStoreCommand.cpp:133
 msgid ""
 "usage: save [-h]\n"
 "  Write file ACL to disk.\n"
 msgstr ""
+"uso: save [-h]\n"
+"  Escribir ACL de archivo en disco.\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:110
+#: src/bas/security/PolicyStoreCommand.cpp:137
 msgid "save only applies to file ACL (-a/--acl FILE)\n"
-msgstr ""
+msgstr "save solo aplica a ACL de archivo (-a/--acl FILE)\n"
 
-#: src/bas/security/PolicyStoreCommand.cpp:114
-msgid "saved ACL to "
-msgstr ""
+#: src/bas/security/PolicyStoreCommand.cpp:141
+msgid "saved ACL to"
+msgstr "ACL guardada en"
 
-#: src/bas/security/PolicyStoreCommand.cpp:123
-msgid "unknown acl command: "
+#: src/bas/security/PolicyStoreCommand.cpp:146
+msgid ""
+"usage: allow|deny IDENTITY PERMISSION\n"
+"       grant IDENTITY PERMISSION [allow|deny]\n"
 msgstr ""
+"uso: allow|deny IDENTIDAD PERMISO\n"
+"       grant IDENTIDAD PERMISO [allow|deny]\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:153
+msgid "usage: grant IDENTITY PERMISSION [allow|deny]\n"
+msgstr "uso: grant IDENTIDAD PERMISO [allow|deny]\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:163
+msgid "unknown effect:"
+msgstr "efecto desconocido:"
+
+#: src/bas/security/PolicyStoreCommand.cpp:168
+msgid "usage:"
+msgstr "uso:"
+
+#: src/bas/security/PolicyStoreCommand.cpp:168
+msgid "IDENTITY PERMISSION\n"
+msgstr "IDENTIDAD PERMISO\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:180
+#: src/bas/security/PolicyStoreCommand.cpp:184
+msgid "usage: revoke IDENTITY PERMISSION\n"
+msgstr "uso: revoke IDENTITY PERMISSION\n"
+
+#: src/bas/security/PolicyStoreCommand.cpp:192
+msgid "revoked"
+msgstr "revocado"
+
+#: src/bas/security/PolicyStoreCommand.cpp:202
+msgid "unknown acl command:"
+msgstr "comando ACL desconocido:"
 
 #: src/bas/security/SecurityManagerCommand.cpp:15
 msgid ""
@@ -814,59 +1029,71 @@ msgid ""
 "  logout-realm [@realm|NAME]     clear identities in a realm\n"
 "  check [@realm] PERMISSION      check permission\n"
 "  request [@realm] PERM [USER]   request permission (login if needed)\n"
-"  login [@realm] [USER]          interactive login\n"
+"  login [@realm] [USER] [PASSWORD] interactive or non-interactive login\n"
 "  reload-creds                   reload credential file and restore logins\n"
 "  help                           show this help\n"
 msgstr ""
+"comandos de control de acceso:\n"
+"  whoami                         listar identidades activas\n"
+"  logout                         borrar todas las identidades activas\n"
+"  logout-realm [@realm|NAME]     borrar identidades de un realm\n"
+"  check [@realm] PERMISSION      comprobar permiso\n"
+"  request [@realm] PERM [USER]   solicitar permiso (login si hace falta)\n"
+"  login [@realm] [USER] [PASSWORD] login interactivo o no interactivo\n"
+"  reload-creds                   recargar archivo de credenciales y restaurar logins\n"
+"  help                           mostrar esta ayuda\n"
 
 #: src/bas/security/SecurityManagerCommand.cpp:40
 msgid "no active identities\n"
-msgstr ""
+msgstr "no hay identidades activas\n"
 
 #: src/bas/security/SecurityManagerCommand.cpp:49
-msgid " via "
-msgstr ""
+msgid "via"
+msgstr "vía"
 
-#: src/bas/security/SecurityManagerCommand.cpp:111
+#: src/bas/security/SecurityManagerCommand.cpp:112
 msgid "logged out all identities (auto-login suppressed until next login)\n"
-msgstr ""
+msgstr "se cerraron todas las identidades (auto-login suprimido hasta el próximo login)\n"
 
-#: src/bas/security/SecurityManagerCommand.cpp:124
+#: src/bas/security/SecurityManagerCommand.cpp:125
 msgid "usage: logout-realm [@realm|NAME]\n"
-msgstr ""
+msgstr "uso: logout-realm [@realm|NAME]\n"
 
-#: src/bas/security/SecurityManagerCommand.cpp:128
-msgid "logged out identities in realm "
-msgstr ""
+#: src/bas/security/SecurityManagerCommand.cpp:129
+msgid "logged out identities in realm"
+msgstr "identidades cerradas en el realm"
 
-#: src/bas/security/SecurityManagerCommand.cpp:133
+#: src/bas/security/SecurityManagerCommand.cpp:134
 msgid "no file credential store configured\n"
-msgstr ""
+msgstr "no hay almacén de credenciales en archivo configurado\n"
 
-#: src/bas/security/SecurityManagerCommand.cpp:156
+#: src/bas/security/SecurityManagerCommand.cpp:157
 msgid "usage: check [@realm] PERMISSION\n"
-msgstr ""
+msgstr "uso: check [@realm] PERMISSION\n"
 
-#: src/bas/security/SecurityManagerCommand.cpp:166
+#: src/bas/security/SecurityManagerCommand.cpp:167
 msgid "usage: request [@realm] PERMISSION [USER]\n"
-msgstr ""
+msgstr "uso: request [@realm] PERMISSION [USER]\n"
 
-#: src/bas/security/SecurityManagerCommand.cpp:196
+#: src/bas/security/SecurityManagerCommand.cpp:211
+#: src/bas/security/SecurityManagerCommand.cpp:224
 msgid "login ok"
-msgstr ""
+msgstr "inicio de sesión correcto"
 
-#: src/bas/security/SecurityManagerCommand.cpp:198
-msgid " realm="
-msgstr ""
+#: src/bas/security/SecurityManagerCommand.cpp:213
+#: src/bas/security/SecurityManagerCommand.cpp:226
+msgid "realm="
+msgstr "dominio="
 
-#: src/bas/security/SecurityManagerCommand.cpp:204
+#: src/bas/security/SecurityManagerCommand.cpp:219
+#: src/bas/security/SecurityManagerCommand.cpp:232
 msgid "login failed\n"
-msgstr ""
+msgstr "fallo de inicio de sesión\n"
 
-#: src/bas/security/SecurityManagerCommand.cpp:208
+#: src/bas/security/SecurityManagerCommand.cpp:236
 #: src/bas/security/UserStoreCommand.cpp:524
-msgid "unknown command: "
-msgstr ""
+msgid "unknown command:"
+msgstr "comando desconocido:"
 
 #: src/bas/security/UserStoreCommand.cpp:34
 msgid ""
@@ -884,25 +1111,49 @@ msgid ""
 "  user check USER [PASSWORD]        validate password (exit 1 on failure)\n"
 "  user del USER                   remove user\n"
 "  user enable USER | user disable USER\n"
-"  user roles USER | user roles set USER Râ¦\n"
+"  user roles USER | user roles set USER R…\n"
 "  user role add USER ROLE | user role del USER ROLE\n"
-"  user keys USER | user key add/del â¦\n"
+"  user keys USER | user key add/del …\n"
 "  path | reload | save | help\n"
 "  commands may be abbreviated by unique prefix\n"
 "  -h/--help on any subcommand shows its usage\n"
 msgstr ""
+"comandos del almacén de usuarios:\n"
+"  user list                       listar nombres de usuario\n"
+"  user show USER                  mostrar perfil, roles, claves\n"
+"  user add [options] USER [PASSWORD]\n"
+"  user update [options] USER [PASSWORD]\n"
+"      -a/--avatar NAME   -d/--display NAME   -e/--email EMAIL\n"
+"      -p/--password PASS  [PASSWORD] posicional\n"
+"      -H/--hash ALGO      plain (predeterminado), sha256, sha1, md5\n"
+"      -h/--help           mostrar ayuda del comando\n"
+"      -r/--roles ROLES    nombres de rol separados por comas\n"
+"      contraseña desde stdin cuando se omiten -p y [PASSWORD]\n"
+"  user check USER [PASSWORD]        validar contraseña (salida 1 si falla)\n"
+"  user del USER                   eliminar usuario\n"
+"  user enable USER | user disable USER\n"
+"  user roles USER | user roles set USER R…\n"
+"  user role add USER ROLE | user role del USER ROLE\n"
+"  user keys USER | user key add/del …\n"
+"  path | reload | save | help\n"
+"  los comandos se pueden abreviar por prefijo único\n"
+"  -h/--help en cualquier subcomando muestra su uso\n"
 
 #: src/bas/security/UserStoreCommand.cpp:57
 msgid ""
 "usage: user list [-h]\n"
 "  List all usernames in the store.\n"
 msgstr ""
+"uso: user list [-h]\n"
+"  Listar todos los nombres de usuario del almacén.\n"
 
 #: src/bas/security/UserStoreCommand.cpp:62
 msgid ""
 "usage: user show [-h] USER\n"
 "  Show profile, roles, and auth keys for USER.\n"
 msgstr ""
+"uso: user show [-h] USER\n"
+"  Mostrar perfil, roles y claves de autenticación de USER.\n"
 
 #: src/bas/security/UserStoreCommand.cpp:67
 msgid ""
@@ -918,6 +1169,17 @@ msgid ""
 "  -h, --help            show this help\n"
 "  If neither -p nor PASSWORD is given, password is read from stdin.\n"
 msgstr ""
+"uso: user add [-h] [options] USER [PASSWORD]\n"
+"  Crear un nuevo registro de usuario.\n"
+"options:\n"
+"  -a, --avatar NAME     profile.attributes.avatar\n"
+"  -d, --display NAME    nombre para mostrar\n"
+"  -e, --email EMAIL     dirección de correo\n"
+"  -p, --password PASS   contraseña (o PASSWORD posicional)\n"
+"  -H, --hash ALGO       plain (predeterminado), sha256, sha1, md5\n"
+"  -r, --roles ROLES     nombres de rol separados por comas (predeterminado: operator)\n"
+"  -h, --help            mostrar esta ayuda\n"
+"  Si no se dan -p ni PASSWORD, la contraseña se lee desde stdin.\n"
 
 #: src/bas/security/UserStoreCommand.cpp:81
 msgid ""
@@ -925,6 +1187,9 @@ msgid ""
 "  Update an existing user; only specified fields are changed.\n"
 "options: same as user add\n"
 msgstr ""
+"uso: user update [-h] [options] USER [PASSWORD]\n"
+"  Actualizar un usuario existente; solo cambian los campos indicados.\n"
+"options: iguales que user add\n"
 
 #: src/bas/security/UserStoreCommand.cpp:87
 msgid ""
@@ -932,25 +1197,35 @@ msgid ""
 "  Validate PASSWORD against USER's stored keys (exit 1 on failure).\n"
 "  PASSWORD from stdin when omitted.\n"
 msgstr ""
+"uso: user check [-h] USER [PASSWORD]\n"
+"  Validar PASSWORD contra las claves almacenadas de USER (salida 1 si falla).\n"
+"  PASSWORD desde stdin si se omite.\n"
 
 #: src/bas/security/UserStoreCommand.cpp:93
 msgid ""
 "usage: user del|rm [-h] USER\n"
 "  Remove USER from the store.\n"
 msgstr ""
+"uso: user del|rm [-h] USER\n"
+"  Eliminar USER del almacén.\n"
 
 #: src/bas/security/UserStoreCommand.cpp:98
 msgid ""
 "usage: user enable|disable [-h] USER\n"
 "  Enable or disable USER login.\n"
 msgstr ""
+"uso: user enable|disable [-h] USER\n"
+"  Habilitar o deshabilitar el login de USER.\n"
 
 #: src/bas/security/UserStoreCommand.cpp:103
 msgid ""
 "usage: user roles [-h] USER\n"
-"       user roles set [-h] USER ROLEâ¦\n"
+"       user roles set [-h] USER ROLE…\n"
 "  List roles, or replace the role list for USER.\n"
 msgstr ""
+"uso: user roles [-h] USER\n"
+"       user roles set [-h] USER ROLE…\n"
+"  Listar roles, o reemplazar la lista de roles de USER.\n"
 
 #: src/bas/security/UserStoreCommand.cpp:109
 msgid ""
@@ -958,12 +1233,17 @@ msgid ""
 "       user role del [-h] USER ROLE\n"
 "  Add or remove a single role name on USER.\n"
 msgstr ""
+"uso: user role add [-h] USER ROLE\n"
+"       user role del [-h] USER ROLE\n"
+"  Agregar o quitar un solo nombre de rol en USER.\n"
 
 #: src/bas/security/UserStoreCommand.cpp:115
 msgid ""
 "usage: user keys [-h] USER\n"
 "  List authentication keys for USER.\n"
 msgstr ""
+"uso: user keys [-h] USER\n"
+"  Listar claves de autenticación de USER.\n"
 
 #: src/bas/security/UserStoreCommand.cpp:120
 msgid ""
@@ -971,79 +1251,86 @@ msgid ""
 "       user key del [-h] USER ID\n"
 "options for add:\n"
 "  -p, --password PASS   key secret\n"
-"  -H, --hash ALGO       for password-hash (default plain â password-plain)\n"
+"  -H, --hash ALGO       for password-hash (default plain → password-plain)\n"
 "  --name LABEL          key display name\n"
 "  -h, --help            show this help\n"
 msgstr ""
+"uso: user key add [-h] USER ID TYPE [options]\n"
+"       user key del [-h] USER ID\n"
+"options para add:\n"
+"  -p, --password PASS   secreto de la clave\n"
+"  -H, --hash ALGO       para password-hash (predeterminado plain → password-plain)\n"
+"  --name LABEL          nombre para mostrar de la clave\n"
+"  -h, --help            mostrar esta ayuda\n"
+
+#: src/bas/security/UserStoreCommand.cpp:131
+msgid "name:"
+msgstr "nombre:"
 
 #: src/bas/security/UserStoreCommand.cpp:133
-msgid "  display: "
-msgstr ""
+msgid "display:"
+msgstr "visualización:"
 
 #: src/bas/security/UserStoreCommand.cpp:136
-msgid "  email: "
-msgstr ""
+msgid "email:"
+msgstr "correo:"
 
 #: src/bas/security/UserStoreCommand.cpp:140
-msgid "  avatar: "
-msgstr ""
+msgid "avatar:"
+msgstr "imagen:"
 
 #: src/bas/security/UserStoreCommand.cpp:143
-msgid "  enabled: "
-msgstr ""
+msgid "enabled:"
+msgstr "habilitado:"
 
 #: src/bas/security/UserStoreCommand.cpp:144
-msgid "  roles:"
-msgstr ""
+msgid "roles:"
+msgstr "papeles:"
 
 #: src/bas/security/UserStoreCommand.cpp:153
-msgid "  keys:\n"
-msgstr ""
-
-#: src/bas/security/UserStoreCommand.cpp:155
-msgid "    (none)\n"
-msgstr ""
+msgid "keys:\n"
+msgstr "claves:\n"
 
 #: src/bas/security/UserStoreCommand.cpp:244
 msgid "failed to read password from stdin"
-msgstr ""
+msgstr "no se pudo leer la contraseña desde stdin"
 
 #: src/bas/security/UserStoreCommand.cpp:257
-msgid "missing value for "
-msgstr ""
+msgid "missing value for"
+msgstr "falta valor para"
 
 #: src/bas/security/UserStoreCommand.cpp:313
-msgid "unknown option: "
-msgstr ""
+msgid "unknown option:"
+msgstr "opción desconocida:"
 
 #: src/bas/security/UserStoreCommand.cpp:333
 #: src/bas/security/UserStoreCommand.cpp:366
-msgid "unexpected argument: "
-msgstr ""
+msgid "unexpected argument:"
+msgstr "argumento inesperado:"
 
 #: src/bas/security/UserStoreCommand.cpp:337
 #: src/bas/security/UserStoreCommand.cpp:353
 msgid "USER name required"
-msgstr ""
+msgstr "se requiere nombre USER"
 
 #: src/bas/security/UserStoreCommand.cpp:411
-msgid "user already exists: "
-msgstr ""
+msgid "user already exists:"
+msgstr "el usuario ya existe:"
 
 #: src/bas/security/UserStoreCommand.cpp:415
 #: src/bas/security/UserStoreCommand.cpp:460
 #: src/bas/security/UserStoreCommand.cpp:788
-msgid "unsupported hash algorithm: "
-msgstr ""
+msgid "unsupported hash algorithm:"
+msgstr "algoritmo de hash no soportado:"
 
 #: src/bas/security/UserStoreCommand.cpp:416
 #: src/bas/security/UserStoreCommand.cpp:461
-msgid " (use plain, sha256, sha1, or md5)\n"
-msgstr ""
+msgid "(use plain, sha256, sha1, or md5)\n"
+msgstr "(use plain, sha256, sha1 o md5)\n"
 
 #: src/bas/security/UserStoreCommand.cpp:436
-msgid "added user "
-msgstr ""
+msgid "added user"
+msgstr "usuario añadido"
 
 #: src/bas/security/UserStoreCommand.cpp:456
 #: src/bas/security/UserStoreCommand.cpp:467
@@ -1056,175 +1343,185 @@ msgstr ""
 #: src/bas/security/UserStoreCommand.cpp:698
 #: src/bas/security/UserStoreCommand.cpp:719
 #: src/bas/security/UserStoreCommand.cpp:767
-msgid "user not found: "
-msgstr ""
+msgid "user not found:"
+msgstr "usuario no encontrado:"
 
 #: src/bas/security/UserStoreCommand.cpp:485
-msgid "updated user "
-msgstr ""
+msgid "updated user"
+msgstr "usuario actualizado"
 
 #: src/bas/security/UserStoreCommand.cpp:501
 msgid "password required\n"
-msgstr ""
+msgstr "se requiere contraseña\n"
 
 #: src/bas/security/UserStoreCommand.cpp:509
-msgid "password ok for "
-msgstr ""
+msgid "password ok for"
+msgstr "contraseña correcta para"
 
 #: src/bas/security/UserStoreCommand.cpp:512
-msgid "invalid password for "
-msgstr ""
+msgid "invalid password for"
+msgstr "contraseña inválida para"
 
 #: src/bas/security/UserStoreCommand.cpp:520
-msgid "ambiguous command: "
-msgstr ""
+msgid "ambiguous command:"
+msgstr "comando ambiguo:"
 
 #: src/bas/security/UserStoreCommand.cpp:559
 msgid "no users in store\n"
-msgstr ""
+msgstr "no hay usuarios en el almacén\n"
 
 #: src/bas/security/UserStoreCommand.cpp:570
-msgid " [disabled]"
-msgstr ""
+msgid "[disabled]"
+msgstr "[deshabilitado]"
 
 #: src/bas/security/UserStoreCommand.cpp:617
-msgid "removed user "
-msgstr ""
+msgid "removed user"
+msgstr "usuario eliminado"
 
 #: src/bas/security/UserStoreCommand.cpp:635
-msgid "enabled user "
-msgstr ""
+msgid "enabled user"
+msgstr "usuario habilitado"
 
 #: src/bas/security/UserStoreCommand.cpp:638
-msgid "disabled user "
-msgstr ""
+msgid "disabled user"
+msgstr "usuario deshabilitado"
 
 #: src/bas/security/UserStoreCommand.cpp:660
-msgid "usage: user roles set USER Râ¦\n"
-msgstr ""
+msgid "usage: user roles set USER R…\n"
+msgstr "uso: user roles set USER R…\n"
 
 #: src/bas/security/UserStoreCommand.cpp:670
-msgid "roles updated for "
-msgstr ""
+msgid "roles updated for"
+msgstr "roles actualizados para"
 
 #: src/bas/security/UserStoreCommand.cpp:678
-msgid "  role:"
-msgstr ""
+msgid "role:"
+msgstr "rol:"
 
 #: src/bas/security/UserStoreCommand.cpp:706
-msgid "role "
-msgstr ""
+msgid "role"
+msgstr "rol"
 
 #: src/bas/security/UserStoreCommand.cpp:706
-msgid " for "
-msgstr ""
+msgid "for"
+msgstr "para"
 
 #: src/bas/security/UserStoreCommand.cpp:751
-msgid "removed key "
-msgstr ""
+msgid "removed key"
+msgstr "clave eliminada"
 
 #: src/bas/security/UserStoreCommand.cpp:751
-msgid " from "
-msgstr ""
+msgid "from"
+msgstr "de"
 
 #: src/bas/security/UserStoreCommand.cpp:793
 msgid "password flags require key type password-hash or password-plain\n"
-msgstr ""
+msgstr "las opciones de contraseña requieren tipo de clave password-hash o password-plain\n"
 
 #: src/bas/security/UserStoreCommand.cpp:805
-msgid "added key "
-msgstr ""
+msgid "added key"
+msgstr "clave añadida"
 
 #: src/bas/security/UserStoreCommand.cpp:805
-msgid " to "
-msgstr ""
+msgid "to"
+msgstr "a"
 
 #: src/bas/security/UserStoreCommand.cpp:809
-msgid "unknown user subcommand: "
-msgstr ""
+msgid "unknown user subcommand:"
+msgstr "subcomando de usuario desconocido:"
 
 #: src/bas/security/UserStoreCommand.cpp:837
 msgid ""
 "usage: path [-h]\n"
 "  Show user store file path and label.\n"
 msgstr ""
+"uso: path [-h]\n"
+"  Mostrar ruta y etiqueta del almacén de usuarios.\n"
+
+#: src/bas/security/UserStoreCommand.cpp:840
+msgid "user store:"
+msgstr "almacén de usuarios:"
 
 #: src/bas/security/UserStoreCommand.cpp:843
-msgid "  file: "
-msgstr ""
+msgid "file:"
+msgstr "archivo:"
 
 #: src/bas/security/UserStoreCommand.cpp:845
-msgid "  kind: in-memory\n"
-msgstr ""
+msgid "kind: in-memory\n"
+msgstr "tipo: en memoria\n"
 
 #: src/bas/security/UserStoreCommand.cpp:851
 msgid ""
 "usage: reload [-h]\n"
 "  Reload user store from disk.\n"
 msgstr ""
+"uso: reload [-h]\n"
+"  Recargar almacén de usuarios desde disco.\n"
 
 #: src/bas/security/UserStoreCommand.cpp:855
 msgid "reload only applies to file store (-d/--store FILE)\n"
-msgstr ""
+msgstr "reload solo aplica al almacén en archivo (-d/--store FILE)\n"
 
 #: src/bas/security/UserStoreCommand.cpp:859
-msgid "reloaded user store from "
-msgstr ""
+msgid "reloaded user store from"
+msgstr "almacén de usuarios recargado desde"
 
 #: src/bas/security/UserStoreCommand.cpp:864
 msgid ""
 "usage: save [-h]\n"
 "  Write user store to disk.\n"
 msgstr ""
+"uso: save [-h]\n"
+"  Escribir almacén de usuarios en disco.\n"
 
 #: src/bas/security/UserStoreCommand.cpp:868
 msgid "save only applies to file store (-d/--store FILE)\n"
-msgstr ""
+msgstr "save solo aplica al almacén en archivo (-d/--store FILE)\n"
 
 #: src/bas/security/UserStoreCommand.cpp:872
-msgid "saved user store to "
-msgstr ""
+msgid "saved user store to"
+msgstr "almacén de usuarios guardado en"
 
 #: src/bas/volume/Volume_utils.cpp:152
 msgid "Usage: assets [OPTIONS] [PATH...]"
-msgstr ""
+msgstr "Uso: assets [OPTIONS] [PATH...]"
 
 #: src/bas/volume/Volume_utils.cpp:153
 msgid "Options:"
-msgstr ""
+msgstr "Opciones:"
 
 #: src/bas/volume/Volume_utils.cpp:154
-msgid "  -R, --recursive        list subdirectories recursively"
-msgstr ""
+msgid "-R, --recursive        list subdirectories recursively"
+msgstr "-R, --recursive        listar subdirectorios recursivamente"
 
 #: src/bas/volume/Volume_utils.cpp:155
-msgid "  -l, --long             use a long listing format"
-msgstr ""
+msgid "-l, --long             use a long listing format"
+msgstr "-l, --long             usar formato de listado largo"
 
 #: src/bas/volume/Volume_utils.cpp:156
-msgid "  -a, --all              include entries starting with . and .."
-msgstr ""
+msgid "-a, --all              include entries starting with . and .."
+msgstr "-a, --all              incluir entradas que empiezan con . y .."
 
 #: src/bas/volume/Volume_utils.cpp:157
-msgid "  -A, --almost-all       include entries starting with . except . and .."
-msgstr ""
+msgid "-A, --almost-all       include entries starting with . except . and .."
+msgstr "-A, --almost-all       incluir entradas que empiezan con . excepto . y .."
 
 #: src/bas/volume/Volume_utils.cpp:158
-msgid "  -F, --classify         append file type indicators"
-msgstr ""
+msgid "-F, --classify         append file type indicators"
+msgstr "-F, --classify         añadir indicadores de tipo de archivo"
 
 #: src/bas/volume/Volume_utils.cpp:159
-msgid "  -h, --human-readable   print sizes in human-readable form"
-msgstr ""
+msgid "-h, --human-readable   print sizes in human-readable form"
+msgstr "-h, --human-readable   imprimir tamaños en forma legible"
 
 #: src/bas/volume/Volume_utils.cpp:160
-msgid "  -C, --color            enable colored output"
-msgstr ""
+msgid "-C, --color            enable colored output"
+msgstr "-C, --color            activar salida en color"
 
 #: src/bas/volume/Volume_utils.cpp:161
-msgid "  -T, --tree             print as directory tree"
-msgstr ""
+msgid "-T, --tree             print as directory tree"
+msgstr "-T, --tree             imprimir como árbol de directorios"
 
 #: src/bas/volume/Volume_utils.cpp:162
-msgid "      --help             display this help and exit"
-msgstr ""
+msgid "--help             display this help and exit"
+msgstr "--help             mostrar esta ayuda y salir"

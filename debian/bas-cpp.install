@@ -1,4 +1,5 @@
 usr/bin/*
 usr/share/bas-cpp/app/*
 usr/share/man/man*/*
+usr/share/man/*/man*/*
 usr/share/bash-completion/completions/*

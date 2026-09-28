@@ -54,6 +54,7 @@ meson install -C build --destdir=%{buildroot}
 %{_bindir}/tanks_game
 %{_datadir}/bash-completion/completions/vols
 %{_mandir}/man1/vols.1*
+%{_mandir}/*/man1/vols.1*
 %{_datadir}/bas-cpp/
 %{_includedir}/*
 %{_datadir}/locale/*/LC_MESSAGES/bas_cpp.mo

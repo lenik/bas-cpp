@@ -1,0 +1,84 @@
+= vols(1)
+{project-author} <{project-email}>
+v{project-version}, {project-year}
+:doctype: manpage
+:manmanual: Commandes utilisateur
+:mansource: vols
+:man-linkstyle: blue R <>
+:nofooter:
+
+== NAME
+
+vols - lister les volumes locaux détectés par bas-cpp
+
+== SYNOPSIS
+
+*vols* [_options_]
+
+== DESCRIPTION
+
+*vols* énumère les volumes locaux connus du sous-système de volumes bas-cpp et affiche une ligne d'en-tête puis une ligne par volume. Les colonnes sont séparées par des tabulations.
+
+Si vous ne passez aucune option de sélection de champs (*-a*, *-c*, *-m*, *-d*, *-t*, *-l*, *-u*, *-r*, *-L*, *-D*, *-o*, *-O*, *-z*), les colonnes par défaut sont *-mdtlu* (point de montage, périphérique, type, étiquette, UUID). Avec *-v* / *--verbose*, les colonnes par défaut sont *-mdtlurLD* (ces cinq plus lecture seule, type logique, périphérique loop). *-c / --compact* ne sélectionne que l'ensemble compact (*-mdtlu*), même avec *-v*. *-a / --all* sélectionne toutes les colonnes (équivalent à combiner tous les drapeaux de champ).
+
+Les montages bind sont toujours inclus dans le scan. Les systèmes de fichiers overlay sont ajoutés lorsque vous passez *-s* / *--symbols*, ou lorsque la colonne de type logique est sélectionnée (*-L* / *--logical-type*, ou les défauts de *-v*).
+
+*-w / --writable* n'affiche que les montages en écriture et implique la colonne lecture seule (*-r*) afin que chaque ligne affiche encore *ro* / *rw*.
+
+== OPTIONS
+
+=== Colonnes de champs
+
+*-a*, *--all*::
+  Afficher toutes les colonnes disponibles.
+*-c*, *--compact*::
+  Utiliser l'ensemble compact (*-mdtlu*) ; avec des drapeaux de champ explicites, le compact est combiné (OU) avec ces colonnes.
+*-m*, *--mountpoint*::
+  Point de montage (ou chemin racine).
+*-d*, *--device*::
+  Chemin du périphérique (ou -).
+*-t*, *--type*::
+  Type de volume.
+*-l*, *--label*::
+  Étiquette.
+*-u*, *--uuid*::
+  UUID.
+*-r*, *--read-only*::
+  Indicateur lecture seule (*ro* / *rw*).
+*-L*, *--logical-type*::
+  Nature logique du montage (*-*, *bind*, *overlay*).
+*-D*, *--loop-device*::
+  Marqueur de périphérique loop (*loop* / *-*).
+*-o*, *--opts*::
+  Chaîne d'options par montage (VFS) depuis */proc/self/mountinfo*.
+*-O*, *--superopts*::
+  Chaîne d'options de superbloc depuis */proc/self/mountinfo*.
+*-z*, *--root*::
+  Chemin racine dans le système de fichiers (champ « root » de mountinfo, avant le point de montage).
+
+=== Autres
+
+*-s*, *--symbols*::
+  Inclure les systèmes de fichiers overlay dans le scan des volumes (les montages bind sont toujours inclus).
+*-h*, *--help*::
+  Afficher l'aide et quitter avec succès.
+*-w*, *--writable*::
+  Omettre les volumes en lecture seule ; implique *-r*.
+*-v*, *--verbose*::
+  Abaisser le seuil de journalisation de la bibliothèque (plus de messages sur stderr). Sans drapeaux de champ, sélectionne l'ensemble de colonnes verbeux par défaut.
+*-q*, *--quiet*::
+  Supprimer les avertissements de la bibliothèque sur stderr (erreurs uniquement).
+
+*-v* et *-q* ne peuvent pas être utilisés ensemble. *-a* et *-c* ne peuvent pas être utilisés ensemble.
+
+== EXIT STATUS
+
+Quitte avec 0 en cas de succès, 2 pour des options invalides, des drapeaux en conflit ou des arguments inattendus.
+
+== AUTHORS
+
+Rédigé dans le cadre du projet bas-cpp.
+
+== SEE ALSO
+
+*bas-cpp*(7)

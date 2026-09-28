@@ -1,3 +1,20 @@
+bas-cpp (1.0.5) testing; urgency=medium
+
+  * Zephyr lint alignment and security command UX.
+  * PolicyStore: allow/deny/grant/revoke ACL grant commands with
+    identity and permission token parsing.
+  * SecurityManager: non-interactive login with USER PASSWORD; keep
+    gettext padding outside _().
+  * i18n: fill L1 ar/es_MX catalogs; translate new vols/ACL/login msgids
+    across LINGUAS; unwrap ar/es_MX.
+  * man: whole-document L1 vols.adoc translations (fr, it, de, es_MX,
+    zh_CN, ja, ko, ar); Meson install under mandir/<locale>/man1.
+  * Packaging: zfr ize CI scaffold (.github/workflows/release-
+    packages.yml, scripts/ci/*); meson posync/look via zfr; RPM/debian
+    locale man globs.
+
+ -- Lenik (谢继雷) <lenik@bodz.net>  Mon, 28 Sep 2026 14:10:00 +0800
+
 bas-cpp (1.0.4) testing; urgency=medium
 
   * Volume ownership and identity:
