@@ -48,6 +48,8 @@ version:
 	@echo $(VERSION)
 
 # Prefer source-tree tools/zfr (meta-repo bootstrap); else zfr on PATH.
+# meson dist keeps the subprojects symlink as a broken placeholder; inject
+# vendored boost + date_tz so RPM builds match the live tree.
 dist:
 	mkdir -p $(TOPDIR)/SOURCES $(TOPDIR)/SPECS
 	@set -e; \
@@ -59,7 +61,22 @@ dist:
 	else \
 		echo "zfr dist: zfr not found on PATH" >&2; \
 		exit 1; \
-	fi
+	fi; \
+	tarball=$$(ls "$(TOPDIR)/SOURCES/$(NAME)"-*.tar.xz | head -1); \
+	tmpdir=$$(mktemp -d); \
+	trap 'rm -rf "$$tmpdir"' EXIT; \
+	tar -C "$$tmpdir" -xf "$$tarball"; \
+	srcdir=$$(ls "$$tmpdir"); \
+	rm -rf "$$tmpdir/$$srcdir/subprojects"; \
+	mkdir -p "$$tmpdir/$$srcdir/subprojects"; \
+	cp -a "$(SRCDIR)/subprojects/boost" "$(SRCDIR)/subprojects/date_tz" \
+		"$$tmpdir/$$srcdir/subprojects/"; \
+	rm -rf "$$tmpdir/$$srcdir/subprojects/date_tz/build" \
+		"$$tmpdir/$$srcdir/subprojects/boost"/.git \
+		"$$tmpdir/$$srcdir/subprojects/boost"/*/.git \
+		"$$tmpdir/$$srcdir/subprojects/date_tz"/.git \
+		"$$tmpdir/$$srcdir/subprojects/date_tz"/*/.git; \
+	tar -C "$$tmpdir" -cJf "$$tarball" "$$srcdir"
 
 # Freeze versions into the spec so SRPM rebuilds do not fall back to 0.0.0.
 spec: dist $(NAME).spec

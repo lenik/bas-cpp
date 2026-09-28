@@ -51,14 +51,18 @@ meson compile -C build
 meson install -C build --destdir=%{buildroot}
 
 %files
-%{_bindir}/tanks_game
+%{_bindir}/*
+%{_prefix}/lib/*/libbas-cpp.so*
+%{_prefix}/lib/*/libbas-cpp.a
+%{_prefix}/lib/*/pkgconfig/bas-cpp*.pc
+%{_includedir}/bas
+%{_datadir}/bas-cpp/
 %{_datadir}/bash-completion/completions/vols
+%{_datadir}/locale/*/LC_MESSAGES/bas_cpp.mo
+%{_datadir}/locale/*/LC_MESSAGES/bas-cpp.mo
+%{_datadir}/doc/bas-cpp/
 %{_mandir}/man1/vols.1*
 %{_mandir}/*/man1/vols.1*
-%{_datadir}/bas-cpp/
-%{_includedir}/*
-%{_datadir}/locale/*/LC_MESSAGES/bas_cpp.mo
-%{_datadir}/doc/bas-cpp/
 
 %changelog
 * Thu Aug 20 2026 Lenik (谢继雷) <lenik@bodz.net>

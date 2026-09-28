@@ -19,7 +19,21 @@ MINGW_CC := $(shell command -v x86_64-w64-mingw32-gcc 2>/dev/null)
 all:
 	"$(HOST_SH)" run $(KIND) -- $(MAKE) -C "$(CURDIR)" local
 
-local: $(ARTIFACT)
+local:
+	@set -e; \
+	if [ -z "$$OS" ] || [ "$$OS" != Windows_NT ]; then \
+		if [ -z "$(MINGW_CC)" ]; then \
+			echo "mingw: skip (x86_64-w64-mingw32-gcc not found)"; \
+			mkdir -p "$(OUTDIR)"; \
+			exit 0; \
+		fi; \
+		if ! x86_64-w64-mingw32-pkg-config --exists bas-c 2>/dev/null; then \
+			echo "mingw: skip (cross bas-c pkg-config not found)"; \
+			mkdir -p "$(OUTDIR)"; \
+			exit 0; \
+		fi; \
+	fi; \
+	$(MAKE) $(ARTIFACT)
 
 stage:
 	rm -rf "$(STAGE)" "$(BUILD)"
